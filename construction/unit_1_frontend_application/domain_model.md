@@ -244,7 +244,9 @@ The Frontend Application manages the user's room planning session, including roo
 **Behaviors:**
 - `applyDetection(detectedItems, isEmpty)`: Store AI detection results
 - `applyReplacement(detectedItemId, replacementProductId)`: Add replacement mapping
-- `applyPlacement(productId, imagePosition)`: Add furniture placement for empty room
+- `applyPlacement(productId, imagePosition, rotation, scale)`: Add furniture placement for empty room
+- `updatePlacement(placementId, newPosition, newRotation, newScale)`: Update existing placement (for US-4.5 adjustment)
+- `removePlacement(placementId)`: Remove furniture placement from empty room
 - `getProcessedImage()`: Return image with replacements/placements applied
 - `clearReplacements()`: Remove all replacements
 - `clearPlacements()`: Remove all placements
@@ -528,11 +530,18 @@ The Frontend Application manages the user's room planning session, including roo
 **Description:** Immutable representation of furniture placed in empty room image.
 
 **Attributes:**
+- placementId: Unique identifier
 - productId: Product ID from catalog
 - productName: Product name
 - imagePosition: Position2D value object (x, y coordinates in image)
 - scale: Scale factor for rendering
+- rotation: Rotation angle in degrees (0-360) for orientation adjustment
 - appliedAt: Timestamp
+
+**Behaviors:**
+- `moveTo(newPosition)`: Create new placement with updated position
+- `rotateTo(angle)`: Create new placement with updated rotation
+- `scaleTo(factor)`: Create new placement with updated scale
 
 ---
 
@@ -732,7 +741,15 @@ The Frontend Application manages the user's room planning session, including roo
 
 #### FurniturePlacedInImage
 - **Triggered when:** User places furniture in empty room photo
-- **Contains:** imageId, productId, imagePosition, processedImageUrl, timestamp
+- **Contains:** imageId, productId, imagePosition, rotation, scale, processedImageUrl, timestamp
+
+#### ImagePlacementAdjusted
+- **Triggered when:** User adjusts furniture placement or orientation in empty room photo (US-4.5)
+- **Contains:** imageId, placementId, oldPosition, newPosition, oldRotation, newRotation, oldScale, newScale, timestamp
+
+#### ImagePlacementRemoved
+- **Triggered when:** User removes furniture placement from empty room photo
+- **Contains:** imageId, placementId, timestamp
 
 ---
 
@@ -1164,7 +1181,7 @@ This domain model supports all user stories from the inception document:
 - **US-4.2**: `DetectedFurnitureItem` value object and `FurnitureDetected` event
 - **US-4.3**: `AIServiceAdapter.toReplacementResult()` with multiple alternatives
 - **US-4.4**: `RoomImage.applyReplacement()` and `FurnitureReplacementApplied` event
-- **US-4.5**: `RoomImage.isEmpty`, `ImageFurniturePlacement`, and `FurniturePlacedInImage` event
+- **US-4.5**: `RoomImage.isEmpty`, `ImageFurniturePlacement` with rotation/scale, `RoomImage.updatePlacement()` for adjustments, and `ImagePlacementAdjusted` event
 
 ### Epic 5: Room Visualization
 - **US-5.1, US-5.2**: `ViewState.mode` (2D | 3D)
