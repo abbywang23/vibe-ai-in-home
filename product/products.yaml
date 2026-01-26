@@ -1,0 +1,147 @@
+products:
+  - index: 1
+    name: "Owen Chaise Sectional Sofa"
+    url: "https://www-test.castlery.com/sg/products/owen-chaise-sectional-sofa?orientation=left_facing&material=pearl_beige&leg_color=walnut&Configuration_rick=hamilton-round-chaise-sectional-sofa"
+    price: "$1,999"
+    original_price: null
+    description: "Removable Covers, Machine Washable"
+    detailed_description: |
+      Everyone's favourite seat: One sofa that makes the entire family happy. The chaise creates a reading nook for quiet time, while deep seating welcomes gatherings with face-to-face conversations and side-by-side movie watching.
+      
+      Removable covers made for messes: From lively dinners to occasional wine spills, removable covers make cleanup simple. Make all the memories you want—Owen handles the messes.
+      
+      Knock-proof corners: Curved, padded armrests keep arms, legs, and feet from going bump in the day.
+      
+      Raised for hassle-free cleaning: Frame raised just right—so your vacuum glides underneath with minimal lifting, while giving kids and pets their perfect perch.
+    tag: "Customisable"
+    delivery: "Leaves warehouse by Feb 27"
+    images:
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1624965959/crusader/variants/54000008-TL4002/Owen-Left-Chaise-Sectional-Sofa-Pearl_Beige-Front.jpg"
+        local: "product1_img1.jpg"
+        alt: "Owen Chaise Sectional Sofa Front"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1624965957/crusader/variants/54000008-TL4002/Owen-Left-Chaise-Sectional-Sofa-Pearl-Beige-D1.jpg"
+        local: "product1_img2.jpg"
+        alt: "Owen Chaise Sectional Sofa Detail 1"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1624965963/crusader/variants/54000008-TL4002/Owen-Left-Chaise-Sectional-Sofa-Pearl_Beige-Angle.jpg"
+        local: "product1_img3.jpg"
+        alt: "Owen Chaise Sectional Sofa Angle"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1624965964/crusader/variants/54000008-TL4002/Owen-Left-Chaise-Sectional-Sofa-Pearl_Beige-Side.jpg"
+        local: "product1_img4.jpg"
+        alt: "Owen Chaise Sectional Sofa Side"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1624965964/crusader/variants/54000008-TL4002/Owen-Left-Chaise-Sectional-Sofa-Pearl_Beige-Back.jpg"
+        local: "product1_img5.jpg"
+        alt: "Owen Chaise Sectional Sofa Back"
+    
+  - index: 2
+    name: "Hamilton Round Chaise Sectional Sofa"
+    url: "https://www-test.castlery.com/sg/products/hamilton-round-chaise-sectional-sofa?orientation=left_facing&material=performance_brilliant_white"
+    price: "$2,799"
+    original_price: null
+    description: "Removable Cushion Covers, Deep Seats"
+    tag: "Customisable"
+    delivery: "Leaves warehouse by Feb 27"
+    images:
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1655431871/crusader/variants/50440780-MC4002/Hamilton-Round-Chaise-Sectional-Sofa-Left-Brilliant-White-Front-1655431869.jpg"
+        local: "product2_img1.jpg"
+        alt: "Hamilton Round Chaise Sectional Sofa Front"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1655448965/crusader/variants/50440780-MC4002/Hamilton-Left-Round-Chaise-Sectional-Sofa-in-Brilliant-White-Square-Set_1-1655448963.jpg"
+        local: "product2_img2.jpg"
+        alt: "Hamilton Round Chaise Sectional Sofa Set"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1655437905/crusader/variants/50440780-MC4002/Hamilton-Round-Chaise-Sectional-Sofa-Left-Brilliant-White-Angle-1655437903.jpg"
+        local: "product2_img3.jpg"
+        alt: "Hamilton Round Chaise Sectional Sofa Angle"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1655448965/crusader/variants/50440780-MC4002/Hamilton-Left-Round-Chaise-Sectional-Sofa-in-Brilliant-White-Square-Det_10-1655448962.jpg"
+        local: "product2_img4.jpg"
+        alt: "Hamilton Round Chaise Sectional Sofa Detail"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1655448965/crusader/variants/50440780-MC4002/Hamilton-Round-Chaise-Sectional-Sofa-in-Brilliant-White-Square-Det_1-1655448963.jpg"
+        local: "product2_img5.jpg"
+        alt: "Hamilton Round Chaise Sectional Sofa Detail 2"
+    
+  - index: 3
+    name: "Auburn Performance Bouclé 3 Seater Sofa"
+    url: "https://www-test.castlery.com/sg/products/auburn-performance-boucle-3-seater-sofa?material=chalk_boucle"
+    price: "$1,738"
+    original_price: null
+    description: "Spill-Resistant, Modular"
+    detailed_description: |
+      Shape it your way: Designed to do more with less, Auburn 3 Seater fits you plus two comfortably without taking over your space—and is made to grow as your family does. Move modules around or add extra seats as you need them, because your sofa should fit into your life, not the other way around.
+      
+      Support you can stretch out on: With foam- and fibre-filled cushions, this seat is made for lounging—but stays supportive, even through long movie marathons.
+      
+      Made for life's messy moments: Auburn's spill-resistant performance bouclé beads up when spills happen—just blot and go.
+      
+      Tailored support: No slouching here—Auburn's tight back keeps its shape so you can skip the constant fluffing and get straight to the lounging.
+    tag: "Bestseller"
+    delivery: "Leaves warehouse by Mar 2"
+    images:
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1683792727/crusader/variants/T50441131-CB4001/Auburn-Performance-Boucle-3-Seater-Sofa-Chalk-Front-1683792724.jpg"
+        local: "product3_img1.jpg"
+        alt: "Auburn Performance Bouclé 3 Seater Sofa Front"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1683794517/crusader/variants/T50441131-CB4001/Auburn-Performance-Boucle-3-Seater-Sofa-Chalk-Square-Set_1-1683794515.jpg"
+        local: "product3_img2.jpg"
+        alt: "Auburn Performance Bouclé 3 Seater Sofa Set"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1683792727/crusader/variants/T50441131-CB4001/Auburn-Performance-Boucle-3-Seater-Sofa-Chalk-Angle-1683792724.jpg"
+        local: "product3_img3.jpg"
+        alt: "Auburn Performance Bouclé 3 Seater Sofa Angle"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1683792726/crusader/variants/T50441131-CB4001/Auburn-Performance-Boucle-3-Seater-Sofa-Chalk-Side-1683792724.jpg"
+        local: "product3_img4.jpg"
+        alt: "Auburn Performance Bouclé 3 Seater Sofa Side"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1683792727/crusader/variants/T50441131-CB4001/Auburn-Performance-Boucle-3-Seater-Sofa-Chalk-Back-1683792724.jpg"
+        local: "product3_img5.jpg"
+        alt: "Auburn Performance Bouclé 3 Seater Sofa Back"
+    
+  - index: 4
+    name: "Madison Leather 3 Seater Sofa"
+    url: "https://www-test.castlery.com/sg/products/madison-leather-3-seater-sofa?material=caramel"
+    price: "$1,700"
+    original_price: "$1,999"
+    description: "Grid Tufted, Top Grain Leather"
+    detailed_description: |
+      Unique biscuit tufting: Meet this tough cookie—Madison is built to flawlessly hold its shape for all the lounging you'll ever do, and then some.
+      
+      Solid rubberwood legs: Get unwavering support that never goes out of style, thanks to its solid rubberwood legs.
+      
+      All the luxury, none of the fuss: Madison comes dressed in top-grain American leather, chosen for its ease of maintenance, supple texture, and buttery-soft feel. Touch it once, and you'll want to run your hands over (and over).
+    tag: "Sale"
+    delivery: "Leaves warehouse by Feb 27"
+    images:
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1631157536/crusader/variants/50440750-LE4016/Madison-3-Seater-Sofa-Caramel-Front.jpg"
+        local: "product4_img1.jpg"
+        alt: "Madison Leather 3 Seater Sofa Front"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1631157809/crusader/variants/50440750-LE4016/Madison-3-Seater-Sofa-Caramel-Angle.jpg"
+        local: "product4_img2.jpg"
+        alt: "Madison Leather 3 Seater Sofa Angle"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1631157921/crusader/variants/50440750-LE4016/Madison-3-Seater-Sofa-Caramel-Side.jpg"
+        local: "product4_img3.jpg"
+        alt: "Madison Leather 3 Seater Sofa Side"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1631157930/crusader/variants/50440750-LE4016/Madison-3-Seater-Sofa-Caramel-Back.jpg"
+        local: "product4_img4.jpg"
+        alt: "Madison Leather 3 Seater Sofa Back"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1631157610/crusader/variants/50440750-LE4016/Madison-3-Seater-Sofa-Caramel-Square-Set_4.jpg"
+        local: "product4_img5.jpg"
+        alt: "Madison Leather 3 Seater Sofa Set"
+    
+  - index: 5
+    name: "Hamilton Leather 3 Seater Sofa"
+    url: "https://www-test.castlery.com/sg/products/hamilton-leather-3-seater-sofa?material=marche_Ivory"
+    price: "$2,299"
+    original_price: null
+    description: "American Top Grain Leather, Deep Seats"
+    tag: null
+    delivery: "Leaves warehouse by Feb 27"
+    images:
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1710753518/crusader/variants/50440764-LE4021/Hamilton-Leather-Sofa-Ivory-Front-1710753515.jpg"
+        local: "product5_img1.jpg"
+        alt: "Hamilton Leather 3 Seater Sofa Front"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1710753518/crusader/variants/50440764-LE4021/Hamilton-Leather-Sofa-Ivory-Angle-1710753515.jpg"
+        local: "product5_img2.jpg"
+        alt: "Hamilton Leather 3 Seater Sofa Angle"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1710753517/crusader/variants/50440764-LE4021/Hamilton-Leather-Sofa-Ivory-Side-1710753515.jpg"
+        local: "product5_img3.jpg"
+        alt: "Hamilton Leather 3 Seater Sofa Side"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1710729394/crusader/variants/50440780-LE4021/Hamilton-Leather-Sofa-Ivory-Det_1-1710729392.jpg"
+        local: "product5_img4.jpg"
+        alt: "Hamilton Leather 3 Seater Sofa Detail 1"
+      - url: "https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1710729394/crusader/variants/50440780-LE4021/Hamilton-Leather-Sofa-Ivory-Det_2-1710729392.jpg"
+        local: "product5_img5.jpg"
+        alt: "Hamilton Leather 3 Seater Sofa Detail 2"
