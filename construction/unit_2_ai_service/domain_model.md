@@ -81,7 +81,7 @@ Based on the requirements, the following external AI models are recommended:
 
 ### 3. ImageAnalysis (Aggregate Root)
 
-**Description:** Manages the analysis of uploaded room images for furniture detection, replacement, and placement in empty rooms.
+**Description:** Manages the analysis of uploaded room images for furniture detection, replacement, and placement in empty rooms. Automatically determines analysis mode based on room occupancy.
 
 **Responsibilities:**
 - Process uploaded room images
@@ -90,13 +90,24 @@ Based on the requirements, the following external AI models are recommended:
 - Generate replacement suggestions for existing furniture
 - Generate placement suggestions for empty rooms
 - Render furniture replacements and placements realistically
+- Switch between replacement and placement modes automatically
+
+**Attributes:**
+- analysisId: Unique identifier
+- imageUrl: URL of uploaded image
+- roomDimensions: User-provided room dimensions
+- analysisMode: AnalysisMode (REPLACEMENT | PLACEMENT)
+- detectedFurniture: List of detected furniture items (for replacement mode)
+- roomSpace: Extracted room space info (for placement mode)
+- suggestedPlacements: List of placement suggestions (for placement mode)
 
 **Invariants:**
 - Image must be valid (JPEG/PNG, within size limits)
 - Room dimensions must be provided for scale estimation
-- Detected furniture must have confidence > threshold
+- Detected furniture must have confidence > threshold (for replacement mode)
 - Replacement/placement products must exist in catalog
 - Empty room detection must be reliable to avoid incorrect mode switching
+- Analysis mode must be determined before generating suggestions
 
 ---
 
@@ -311,6 +322,32 @@ Based on the requirements, the following external AI models are recommended:
 
 ---
 
+### AnalysisMode
+
+**Description:** Enumeration of image analysis modes.
+
+**Values:**
+- REPLACEMENT (existing furniture detected, suggest replacements)
+- PLACEMENT (no furniture detected, suggest placements)
+
+---
+
+### RoomSpace
+
+**Description:** Immutable representation of room space extracted from image.
+
+**Attributes:**
+- roomBoundaries: BoundingBox of room in image
+- estimatedDimensions: RoomDimensions estimated from image
+- usableArea: Calculated usable area for furniture
+- wallPositions: Positions of walls for placement constraints
+
+**Behaviors:**
+- getAvailableSpace(): Calculate available space for furniture
+- canFitFurniture(furniture): Check if furniture can fit in space
+
+---
+
 ## Domain Events
 
 ### RecommendationRequested
@@ -372,6 +409,10 @@ Based on the requirements, the following external AI models are recommended:
 ### EmptyRoomDetected
 - Triggered when: AI detects room has no existing furniture
 - Contains: analysisId, roomDimensions
+
+### PlacementSuggestionsGenerated
+- Triggered when: AI generates placement suggestions for empty room
+- Contains: analysisId, placements, totalPrice, budgetStatus
 
 ### AIServiceUnavailable
 - Triggered when: External AI service is unavailable
@@ -474,6 +515,37 @@ Based on the requirements, the following external AI models are recommended:
 
 ---
 
+### EmptyRoomAnalysisService
+
+**Responsibilities:**
+- Detect if uploaded room image contains no existing furniture
+- Determine room boundaries and usable space from image
+- Generate furniture placement suggestions for empty rooms
+- Validate furniture placements fit within room space
+- Switch analysis mode based on room occupancy
+
+**Operations:**
+- isEmptyRoom(imageUrl, roomDimensions): Detect if room is empty (returns boolean + confidence)
+- analyzeRoomSpace(imageUrl, roomDimensions): Extract room boundaries and usable area
+- suggestPlacements(emptyRoom, preferences, budget): Generate furniture placement suggestions
+- validatePlacement(placement, roomSpace): Validate if placement fits within room
+- determinePlacementMode(analysisResult): Determine if should use replacement or placement mode
+
+**Placement Suggestion Algorithm:**
+1. Analyze room dimensions and available space
+2. Query product catalog for furniture matching preferences
+3. Use AI to generate optimal placement layout
+4. Consider furniture dimensions and room constraints
+5. Rank placements by space efficiency and aesthetic appeal
+6. Return top N placement suggestions with confidence scores
+
+**Collaborators:**
+- AIModelGateway (for empty room detection and placement generation)
+- ProductCatalogGateway (for product data)
+- FurnitureSpaceFittingService (for space validation)
+
+---
+
 ## Repositories
 
 ### RecommendationRequestRepository
@@ -501,6 +573,8 @@ Based on the requirements, the following external AI models are recommended:
 - findById(analysisId): Retrieve analysis
 - updateWithDetections(analysisId, detections): Add detection results
 - updateWithReplacement(analysisId, result): Add replacement result
+- updateWithPlacements(analysisId, placements): Add placement results
+- updateAnalysisMode(analysisId, mode): Update analysis mode (replacement | placement)
 
 ---
 
@@ -516,12 +590,15 @@ Based on the requirements, the following external AI models are recommended:
 - detectObjects(imageUrl, prompt): Call GPT-4V for object detection
 - generateImage(prompt, mask, referenceImage): Call Stability AI for inpainting
 - placeFurnitureInRoom(imageUrl, placements, roomDimensions): Call AI for furniture placement
+- detectEmptyRoom(imageUrl, roomDimensions): Call GPT-4V to detect if room is empty
+- analyzeRoomBoundaries(imageUrl, roomDimensions): Call GPT-4V to extract room space info
 
 **Implementation Notes:**
 - Handles API authentication and rate limiting
 - Implements retry logic with exponential backoff
 - Translates between domain model and AI API formats
 - Caches responses where appropriate
+- Empty room detection uses confidence threshold (>= 0.8) to avoid false positives
 
 ---
 
@@ -565,6 +642,17 @@ Based on the requirements, the following external AI models are recommended:
 **Trigger:** RecommendationsGenerated event where totalPrice > budget
 **Action:** Invoke BudgetOptimizationService to find alternatives
 **Result:** Emit RecommendationsAdjusted event with optimized list
+
+---
+
+### EmptyRoomDetectedPolicy
+
+**Trigger:** EmptyRoomDetected event
+**Action:** 
+1. Invoke EmptyRoomAnalysisService to analyze room space
+2. Generate furniture placement suggestions based on preferences and budget
+3. Prepare placement mode UI context
+**Result:** Emit PlacementSuggestionsGenerated event with suggested placements
 
 ---
 
