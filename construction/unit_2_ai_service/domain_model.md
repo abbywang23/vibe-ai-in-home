@@ -182,6 +182,21 @@ Based on the requirements, the following external AI models are recommended:
 
 ---
 
+### EnrichedRoomScene
+
+**Description:** A complete room scene with furniture, appliances, and decorative elements.
+
+**Attributes:**
+- sceneId: Unique identifier
+- furniture: List of placed furniture items
+- appliances: List of selected appliances
+- decorativeElements: List of decorative items
+- totalImageUrl: URL of final rendered scene
+- styleConsistency: Score indicating style coherence (0-1)
+- completenessScore: Score indicating how complete the room looks (0-1)
+
+---
+
 ## Value Objects
 
 ### RoomConfiguration
@@ -348,6 +363,94 @@ Based on the requirements, the following external AI models are recommended:
 
 ---
 
+### Appliance
+
+**Description:** Immutable representation of a room appliance/electronic device.
+
+**Attributes:**
+- applianceId: Unique identifier
+- name: Appliance name
+- type: ApplianceType enum
+- roomTypes: List of compatible room types
+- dimensions: Physical dimensions
+- position: Suggested position in room
+- imageUrl: Visual representation
+
+---
+
+### DecorativeElement
+
+**Description:** Immutable representation of decorative items and soft furnishings.
+
+**Attributes:**
+- decorId: Unique identifier
+- name: Decoration name
+- type: DecorationType enum
+- roomTypes: List of compatible room types
+- style: Style category (Modern, Nordic, Classic, etc.)
+- position: Suggested position in room
+- imageUrl: Visual representation
+
+---
+
+### ApplianceType
+
+**Description:** Enumeration of appliance types.
+
+**Values:**
+- TV
+- SOUND_SYSTEM
+- COMPUTER_MONITOR
+- DESK_LAMP
+- BEDSIDE_LAMP
+- FLOOR_LAMP
+- TABLE_LAMP
+- WALL_SCONCE
+- AIR_PURIFIER
+- HUMIDIFIER
+- SMART_SPEAKER
+- PRINTER
+- WEBCAM
+- WINE_COOLER
+- COFFEE_MAKER
+- BEVERAGE_COOLER
+
+---
+
+### DecorationType
+
+**Description:** Enumeration of decoration types.
+
+**Values:**
+- POTTED_PLANT
+- HANGING_PLANT
+- WALL_ART
+- MIRROR
+- WALL_DECAL
+- RUG
+- CURTAINS
+- THROW_PILLOW
+- BOOKS
+- PHOTO_FRAME
+- DECORATIVE_OBJECT
+
+---
+
+### RoomStyle
+
+**Description:** Enumeration of interior design styles.
+
+**Values:**
+- MODERN
+- NORDIC
+- CLASSIC
+- INDUSTRIAL
+- MINIMALIST
+- BOHEMIAN
+- CONTEMPORARY
+
+---
+
 ## Domain Events
 
 ### RecommendationRequested
@@ -413,6 +516,14 @@ Based on the requirements, the following external AI models are recommended:
 ### PlacementSuggestionsGenerated
 - Triggered when: AI generates placement suggestions for empty room
 - Contains: analysisId, placements, totalPrice, budgetStatus
+
+### RoomEnrichedWithAccessories
+- Triggered when: Decorative elements and appliances are added to room
+- Contains: sceneId, appliances, decorativeElements, styleConsistency
+
+### AppliancesSelected
+- Triggered when: Room-appropriate appliances are selected
+- Contains: sceneId, roomType, selectedAppliances
 
 ### AIServiceUnavailable
 - Triggered when: External AI service is unavailable
@@ -484,6 +595,7 @@ Based on the requirements, the following external AI models are recommended:
 **Responsibilities:**
 - Generate realistic furniture replacement images
 - Generate furniture placement images for empty rooms
+- Render complete room scenes with furniture, appliances, and decor
 - Invoke image generation AI for inpainting and placement
 - Ensure proper scale and perspective
 - Manage replacement and placement image storage
@@ -491,8 +603,11 @@ Based on the requirements, the following external AI models are recommended:
 **Operations:**
 - applyReplacements(imageUrl, replacements): Generate replacement image
 - placeFurniture(imageUrl, placements, roomDimensions): Generate placement image
+- renderEnrichedScene(imageUrl, furniture, appliances, decor, roomDimensions): Render complete scene
 - prepareInpaintingMask(boundingBox): Create mask for replacement area
 - renderFurniture(product, targetArea): Render product into image
+- renderAppliance(appliance, position): Render appliance into image
+- renderDecor(decor, position): Render decorative element into image
 
 **Collaborators:**
 - AIModelGateway (for image generation)
@@ -546,6 +661,80 @@ Based on the requirements, the following external AI models are recommended:
 
 ---
 
+### FurnitureTypeSelectionService
+
+**Responsibilities:**
+- Determine appropriate furniture types for a given room type
+- Filter furniture catalog by room-appropriate types
+- Prioritize furniture types based on room layout and space
+- Ensure essential furniture types are included for each room
+
+**Operations:**
+- getEssentialFurnitureTypes(roomType): Get must-have furniture types for room
+- getOptionalFurnitureTypes(roomType): Get optional furniture types for room
+- filterFurnitureByRoomType(furniture, roomType): Filter furniture suitable for room
+- rankFurnitureByPriority(furniture, roomType, roomSpace): Rank by importance and fit
+
+**Room Type Mappings:**
+
+| Room Type | Essential Furniture | Optional Furniture |
+|-----------|-------------------|-------------------|
+| Living Room | Sofa, Coffee Table, TV Stand | Bookshelf, Side Table, Armchair |
+| Bedroom | Bed, Nightstand, Dresser | Wardrobe, Bench, Desk |
+| Dining Room | Dining Table, Dining Chairs | Buffet, Bar Cart, Sideboard |
+| Home Office | Desk, Office Chair, Shelving | Filing Cabinet, Bookshelf, Lamp |
+
+**Collaborators:**
+- ProductCatalogGateway (for furniture data)
+- EmptyRoomAnalysisService (for room space info)
+
+---
+
+### RoomDecorEnrichmentService
+
+**Responsibilities:**
+- Enhance room rendering with virtual soft furnishings and accessories
+- Select appropriate appliances based on room type
+- Add decorative elements (plants, artwork, lighting)
+- Ensure appliance selection matches room functionality
+- Generate realistic and contextually appropriate room scenes
+
+**Operations:**
+- enrichRoomWithAccessories(room, roomType, style): Add decorative elements
+- selectAppliancesForRoom(roomType, budget): Select room-appropriate appliances
+- generateDecorativeElements(roomType, style): Generate plants, artwork, lighting
+- validateDecorPlacement(decor, roomSpace): Ensure decor fits in space
+- createEnrichedRoomScene(furniture, appliances, decor): Combine all elements
+
+**Appliance Selection by Room Type:**
+
+| Room Type | Primary Appliances | Secondary Appliances |
+|-----------|------------------|----------------------|
+| Living Room | TV, Sound System | Air Purifier, Humidifier |
+| Bedroom | Bedside Lamp, Air Purifier | Humidifier, Smart Speaker |
+| Dining Room | Dining Light, Wine Cooler | Coffee Maker, Beverage Cooler |
+| Home Office | Computer/Monitor, Desk Lamp | Printer, Webcam, Speaker |
+
+**Decorative Elements:**
+- Plants: Potted plants, hanging plants (room-appropriate species)
+- Artwork: Wall art, mirrors, wall decals
+- Lighting: Floor lamps, table lamps, wall sconces
+- Textiles: Rugs, curtains, throw pillows
+- Accessories: Books, decorative objects, photo frames
+
+**Styling Considerations:**
+- Match decor style to furniture collection (Modern, Nordic, Classic)
+- Ensure color harmony across furniture and decor
+- Balance visual weight in the room
+- Maintain realistic proportions and placement
+
+**Collaborators:**
+- ProductCatalogGateway (for appliance and decor data)
+- AIModelGateway (for AI-powered styling suggestions)
+- FurnitureReplacementService (for rendering enriched scenes)
+
+---
+
 ## Repositories
 
 ### RecommendationRequestRepository
@@ -592,6 +781,9 @@ Based on the requirements, the following external AI models are recommended:
 - placeFurnitureInRoom(imageUrl, placements, roomDimensions): Call AI for furniture placement
 - detectEmptyRoom(imageUrl, roomDimensions): Call GPT-4V to detect if room is empty
 - analyzeRoomBoundaries(imageUrl, roomDimensions): Call GPT-4V to extract room space info
+- suggestAppliancesForRoom(roomType, style, budget): Call GPT-4 for appliance suggestions
+- suggestDecorativeElements(roomType, style, furniture): Call GPT-4 for decor suggestions
+- renderEnrichedScene(imageUrl, elements, roomDimensions): Call Stability AI for complete scene rendering
 
 **Implementation Notes:**
 - Handles API authentication and rate limiting
@@ -599,6 +791,7 @@ Based on the requirements, the following external AI models are recommended:
 - Translates between domain model and AI API formats
 - Caches responses where appropriate
 - Empty room detection uses confidence threshold (>= 0.8) to avoid false positives
+- Appliance and decor suggestions consider room type, style, and budget constraints
 
 ---
 
@@ -653,6 +846,29 @@ Based on the requirements, the following external AI models are recommended:
 2. Generate furniture placement suggestions based on preferences and budget
 3. Prepare placement mode UI context
 **Result:** Emit PlacementSuggestionsGenerated event with suggested placements
+
+---
+
+### RoomEnrichmentPolicy
+
+**Trigger:** PlacementRequested event (after furniture placement confirmed)
+**Action:**
+1. Invoke FurnitureTypeSelectionService to identify essential furniture types
+2. Invoke RoomDecorEnrichmentService to add appliances and decorative elements
+3. Validate all elements fit within room space
+4. Generate enriched room scene with all elements
+**Result:** Emit RoomEnrichedWithAccessories event with complete scene
+
+---
+
+### ApplianceSelectionPolicy
+
+**Trigger:** RoomEnrichedWithAccessories event
+**Action:**
+1. Validate appliance selection matches room type requirements
+2. Check appliance placement doesn't conflict with furniture
+3. Ensure style consistency across appliances and furniture
+**Result:** Emit AppliancesSelected event or request manual adjustment
 
 ---
 
