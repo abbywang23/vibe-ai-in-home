@@ -1,3 +1,9 @@
+## 2026/1/26
+
+Leveraging AIDLC demo prompts, the PRD, architecture design and the first version of the code were completed and implemented through Kiro.
+
+
+
 ## 2026/1/27
 
 
