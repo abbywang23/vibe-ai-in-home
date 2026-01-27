@@ -6,6 +6,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import './index.css';
 import HomePage from './pages/HomePage';
 import PlannerPage from './pages/PlannerPage';
+import PlannerFlowPage from './pages/PlannerFlowPage';
 import { store } from './store';
 import { brandTheme } from './theme/brandTheme';
 
@@ -17,7 +18,8 @@ createRoot(document.getElementById('root')!).render(
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/planner" element={<PlannerPage />} />
+            <Route path="/planner" element={<PlannerFlowPage />} />
+            <Route path="/planner-old" element={<PlannerPage />} />
           </Routes>
         </BrowserRouter>
       </ThemeProvider>
