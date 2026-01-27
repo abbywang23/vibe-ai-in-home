@@ -1,0 +1,18 @@
+/* Import Google Fonts first - @import must precede all other statements */
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;500&family=Work+Sans:wght@400;500&display=swap');
+
+/* Aime Font Family */
+@font-face {
+  font-family: 'Aime';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Sanomat Sans Font Family - Using alternative */
+@font-face {
+  font-family: 'Sanomat Sans';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
