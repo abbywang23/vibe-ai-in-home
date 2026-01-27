@@ -1,10 +1,18 @@
 # Unit 2: AI Service
 
 ## Overview
-Backend service that provides all AI-powered features including furniture recommendations, natural language chat, furniture detection in images, and furniture replacement rendering.
+Backend service that provides all AI-powered features including furniture recommendations, natural language chat, furniture detection in images, and furniture replacement rendering. Also manages product catalog via local YAML configuration.
 
 **Team Size:** 1-2 developers  
-**Dependencies:** Unit 3 (Product Service)
+**Dependencies:** None (includes integrated product management)
+
+**Key Features:**
+- AI-powered furniture recommendations (OpenAI GPT-4)
+- Natural language chat interactions
+- Image analysis and furniture detection (GPT-4V)
+- Furniture replacement and placement rendering (Replicate)
+- Product catalog management (local YAML)
+- Image upload and storage (local filesystem)
 
 ---
 

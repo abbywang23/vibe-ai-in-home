@@ -38,7 +38,7 @@ Based on the requirements, the following external AI models are recommended:
 | Furniture Recommendations | **OpenAI GPT-4** | Claude 3 | Strong reasoning for room layout optimization |
 | Natural Language Chat | **OpenAI GPT-4** | Claude 3 | Multi-language support, conversational ability |
 | Furniture Detection | **OpenAI GPT-4V** | Google Gemini Pro Vision | Image understanding, object detection |
-| Furniture Replacement | **Stability AI SDXL** | DALL-E 3 | Inpainting capability for realistic replacement |
+| Furniture Replacement | **Replicate (SDXL)** | DALL-E 3 | Inpainting capability for realistic replacement |
 
 ---
 
@@ -777,13 +777,13 @@ Based on the requirements, the following external AI models are recommended:
 - generateRecommendations(prompt, context): Call GPT-4 for recommendations
 - chat(messages, context): Call GPT-4 for chat completion
 - detectObjects(imageUrl, prompt): Call GPT-4V for object detection
-- generateImage(prompt, mask, referenceImage): Call Stability AI for inpainting
+- generateImage(prompt, mask, referenceImage): Call Replicate for inpainting
 - placeFurnitureInRoom(imageUrl, placements, roomDimensions): Call AI for furniture placement
 - detectEmptyRoom(imageUrl, roomDimensions): Call GPT-4V to detect if room is empty
 - analyzeRoomBoundaries(imageUrl, roomDimensions): Call GPT-4V to extract room space info
 - suggestAppliancesForRoom(roomType, style, budget): Call GPT-4 for appliance suggestions
 - suggestDecorativeElements(roomType, style, furniture): Call GPT-4 for decor suggestions
-- renderEnrichedScene(imageUrl, elements, roomDimensions): Call Stability AI for complete scene rendering
+- renderEnrichedScene(imageUrl, elements, roomDimensions): Call Replicate for complete scene rendering
 
 **Implementation Notes:**
 - Handles API authentication and rate limiting
@@ -906,7 +906,7 @@ Based on the requirements, the following external AI models are recommended:
 │               │   │               │   │               │
 │ - GPT-4       │   │ - Products    │   │ - S3/CDN      │
 │ - GPT-4V      │   │ - Categories  │   │               │
-│ - Stability AI│   │ - Collections │   │               │
+│ - Replicate   │   │ - Collections │   │               │
 └───────────────┘   └───────────────┘   └───────────────┘
 
 Relationship: 

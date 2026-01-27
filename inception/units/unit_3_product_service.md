@@ -1,33 +1,52 @@
-# Unit 3: Product Service
+# Unit 3: Product Service (DEPRECATED - Integrated into Unit 2)
 
-## Overview
-Backend service that provides product data APIs including search, categories, collections, and pricing. Uses in-memory storage with mock data for demo purposes.
+## ⚠️ DEPRECATION NOTICE
 
-**Team Size:** 1 developer  
-**Dependencies:** None (base service)
+**This unit has been integrated into Unit 2 (AI Service) for simplified architecture.**
+
+- Product data is now managed via local YAML configuration in AI Service
+- All product APIs are now available at `/api/ai/products/*` endpoints
+- No separate Product Service deployment is needed
+
+## Historical Overview
+Backend service that provided product data APIs including search, categories, collections, and pricing. Originally used in-memory storage with mock data for demo purposes.
+
+**Status:** DEPRECATED - Functionality moved to AI Service  
+**Migration Date:** Current  
+**Replacement:** Unit 2 AI Service with integrated product management
 
 ---
 
-## User Stories
+## Migrated User Stories
+
+The following user stories are now handled by Unit 2 (AI Service):
 
 ### Product Search
 
-#### US-3.2: Specify Product Preferences by Name
+#### US-3.2: Specify Product Preferences by Name ✅ Migrated
 **As a** user  
 **I want to** search and specify products by name  
 **So that** I can include specific Castlery items I already like
 
-**Acceptance Criteria:**
-- Search functionality for product names
-- Autocomplete suggestions from Castlery database
-- Add multiple specific products to preferences
-
----
+**New Implementation:** `GET /api/ai/products/search`
 
 ### Product Categories
 
-#### US-3.3: Specify Product Preferences by Category
+#### US-3.3: Specify Product Preferences by Category ✅ Migrated
 **As a** user  
+**I want to** filter products by category  
+**So that** I can focus on specific furniture types
+
+**New Implementation:** `GET /api/ai/products/categories`
+
+---
+
+## Migration Notes
+
+- All product data moved to `/config/products.yaml` in AI Service
+- Product images moved to `/public/products/` in AI Service
+- API endpoints changed from `/api/products/*` to `/api/ai/products/*`
+- Frontend updated to use consolidated AI Service endpoints  
 **I want to** select furniture categories I'm interested in  
 **So that** AI focuses on those types of furniture
 

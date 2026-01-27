@@ -277,7 +277,7 @@ We need to decide how to persist frontend state across browser sessions and tabs
 
 ### Context
 
-The frontend needs to integrate with external services (Product Service, AI Service, Castlery Website Cart). We need to protect our domain model from external API changes.
+The frontend needs to integrate with external services (AI Service with integrated products, Castlery Website Cart). We need to protect our domain model from external API changes.
 
 ### Decision
 

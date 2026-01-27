@@ -248,32 +248,6 @@ interface UIState {
 
 ## API Integration (RTK Query)
 
-### AI Service API
-
-```typescript
-const aiApi = createApi({
-  reducerPath: 'aiApi',
-  baseQuery: fetchBaseQuery({ baseUrl: '/api/ai' }),
-  endpoints: (builder) => ({
-    getRecommendations: builder.mutation<RecommendationsResponse, RecommendationRequest>({
-      query: (body) => ({ url: '/recommend', method: 'POST', body }),
-    }),
-    sendChatMessage: builder.mutation<ChatResponse, ChatRequest>({
-      query: (body) => ({ url: '/chat', method: 'POST', body }),
-    }),
-    detectFurniture: builder.mutation<DetectionResponse, DetectionRequest>({
-      query: (body) => ({ url: '/detect', method: 'POST', body }),
-    }),
-    applyReplacement: builder.mutation<ReplacementResponse, ReplacementRequest>({
-      query: (body) => ({ url: '/replace', method: 'POST', body }),
-    }),
-    placeFurniture: builder.mutation<PlacementResponse, PlacementRequest>({
-      query: (body) => ({ url: '/place', method: 'POST', body }),
-    }),
-  }),
-});
-```
-
 ### AI Service API (with integrated Products)
 
 ```typescript

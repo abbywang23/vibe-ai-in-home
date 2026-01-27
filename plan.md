@@ -56,10 +56,10 @@ Design DDD domain models for 2 units (Unit 3 integrated into Unit 2):
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | Frontend Domain Model | Yes | 前端需要领域模型管理房间配置、可视化状态等 |
-| AI Model Selection | External APIs | 推荐: OpenAI GPT-4V (图像理解), Stability AI (图像生成) |
+| AI Model Selection | External APIs | 推荐: OpenAI GPT-4V (图像理解), Replicate (图像生成) |
 | Product Service Architecture | Repository Pattern | Demo 用内存实现，生产环境可切换到真实数据库 |
 | Empty Room Detection | AI-based | 使用 GPT-4V 自动检测空房间，无需用户手动选择模式 |
-| Furniture Placement | Image Generation | 使用 Stability AI 在空房间中渲染家具，保持真实感 |
+| Furniture Placement | Image Generation | 使用 Replicate 在空房间中渲染家具，保持真实感 |
 
 ---
 

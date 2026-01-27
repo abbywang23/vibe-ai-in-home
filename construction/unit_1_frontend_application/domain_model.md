@@ -1032,9 +1032,9 @@ The Frontend Application manages the user's room planning session, including roo
 
 ## Anti-Corruption Layer
 
-### ProductServiceAdapter
+### AIServiceAdapter (with Product Integration)
 
-**Purpose:** Translate between frontend domain model and Product Service API responses.
+**Purpose:** Translate between frontend domain model and AI Service API responses (including product data).
 
 **Operations:**
 - `toFurniturePlacement(productDTO)`: Convert product DTO to FurniturePlacement entity
