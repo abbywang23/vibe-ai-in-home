@@ -146,7 +146,7 @@ export default function ProductSelectionStep({
 
       <Grid container spacing={3}>
         {/* Left Panel - Product List */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Paper 
             elevation={0}
             sx={{ 
@@ -189,7 +189,7 @@ export default function ProductSelectionStep({
         </Grid>
 
         {/* Right Panel - Rendered Result */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Paper 
             elevation={0}
             sx={{ 

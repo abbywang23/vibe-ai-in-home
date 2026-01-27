@@ -1,52 +1,5 @@
 import { createTheme } from '@mui/material/styles';
 
-<<<<<<< HEAD
-// Brand Colors from demo UI design system
-export const brandColors = {
-  // Primary colors (from demo UI)
-  background: '#FBF9F4',      // rgba(251, 249, 244, 1.00)
-  foreground: '#3C101E',      // rgba(60, 16, 30, 1.00)
-  primary: '#844025',         // rgba(132, 64, 37, 1.00)
-  primaryForeground: '#F6F3E7', // rgba(246, 243, 231, 1.00)
-  
-  // Secondary colors
-  secondary: '#D25C1B',       // rgba(210, 92, 27, 1.00)
-  secondaryForeground: '#F6F3E7',
-  
-  // Accent
-  accent: '#D25C1B',
-  accentForeground: '#F6F3E7',
-  
-  // Muted
-  muted: '#BEBEBE',           // rgba(190, 190, 190, 1.00)
-  mutedForeground: '#A59198', // rgba(165, 145, 152, 1.00)
-  
-  // Card
-  card: '#FBF9F4',
-  cardForeground: '#3C101E',
-  
-  // Border and input
-  border: '#BEBEBE',
-  input: '#FBF9F4',
-  ring: '#844025',
-  
-  // Destructive
-  destructive: '#B3261E',     // rgba(179, 38, 30, 1.00)
-  destructiveForeground: '#FFFFFF',
-  
-  // Legacy compatibility (mapped to new colors)
-  sienna: '#844025',
-  terracotta: '#D25C1B',
-  cream: '#F6F3E7',
-  white: '#FFFFFF',
-  lightGray: '#F5F5F5',
-  mediumGray: '#BEBEBE',
-  darkGray: '#A59198',
-  black: '#3C101E',
-};
-
-// Typography - Aime (Display) and Sanomat Sans (Body) from demo UI
-=======
 // Brand Colors from Castlery design system
 export const brandColors = {
   // Primary palette
@@ -72,10 +25,24 @@ export const brandColors = {
   olive: '#4D4228',
   terracotta: '#D25C36',
   slate: '#6A85C1',
+  
+  // Compatibility mappings for existing components
+  primary: '#A84025',           // Maps to terracotta500
+  primaryForeground: '#FFFFFF', // Maps to white
+  secondary: '#D25C36',         // Maps to burntOrange500
+  secondaryForeground: '#FFFFFF',
+  background: '#FFFFFF',        // Maps to white
+  foreground: '#2C1B1E',        // Maps to primaryText
+  card: '#FFFFFF',              // Maps to white
+  border: '#E0E0E0',            // Maps to mediumGray
+  input: '#FFFFFF',             // Maps to white
+  muted: '#E0E0E0',             // Maps to mediumGray
+  mutedForeground: '#757575',   // Maps to darkGray
+  destructive: '#d32f2f',       // Standard error color
+  accent: '#D25C36',            // Maps to burntOrange500
 };
 
 // Typography - Google Fonts: Playfair Display (Display) and Inter (Body)
->>>>>>> 15e0fed867648ee45a16db94eea2068bf2036072
 export const typography = {
   display: {
     fontFamily: '"Playfair Display", serif',
@@ -123,17 +90,6 @@ export const spacing = {
 export const brandTheme = createTheme({
   palette: {
     primary: {
-<<<<<<< HEAD
-      main: brandColors.primary,
-      light: brandColors.primaryForeground,
-      dark: brandColors.sienna,
-      contrastText: brandColors.primaryForeground,
-    },
-    secondary: {
-      main: brandColors.secondary,
-      light: brandColors.secondaryForeground,
-      contrastText: brandColors.secondaryForeground,
-=======
       main: brandColors.terracotta500,
       dark: brandColors.primaryText,
       light: brandColors.cream,
@@ -144,28 +100,19 @@ export const brandTheme = createTheme({
       light: brandColors.freshwaterBlue500,
       dark: brandColors.leafGreen500,
       contrastText: brandColors.white,
->>>>>>> 15e0fed867648ee45a16db94eea2068bf2036072
     },
     background: {
-      default: brandColors.background,
-      paper: brandColors.card,
+      default: brandColors.white,
+      paper: brandColors.white,
     },
     text: {
-<<<<<<< HEAD
-      primary: brandColors.foreground,
-      secondary: brandColors.mutedForeground,
-=======
       primary: brandColors.primaryText,
       secondary: brandColors.darkGray,
->>>>>>> 15e0fed867648ee45a16db94eea2068bf2036072
     },
     error: {
-      main: brandColors.destructive,
+      main: '#d32f2f',
     },
     success: {
-<<<<<<< HEAD
-      main: '#4CAF50',
-=======
       main: brandColors.leafGreen500,
     },
     info: {
@@ -173,9 +120,8 @@ export const brandTheme = createTheme({
     },
     warning: {
       main: brandColors.burntOrange500,
->>>>>>> 15e0fed867648ee45a16db94eea2068bf2036072
     },
-    divider: brandColors.border,
+    divider: brandColors.mediumGray,
   },
   typography: {
     fontFamily: typography.body.fontFamily,
@@ -257,38 +203,13 @@ export const brandTheme = createTheme({
           },
         },
         containedPrimary: {
-<<<<<<< HEAD
-          backgroundColor: brandColors.primary,
-          color: brandColors.primaryForeground,
-=======
           backgroundColor: brandColors.terracotta500,
           color: brandColors.white,
->>>>>>> 15e0fed867648ee45a16db94eea2068bf2036072
           '&:hover': {
             backgroundColor: brandColors.primaryText,
           },
         },
         containedSecondary: {
-<<<<<<< HEAD
-          backgroundColor: brandColors.secondary,
-          color: brandColors.secondaryForeground,
-          '&:hover': {
-            backgroundColor: '#B84E17',
-          },
-        },
-        outlined: {
-          borderColor: brandColors.border,
-          color: brandColors.foreground,
-          '&:hover': {
-            borderColor: brandColors.primary,
-            backgroundColor: 'rgba(132, 64, 37, 0.04)',
-          },
-        },
-        text: {
-          color: brandColors.mutedForeground,
-          '&:hover': {
-            backgroundColor: 'rgba(132, 64, 37, 0.04)',
-=======
           backgroundColor: brandColors.burntOrange500,
           color: brandColors.white,
           '&:hover': {
@@ -307,7 +228,6 @@ export const brandTheme = createTheme({
           color: brandColors.terracotta500,
           '&:hover': {
             backgroundColor: 'rgba(168, 64, 37, 0.04)',
->>>>>>> 15e0fed867648ee45a16db94eea2068bf2036072
           },
         },
       },
@@ -317,20 +237,15 @@ export const brandTheme = createTheme({
         root: {
           '& .MuiOutlinedInput-root': {
             borderRadius: 8,
-            backgroundColor: brandColors.input,
+            backgroundColor: brandColors.white,
             '& fieldset': {
-              borderColor: brandColors.border,
+              borderColor: brandColors.mediumGray,
             },
             '&:hover fieldset': {
-              borderColor: brandColors.mutedForeground,
+              borderColor: brandColors.darkGray,
             },
             '&.Mui-focused fieldset': {
-<<<<<<< HEAD
-              borderColor: brandColors.ring,
-              borderWidth: '2px',
-=======
               borderColor: brandColors.terracotta500,
->>>>>>> 15e0fed867648ee45a16db94eea2068bf2036072
             },
           },
         },
@@ -341,8 +256,8 @@ export const brandTheme = createTheme({
         root: {
           borderRadius: 8,
           boxShadow: 'none',
-          border: `1px solid ${brandColors.border}`,
-          backgroundColor: brandColors.card,
+          border: `1px solid ${brandColors.mediumGray}`,
+          backgroundColor: brandColors.white,
         },
       },
     },
@@ -350,11 +265,11 @@ export const brandTheme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 8,
-          backgroundColor: brandColors.card,
+          backgroundColor: brandColors.white,
         },
         elevation0: {
           boxShadow: 'none',
-          border: `1px solid ${brandColors.border}`,
+          border: `1px solid ${brandColors.mediumGray}`,
         },
         elevation1: {
           boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
@@ -368,26 +283,7 @@ export const brandTheme = createTheme({
         },
         filled: {
           backgroundColor: brandColors.cream,
-<<<<<<< HEAD
-          color: brandColors.primary,
-        },
-      },
-    },
-    MuiStepper: {
-      styleOverrides: {
-        root: {
-          backgroundColor: 'transparent',
-        },
-      },
-    },
-    MuiStepLabel: {
-      styleOverrides: {
-        label: {
-          fontFamily: typography.display.fontFamily,
-          fontSize: typography.sizes.caption,
-=======
           color: brandColors.terracotta500,
->>>>>>> 15e0fed867648ee45a16db94eea2068bf2036072
         },
       },
     },

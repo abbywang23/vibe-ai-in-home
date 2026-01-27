@@ -68,7 +68,7 @@ export default function EmptyRoomPlacementPanel({
           </Typography>
           <Grid container spacing={1}>
             {productsData.products.map((product) => (
-              <Grid item xs={12} key={product.id}>
+              <Grid size={12} key={product.id}>
                 <Button
                   variant={selectedProduct === product.id ? 'contained' : 'outlined'}
                   fullWidth
