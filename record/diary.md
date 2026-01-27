@@ -11,6 +11,8 @@ Leveraging AIDLC demo prompts, the PRD, architecture design and the first versio
 
 ### Looking forward to the renderings
 
+Our PM uses Figma to showcase the product effects.
+
 [demo](https://www.figma.com/make/7NoVhj1UVvMBrGRr0LawY3/Optimize-User-Flow-Review?p=f&t=h4gO4xi1INPfcOYl-0)
 
 ![1769502329290](images/diary/1769502329290.png)
