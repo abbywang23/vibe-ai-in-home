@@ -21,7 +21,7 @@ The AI Service is a Node.js/TypeScript backend service that provides AI-powered 
 ### External AI Services
 - **OpenAI GPT-4**: Furniture recommendations, chat
 - **OpenAI GPT-4V**: Image analysis, furniture detection
-- **Stability AI SDXL**: Image generation, inpainting
+- **Replicate (SDXL)**: Image generation, inpainting (running Stable Diffusion XL via Replicate)
 
 ### Development Tools
 - **Package Manager**: npm
@@ -63,8 +63,8 @@ The AI Service is a Node.js/TypeScript backend service that provides AI-powered 
 │  ┌────────────────────────────────────────────────────────────┐ │
 │  │                  Infrastructure Layer                       │ │
 │  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │ │
-│  │  │  OpenAI  │  │Stability │  │ Product  │  │  Image   │   │ │
-│  │  │  Client  │  │AI Client │  │  Client  │  │ Storage  │   │ │
+│  │  │  OpenAI  │  │Replicate │  │ Product  │  │  Image   │   │ │
+│  │  │  Client  │  │  Client  │  │  Client  │  │ Storage  │   │ │
 │  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │ │
 │  └────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
@@ -73,7 +73,7 @@ The AI Service is a Node.js/TypeScript backend service that provides AI-powered 
                     ┌──────────────────┐
                     │  External APIs   │
                     │  - OpenAI API    │
-                    │  - Stability AI  │
+                    │  - Replicate API │
                     │  - Product API   │
                     └──────────────────┘
 ```
@@ -202,18 +202,34 @@ interface PlacementResponse {
 ```
 
 ### POST /api/upload
-**Purpose**: Upload room image
+**Purpose**: Upload room image to server local storage
 
 **Request**: Multipart form data with image file
+- Content-Type: multipart/form-data
+- Field name: `image`
+- Max file size: 10MB
+- Allowed types: image/jpeg, image/png, image/webp
 
 **Response**:
 ```typescript
 interface UploadResponse {
   success: boolean;
-  imageUrl: string;
-  imageId: string;
+  imageUrl: string;      // Local server URL, e.g., /uploads/abc123.jpg
+  imageId: string;       // Unique image identifier
+  filename: string;      // Original filename
+  size: number;          // File size in bytes
+  dimensions: {          // Image dimensions
+    width: number;
+    height: number;
+  };
 }
 ```
+
+**Implementation Notes**:
+- Frontend uploads image via FormData
+- Backend receives file using Multer
+- File is saved to server's local `./uploads` directory
+- Returns local access path (not cloud storage URL)
 
 ---
 
@@ -344,7 +360,7 @@ class ChatService {
 **Responsibilities**:
 - Detect furniture in uploaded images using GPT-4V
 - Determine if room is empty or has existing furniture
-- Generate furniture replacement images using Stability AI
+- Generate furniture replacement images using Replicate (SDXL)
 - Generate furniture placement images for empty rooms
 - Enrich rooms with appliances and decorative elements
 
@@ -400,8 +416,8 @@ class ImageService {
       const detection = await this.getDetection(replacement.detectedItemId);
       const product = products.find(p => p.id === replacement.newProductId);
 
-      // 3. Call Stability AI for inpainting
-      const resultImage = await this.stabilityAIClient.inpaint({
+      // 3. Call Replicate for inpainting
+      const resultImage = await this.replicateClient.inpaint({
         image: request.imageUrl,
         mask: this.createMask(detection.boundingBox),
         prompt: `${product.name}, realistic furniture, professional interior photo`,
@@ -435,8 +451,8 @@ class ImageService {
     // 2. Generate placement prompt
     const prompt = this.buildPlacementPrompt(request, products);
 
-    // 3. Call Stability AI for image generation
-    const resultImage = await this.stabilityAIClient.imageToImage({
+    // 3. Call Replicate for image generation
+    const resultImage = await this.replicateClient.imageToImage({
       image: request.imageUrl,
       prompt,
       strength: 0.6, // Preserve room structure
@@ -526,111 +542,366 @@ class OpenAIClient {
 }
 ```
 
-### Stability AI Client
+### Replicate Client
 
 ```typescript
-class StabilityAIClient {
-  private apiKey: string;
-  private baseUrl = 'https://api.stability.ai/v1';
+import Replicate from 'replicate';
+
+class ReplicateClient {
+  private client: Replicate;
 
   constructor() {
-    this.apiKey = process.env.STABILITY_API_KEY;
+    this.client = new Replicate({
+      auth: process.env.REPLICATE_API_TOKEN,
+    });
   }
 
   async inpaint(params: InpaintParams): Promise<ImageResult> {
-    const formData = new FormData();
-    formData.append('image', await this.fetchImage(params.image));
-    formData.append('mask', params.mask);
-    formData.append('prompt', params.prompt);
-    formData.append('negative_prompt', params.negativePrompt);
+    try {
+      // Use SDXL Inpainting model
+      const output = await this.client.run(
+        'stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b',
+        {
+          input: {
+            image: params.image,
+            mask: params.mask,
+            prompt: params.prompt,
+            negative_prompt: params.negativePrompt,
+            num_outputs: 1,
+            guidance_scale: 7.5,
+            num_inference_steps: 30,
+          },
+        }
+      );
 
-    const response = await axios.post(
-      `${this.baseUrl}/generation/stable-diffusion-xl-1024-v1-0/image-to-image/masking`,
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          ...formData.getHeaders(),
-        },
-      }
-    );
+      // output is an array of image URLs
+      const imageUrl = Array.isArray(output) ? output[0] : output;
+      
+      // Download and re-upload to local storage
+      const localUrl = await this.downloadAndStore(imageUrl);
 
-    const imageBuffer = Buffer.from(response.data.artifacts[0].base64, 'base64');
-    const imageUrl = await this.uploadImage(imageBuffer);
-
-    return { url: imageUrl };
+      return { url: localUrl };
+    } catch (error) {
+      throw new AIServiceError('Replicate inpaint failed', error);
+    }
   }
 
   async imageToImage(params: ImageToImageParams): Promise<ImageResult> {
-    const formData = new FormData();
-    formData.append('init_image', await this.fetchImage(params.image));
-    formData.append('prompt', params.prompt);
-    formData.append('image_strength', params.strength.toString());
+    try {
+      // Use SDXL Image-to-Image model
+      const output = await this.client.run(
+        'stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b',
+        {
+          input: {
+            image: params.image,
+            prompt: params.prompt,
+            strength: params.strength,
+            num_outputs: 1,
+            guidance_scale: 7.5,
+            num_inference_steps: 30,
+          },
+        }
+      );
 
-    const response = await axios.post(
-      `${this.baseUrl}/generation/stable-diffusion-xl-1024-v1-0/image-to-image`,
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          ...formData.getHeaders(),
-        },
-      }
-    );
+      const imageUrl = Array.isArray(output) ? output[0] : output;
+      const localUrl = await this.downloadAndStore(imageUrl);
 
-    const imageBuffer = Buffer.from(response.data.artifacts[0].base64, 'base64');
-    const imageUrl = await this.uploadImage(imageBuffer);
+      return { url: localUrl };
+    } catch (error) {
+      throw new AIServiceError('Replicate image-to-image failed', error);
+    }
+  }
 
-    return { url: imageUrl };
+  async textToImage(params: TextToImageParams): Promise<ImageResult> {
+    try {
+      const output = await this.client.run(
+        'stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b',
+        {
+          input: {
+            prompt: params.prompt,
+            negative_prompt: params.negativePrompt,
+            width: params.width || 1024,
+            height: params.height || 1024,
+            num_outputs: 1,
+            guidance_scale: 7.5,
+            num_inference_steps: 30,
+          },
+        }
+      );
+
+      const imageUrl = Array.isArray(output) ? output[0] : output;
+      const localUrl = await this.downloadAndStore(imageUrl);
+
+      return { url: localUrl };
+    } catch (error) {
+      throw new AIServiceError('Replicate text-to-image failed', error);
+    }
+  }
+
+  private async downloadAndStore(imageUrl: string): Promise<string> {
+    // Download image from Replicate
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    const buffer = Buffer.from(response.data);
+
+    // Upload to local storage
+    const storageService = new ImageStorageService();
+    return await storageService.uploadImage(buffer);
   }
 }
 ```
 
-### Product Service Client
+### Product Service Client (Local Configuration)
 
 ```typescript
+import fs from 'fs';
+import path from 'path';
+import yaml from 'js-yaml';
+
+interface ProductData {
+  index: number;
+  name: string;
+  url: string;
+  price: string;
+  original_price?: string;
+  description: string;
+  detailed_description?: string;
+  tag?: string;
+  delivery: string;
+  images: Array<{
+    url: string;
+    local: string;
+    alt: string;
+  }>;
+}
+
+interface ProductsConfig {
+  products: ProductData[];
+}
+
 class ProductServiceClient {
+  private products: Map<string, Product>;
+  private productsArray: Product[];
+
+  constructor() {
+    this.products = new Map();
+    this.productsArray = [];
+    this.loadProducts();
+  }
+
+  /**
+   * Load product data from local YAML file
+   */
+  private loadProducts(): void {
+    try {
+      const configPath = process.env.PRODUCTS_CONFIG_PATH || './config/products.yaml';
+      const fileContents = fs.readFileSync(configPath, 'utf8');
+      const config = yaml.load(fileContents) as ProductsConfig;
+
+      // Convert to internal Product format
+      config.products.forEach((productData) => {
+        const product: Product = {
+          id: `product-${productData.index}`,
+          name: productData.name,
+          description: productData.description,
+          detailedDescription: productData.detailed_description,
+          price: this.parsePrice(productData.price),
+          originalPrice: productData.original_price 
+            ? this.parsePrice(productData.original_price) 
+            : undefined,
+          currency: 'SGD',
+          images: productData.images.map(img => ({
+            url: `/products/${img.local}`,
+            alt: img.alt,
+          })),
+          category: this.inferCategory(productData.name),
+          tags: productData.tag ? [productData.tag] : [],
+          dimensions: this.inferDimensions(productData.name),
+          inStock: true,
+          delivery: productData.delivery,
+          externalUrl: productData.url,
+        };
+
+        this.products.set(product.id, product);
+        this.productsArray.push(product);
+      });
+
+      logger.info(`Loaded ${this.products.size} products from ${configPath}`);
+    } catch (error) {
+      logger.error('Failed to load products configuration', { error });
+      throw new Error('Failed to initialize product catalog');
+    }
+  }
+
+  /**
+   * Parse price string (e.g., "$1,999") to number
+   */
+  private parsePrice(priceStr: string): number {
+    return parseFloat(priceStr.replace(/[$,]/g, ''));
+  }
+
+  /**
+   * Infer category from product name
+   */
+  private inferCategory(name: string): string {
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes('sofa') || lowerName.includes('sectional')) {
+      return 'sofa';
+    }
+    if (lowerName.includes('chair')) {
+      return 'chair';
+    }
+    if (lowerName.includes('table')) {
+      return 'table';
+    }
+    return 'furniture';
+  }
+
+  /**
+   * Infer dimensions from product name (simplified)
+   */
+  private inferDimensions(name: string): Dimensions {
+    // Return typical dimensions based on product type
+    if (name.includes('Sectional')) {
+      return { width: 2.5, depth: 1.8, height: 0.85, unit: 'meters' };
+    }
+    if (name.includes('3 Seater')) {
+      return { width: 2.0, depth: 0.9, height: 0.85, unit: 'meters' };
+    }
+    return { width: 1.5, depth: 0.8, height: 0.85, unit: 'meters' };
+  }
+
+  /**
+   * Search products
+   */
+  async searchProducts(params: SearchParams): Promise<Product[]> {
+    let results = [...this.productsArray];
+
+    // Filter by category
+    if (params.categories && params.categories.length > 0) {
+      results = results.filter(p => 
+        params.categories!.includes(p.category)
+      );
+    }
+
+    // Filter by tags
+    if (params.collections && params.collections.length > 0) {
+      results = results.filter(p =>
+        p.tags.some(tag => params.collections!.includes(tag))
+      );
+    }
+
+    // Filter by price
+    if (params.maxPrice) {
+      results = results.filter(p => p.price <= params.maxPrice!);
+    }
+
+    return results;
+  }
+
+  /**
+   * Get products by IDs
+   */
+  async getProductsByIds(ids: string[]): Promise<Product[]> {
+    return ids
+      .map(id => this.products.get(id))
+      .filter((p): p is Product => p !== undefined);
+  }
+
+  /**
+   * Get products by type
+   */
+  async getProductsByType(type: FurnitureType, maxPrice?: number): Promise<Product[]> {
+    let results = this.productsArray.filter(p => p.category === type);
+
+    if (maxPrice) {
+      results = results.filter(p => p.price <= maxPrice);
+    }
+
+    return results;
+  }
+
+  /**
+   * Get all products
+   */
+  async getAllProducts(): Promise<Product[]> {
+    return [...this.productsArray];
+  }
+
+  /**
+   * Reload product configuration (for hot reload)
+   */
+  async reloadProducts(): Promise<void> {
+    this.products.clear();
+    this.productsArray = [];
+    this.loadProducts();
+  }
+}
+
+// Product type definitions
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  detailedDescription?: string;
+  price: number;
+  originalPrice?: number;
+  currency: string;
+  images: Array<{
+    url: string;
+    alt: string;
+  }>;
+  category: string;
+  tags: string[];
+  dimensions: Dimensions;
+  inStock: boolean;
+  delivery: string;
+  externalUrl: string;
+}
+
+interface Dimensions {
+  width: number;
+  depth: number;
+  height: number;
+  unit: string;
+}
+```
+
+### Image Storage Service (Local Storage)
+
+```typescript
+import fs from 'fs';
+import path from 'path';
+import sharp from 'sharp';
+import { v4 as uuidv4 } from 'uuid';
+
+class ImageStorageService {
+  private uploadDir: string;
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = process.env.PRODUCT_SERVICE_URL || 'http://localhost:3002/api/products';
-  }
-
-  async searchProducts(params: SearchParams): Promise<Product[]> {
-    const response = await axios.get(`${this.baseUrl}/search`, { params });
-    return response.data.products;
-  }
-
-  async getProductsByIds(ids: string[]): Promise<Product[]> {
-    const promises = ids.map(id => 
-      axios.get(`${this.baseUrl}/${id}`).then(r => r.data.product)
-    );
-    return Promise.all(promises);
-  }
-
-  async getProductsByType(type: FurnitureType, maxPrice?: number): Promise<Product[]> {
-    const response = await axios.get(`${this.baseUrl}/by-type/${type}`, {
-      params: { priceMax: maxPrice },
-    });
-    return response.data.products;
-  }
-}
-```
-
-### Image Storage Service
-
-```typescript
-class ImageStorageService {
-  private uploadDir: string;
-
-  constructor() {
     this.uploadDir = process.env.UPLOAD_DIR || './uploads';
-    fs.mkdirSync(this.uploadDir, { recursive: true });
+    this.baseUrl = process.env.IMAGE_BASE_URL || 'http://localhost:3001';
+    
+    // Ensure upload directory exists
+    if (!fs.existsSync(this.uploadDir)) {
+      fs.mkdirSync(this.uploadDir, { recursive: true });
+    }
   }
 
-  async uploadImage(buffer: Buffer, filename?: string): Promise<string> {
-    const imageId = filename || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const filepath = path.join(this.uploadDir, `${imageId}.jpg`);
+  /**
+   * Save uploaded image to local storage
+   * @param buffer Image buffer
+   * @param originalFilename Original filename (optional)
+   * @returns Local access URL
+   */
+  async uploadImage(buffer: Buffer, originalFilename?: string): Promise<string> {
+    // Generate unique filename
+    const imageId = uuidv4();
+    const ext = originalFilename 
+      ? path.extname(originalFilename).toLowerCase() 
+      : '.jpg';
+    const filename = `${imageId}${ext}`;
+    const filepath = path.join(this.uploadDir, filename);
 
     // Optimize image with Sharp
     await sharp(buffer)
@@ -638,13 +909,68 @@ class ImageStorageService {
       .jpeg({ quality: 85 })
       .toFile(filepath);
 
-    // Return URL (in production, this would be S3/CDN URL)
-    return `/uploads/${imageId}.jpg`;
+    // Return local URL
+    return `/uploads/${filename}`;
   }
 
+  /**
+   * Get local file path from URL
+   * @param imageUrl Image URL (e.g., /uploads/abc.jpg)
+   * @returns Local filesystem path
+   */
   async getImagePath(imageUrl: string): Promise<string> {
     const filename = path.basename(imageUrl);
-    return path.join(this.uploadDir, filename);
+    const filepath = path.join(this.uploadDir, filename);
+    
+    // Verify file exists
+    if (!fs.existsSync(filepath)) {
+      throw new Error(`Image not found: ${filename}`);
+    }
+    
+    return filepath;
+  }
+
+  /**
+   * Get full URL for image
+   * @param relativePath Relative path (e.g., /uploads/abc.jpg)
+   * @returns Full URL
+   */
+  getFullUrl(relativePath: string): string {
+    return `${this.baseUrl}${relativePath}`;
+  }
+
+  /**
+   * Delete image file
+   * @param imageUrl Image URL
+   */
+  async deleteImage(imageUrl: string): Promise<void> {
+    const filepath = await this.getImagePath(imageUrl);
+    if (fs.existsSync(filepath)) {
+      fs.unlinkSync(filepath);
+    }
+  }
+
+  /**
+   * Get image information
+   * @param imageUrl Image URL
+   * @returns Image metadata
+   */
+  async getImageInfo(imageUrl: string): Promise<{
+    width: number;
+    height: number;
+    format: string;
+    size: number;
+  }> {
+    const filepath = await this.getImagePath(imageUrl);
+    const metadata = await sharp(filepath).metadata();
+    const stats = fs.statSync(filepath);
+
+    return {
+      width: metadata.width || 0,
+      height: metadata.height || 0,
+      format: metadata.format || 'unknown',
+      size: stats.size,
+    };
   }
 }
 ```
@@ -799,19 +1125,70 @@ const aiRateLimiter = rateLimit({
 ### File Upload Middleware
 
 ```typescript
+import multer from 'multer';
+import path from 'path';
+
+// Use memory storage, process later via ImageStorageService
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB
+    files: 1, // Only allow one file at a time
   },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
+    // Allowed image types
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    
+    if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed'));
+      cb(new Error('Only JPEG, PNG, or WebP image files are allowed'));
     }
   },
 });
+
+// Upload controller
+const uploadController = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'NO_FILE',
+          message: 'No file uploaded',
+        },
+      });
+    }
+
+    const storageService = new ImageStorageService();
+    
+    // Save to local storage
+    const imageUrl = await storageService.uploadImage(
+      req.file.buffer,
+      req.file.originalname
+    );
+
+    // Get image info
+    const imageInfo = await storageService.getImageInfo(imageUrl);
+
+    res.json({
+      success: true,
+      imageUrl,
+      imageId: path.basename(imageUrl, path.extname(imageUrl)),
+      filename: req.file.originalname,
+      size: imageInfo.size,
+      dimensions: {
+        width: imageInfo.width,
+        height: imageInfo.height,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Route configuration
+app.post('/api/upload', upload.single('image'), uploadController);
 ```
 
 ---
@@ -828,15 +1205,20 @@ NODE_ENV=development
 # OpenAI
 OPENAI_API_KEY=sk-...
 
-# Stability AI
-STABILITY_API_KEY=sk-...
+# Replicate
+REPLICATE_API_TOKEN=r8_...
 
-# Product Service
-PRODUCT_SERVICE_URL=http://localhost:3002/api/products
+# Product Configuration (Local)
+PRODUCTS_CONFIG_PATH=./config/products.yaml
+PRODUCTS_IMAGES_DIR=./public/products
 
-# Image Storage
+# Product Service (Removed, now local configuration)
+# PRODUCT_SERVICE_URL=http://localhost:3002/api/products
+
+# Image Storage (Local)
 UPLOAD_DIR=./uploads
 IMAGE_BASE_URL=http://localhost:3001
+MAX_FILE_SIZE=10485760
 
 # Rate Limiting
 RATE_LIMIT_WINDOW_MS=60000
@@ -846,80 +1228,119 @@ RATE_LIMIT_MAX_REQUESTS=10
 
 ---
 
-## Testing Strategy
+## Testing Strategy (Optional)
 
-### Unit Tests (Jest)
+> **Note**: This project primarily relies on manual testing. Automated test configuration is included for reference only. We recommend using Postman, Thunder Client, or the frontend application for actual testing.
+
+### Basic Health Check Test
 
 ```typescript
-describe('RecommendationService', () => {
-  let service: RecommendationService;
-  let mockOpenAIClient: jest.Mocked<OpenAIClient>;
-  let mockProductClient: jest.Mocked<ProductServiceClient>;
+// tests/health.test.ts
+import request from 'supertest';
+import app from '../src/app';
 
-  beforeEach(() => {
-    mockOpenAIClient = {
-      chat: jest.fn(),
-    } as any;
-    mockProductClient = {
-      searchProducts: jest.fn(),
-    } as any;
-    service = new RecommendationService(mockOpenAIClient, mockProductClient);
-  });
+describe('Health Check', () => {
+  it('should return service health status', async () => {
+    const response = await request(app)
+      .get('/health')
+      .expect(200);
 
-  it('should generate recommendations within budget', async () => {
-    mockProductClient.searchProducts.mockResolvedValue([
-      { id: '1', name: 'Sofa', price: 1000 },
-      { id: '2', name: 'Table', price: 500 },
-    ]);
-    mockOpenAIClient.chat.mockResolvedValue({
-      content: JSON.stringify([
-        { productId: '1', position: { x: 0, y: 0, z: 0 }, rotation: 0 },
-      ]),
+    expect(response.body).toEqual({
+      status: 'ok',
+      service: 'ai-service',
+      timestamp: expect.any(String),
     });
-
-    const result = await service.generateRecommendations({
-      roomType: 'living_room',
-      dimensions: { length: 5, width: 4, height: 3, unit: 'meters' },
-      budget: { amount: 2000, currency: 'USD' },
-    });
-
-    expect(result).toHaveLength(1);
-    expect(result[0].productId).toBe('1');
   });
 });
 ```
 
-### Integration Tests (Supertest)
+### Simple API Validation Tests (Optional)
 
 ```typescript
-describe('POST /api/ai/recommend', () => {
-  it('should return recommendations', async () => {
+// tests/api.test.ts
+import request from 'supertest';
+import app from '../src/app';
+
+describe('API Validation', () => {
+  it('should reject invalid recommendation request', async () => {
     const response = await request(app)
       .post('/api/ai/recommend')
       .send({
-        roomType: 'living_room',
-        dimensions: { length: 5, width: 4, height: 3, unit: 'meters' },
-        budget: { amount: 2000, currency: 'USD' },
-      })
-      .expect(200);
-
-    expect(response.body.success).toBe(true);
-    expect(response.body.recommendations).toBeInstanceOf(Array);
-  });
-
-  it('should return 400 for invalid request', async () => {
-    const response = await request(app)
-      .post('/api/ai/recommend')
-      .send({
-        roomType: 'invalid',
+        roomType: 'invalid_type',
       })
       .expect(400);
 
     expect(response.body.success).toBe(false);
     expect(response.body.error.code).toBe('INVALID_REQUEST');
   });
+
+  it('should reject upload request without file', async () => {
+    const response = await request(app)
+      .post('/api/upload')
+      .expect(400);
+
+    expect(response.body.success).toBe(false);
+  });
 });
 ```
+
+### Test Configuration
+
+```json
+// package.json
+{
+  "scripts": {
+    "test": "jest --passWithNoTests",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  }
+}
+```
+
+```javascript
+// jest.config.js
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  roots: ['<rootDir>/tests'],
+  testMatch: ['**/*.test.ts'],
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/*.d.ts',
+  ],
+};
+```
+
+### Recommended Manual Testing Approaches
+
+1. **Using REST Client (VS Code Extension)**
+   ```http
+   ### Health Check
+   GET http://localhost:3001/health
+
+   ### Recommendation API
+   POST http://localhost:3001/api/ai/recommend
+   Content-Type: application/json
+
+   {
+     "roomType": "living_room",
+     "dimensions": {
+       "length": 5,
+       "width": 4,
+       "height": 3,
+       "unit": "meters"
+     }
+   }
+   ```
+
+2. **Using Postman or Thunder Client**
+   - Import API endpoints
+   - Save test cases
+   - Quick feature validation
+
+3. **Using Frontend Application**
+   - Most realistic test environment
+   - Direct user experience validation
 
 ---
 
@@ -930,6 +1351,20 @@ describe('POST /api/ai/recommend', () => {
 ```bash
 npm install
 npm run dev  # Starts server with nodemon on http://localhost:3001
+```
+
+### Health Check Endpoint
+
+```typescript
+// src/routes/health.ts
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'ai-service',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
 ```
 
 ### Production Build
@@ -950,9 +1385,18 @@ COPY package*.json ./
 RUN npm ci --only=production
 
 COPY dist ./dist
-COPY uploads ./uploads
+COPY config ./config
+COPY public ./public
+
+# Create upload directory
+RUN mkdir -p /app/uploads
+
+# Set upload directory permissions
+RUN chown -R node:node /app/uploads
 
 EXPOSE 3001
+
+USER node
 
 CMD ["node", "dist/index.js"]
 ```
@@ -970,12 +1414,12 @@ services:
     environment:
       - NODE_ENV=production
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - STABILITY_API_KEY=${STABILITY_API_KEY}
-      - PRODUCT_SERVICE_URL=http://product-service:3002/api/products
+      - REPLICATE_API_TOKEN=${REPLICATE_API_TOKEN}
+      - PRODUCTS_CONFIG_PATH=/app/config/products.yaml
     volumes:
       - ./uploads:/app/uploads
-    depends_on:
-      - product-service
+      - ./config:/app/config:ro
+      - ./public:/app/public:ro
 ```
 
 ---
@@ -1151,8 +1595,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
     ImageService.ts
   /clients          # External API clients
     OpenAIClient.ts
-    StabilityAIClient.ts
-    ProductServiceClient.ts
+    ReplicateClient.ts
+    ProductServiceClient.ts  # Local configuration loader
   /middleware       # Express middleware
     validation.ts
     errorHandler.ts
@@ -1167,7 +1611,15 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
     index.ts
   index.ts          # Entry point
   app.ts            # Express app setup
-/uploads            # Uploaded images (local storage)
+/config             # Configuration files
+  products.yaml     # Product catalog configuration
+/public             # Static assets
+  /products         # Product images (copied from product directory)
+    product1_img1.jpg
+    product1_img2.jpg
+    ...
+/uploads            # Uploaded images (local storage, created at runtime)
+  .gitkeep          # Keep directory structure
 /tests              # Test files
   /unit
   /integration
@@ -1183,8 +1635,11 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
     "express": "^4.18.0",
     "axios": "^1.6.0",
     "openai": "^4.20.0",
+    "replicate": "^0.25.0",
     "sharp": "^0.33.0",
     "multer": "^1.4.5-lts.1",
+    "uuid": "^9.0.0",
+    "js-yaml": "^4.1.0",
     "zod": "^3.22.0",
     "dotenv": "^16.3.0",
     "cors": "^2.8.5",
@@ -1198,6 +1653,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
     "typescript": "^5.3.0",
     "@types/express": "^4.17.0",
     "@types/multer": "^1.4.0",
+    "@types/uuid": "^9.0.0",
+    "@types/js-yaml": "^4.0.0",
     "@types/node": "^20.10.0",
     "jest": "^29.7.0",
     "@types/jest": "^29.5.0",
@@ -1215,4 +1672,12 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 ## Summary
 
-The AI Service is a robust Node.js/TypeScript backend that integrates with external AI models (OpenAI, Stability AI) to provide intelligent furniture recommendations, natural language interactions, and image analysis capabilities. It follows clean architecture principles with clear separation of concerns, comprehensive error handling, and production-ready features like rate limiting, caching, and structured logging.
+The AI Service is a robust Node.js/TypeScript backend that integrates with external AI models (OpenAI, Replicate) to provide intelligent furniture recommendations, natural language interactions, and image analysis capabilities. It follows clean architecture principles with clear separation of concerns, comprehensive error handling, and production-ready features like rate limiting, caching, and structured logging.
+
+## Why Replicate?
+
+- **Cost-Effective**: ~80% cheaper than Stability AI official API, with $5 free monthly credits
+- **Easy to Use**: Simple API without managing GPU infrastructure
+- **Flexible**: Supports multiple Stable Diffusion models and versions
+- **Scalable**: Pay-as-you-go with automatic scaling
+- **Developer-Friendly**: Fast iteration, ideal for MVP and prototyping
