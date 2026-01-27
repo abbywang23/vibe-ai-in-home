@@ -230,6 +230,50 @@ interface UploadResponse {
 - File is saved to server's local `./uploads` directory
 - Returns local access path (not cloud storage URL)
 
+### GET /api/ai/products/search
+**Purpose**: Search products from local catalog
+
+**Query Parameters**:
+- `q` (string, optional): Search keywords
+- `category` (string, optional): Filter by category
+- `maxPrice` (number, optional): Maximum price filter
+- `limit` (number, optional): Max results, default 10
+
+**Response**:
+```typescript
+interface ProductSearchResponse {
+  success: boolean;
+  products: Product[];
+  total: number;
+}
+```
+
+### GET /api/ai/products/categories
+**Purpose**: Get all available product categories
+
+**Response**:
+```typescript
+interface CategoriesResponse {
+  success: boolean;
+  categories: Array<{
+    id: string;
+    name: string;
+    productCount: number;
+  }>;
+}
+```
+
+### GET /api/ai/products/{id}
+**Purpose**: Get detailed product information
+
+**Response**:
+```typescript
+interface ProductDetailResponse {
+  success: boolean;
+  product: Product;
+}
+```
+
 ---
 
 ## Service Layer
@@ -976,6 +1020,125 @@ class ImageStorageService {
 
 ---
 
+## Controller Layer
+
+### Product Controller
+
+```typescript
+import { Request, Response, NextFunction } from 'express';
+import { ProductServiceClient } from '../clients/ProductServiceClient';
+
+class ProductController {
+  private productClient: ProductServiceClient;
+
+  constructor() {
+    this.productClient = new ProductServiceClient();
+  }
+
+  /**
+   * Search products
+   * GET /api/ai/products/search
+   */
+  async searchProducts(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { q, category, maxPrice, limit } = req.query;
+
+      const products = await this.productClient.searchProducts({
+        query: q as string,
+        categories: category ? [category as string] : undefined,
+        maxPrice: maxPrice ? parseFloat(maxPrice as string) : undefined,
+      });
+
+      const limitNum = limit ? parseInt(limit as string) : 10;
+      const limitedProducts = products.slice(0, limitNum);
+
+      res.json({
+        success: true,
+        products: limitedProducts,
+        total: products.length,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get product categories
+   * GET /api/ai/products/categories
+   */
+  async getCategories(req: Request, res: Response, next: NextFunction) {
+    try {
+      const products = await this.productClient.getAllProducts();
+      
+      // Count products per category
+      const categoryMap = new Map<string, number>();
+      products.forEach(product => {
+        const count = categoryMap.get(product.category) || 0;
+        categoryMap.set(product.category, count + 1);
+      });
+
+      const categories = Array.from(categoryMap.entries()).map(([id, count]) => ({
+        id,
+        name: this.formatCategoryName(id),
+        productCount: count,
+      }));
+
+      res.json({
+        success: true,
+        categories,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get product details
+   * GET /api/ai/products/:id
+   */
+  async getProductById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const products = await this.productClient.getProductsByIds([id]);
+
+      if (products.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'PRODUCT_NOT_FOUND',
+            message: 'Product not found',
+          },
+        });
+      }
+
+      res.json({
+        success: true,
+        product: products[0],
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Format category name
+   */
+  private formatCategoryName(categoryId: string): string {
+    const nameMap: Record<string, string> = {
+      sofa: 'Sofa',
+      chair: 'Chair',
+      table: 'Table',
+      furniture: 'Furniture',
+    };
+    return nameMap[categoryId] || categoryId;
+  }
+}
+
+export default ProductController;
+```
+
+---
+
 ## Error Handling
 
 ### Custom Error Classes
@@ -1588,6 +1751,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
     recommendationController.ts
     chatController.ts
     imageController.ts
+    uploadController.ts
+    productController.ts  # Product-related endpoints
   /services         # Business logic
     RecommendationService.ts
     ChatService.ts
@@ -1608,6 +1773,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
     promptBuilder.ts
   /routes           # Route definitions
     index.ts
+    aiRoutes.ts
+    productRoutes.ts
   index.ts          # Entry point
   app.ts            # Express app setup
 /config             # Configuration files

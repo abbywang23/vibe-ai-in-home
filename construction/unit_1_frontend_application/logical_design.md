@@ -68,7 +68,7 @@ The Frontend Application is a React-based web application that provides the user
                     ┌──────────────────┐
                     │  External APIs   │
                     │  - AI Service    │
-                    │  - Product API   │
+                    │    (with Products)│
                     └──────────────────┘
 ```
 
@@ -274,27 +274,40 @@ const aiApi = createApi({
 });
 ```
 
-### Product Service API
+### AI Service API (with integrated Products)
 
 ```typescript
-const productApi = createApi({
-  reducerPath: 'productApi',
-  baseQuery: fetchBaseQuery({ baseUrl: '/api/products' }),
+const aiApi = createApi({
+  reducerPath: 'aiApi',
+  baseQuery: fetchBaseQuery({ baseUrl: '/api/ai' }),
   endpoints: (builder) => ({
+    getRecommendations: builder.mutation<RecommendationResponse, RecommendationRequest>({
+      query: (data) => ({ url: '/recommend', method: 'POST', body: data }),
+    }),
+    sendChatMessage: builder.mutation<ChatResponse, ChatRequest>({
+      query: (data) => ({ url: '/chat', method: 'POST', body: data }),
+    }),
+    detectFurniture: builder.mutation<DetectionResponse, DetectionRequest>({
+      query: (data) => ({ url: '/detect', method: 'POST', body: data }),
+    }),
+    replaceFurniture: builder.mutation<ReplacementResponse, ReplacementRequest>({
+      query: (data) => ({ url: '/replace', method: 'POST', body: data }),
+    }),
+    placeFurniture: builder.mutation<PlacementResponse, PlacementRequest>({
+      query: (data) => ({ url: '/place', method: 'POST', body: data }),
+    }),
+    uploadImage: builder.mutation<UploadResponse, FormData>({
+      query: (formData) => ({ url: '/upload', method: 'POST', body: formData }),
+    }),
+    // Product-related endpoints (now part of AI Service)
     searchProducts: builder.query<ProductListResponse, SearchParams>({
-      query: (params) => ({ url: '/search', params }),
+      query: (params) => ({ url: '/products/search', params }),
     }),
     getProductById: builder.query<ProductDetailResponse, string>({
-      query: (id) => `/${id}`,
+      query: (id) => `/products/${id}`,
     }),
     getCategories: builder.query<CategoryListResponse, void>({
-      query: () => '/categories',
-    }),
-    getCollections: builder.query<CollectionListResponse, void>({
-      query: () => '/collections',
-    }),
-    getBulkPrices: builder.mutation<PriceListResponse, string[]>({
-      query: (productIds) => ({ url: '/prices', method: 'POST', body: { productIds } }),
+      query: () => '/products/categories',
     }),
   }),
 });
@@ -626,7 +639,6 @@ npm run preview  # Preview production build
 
 ```env
 VITE_AI_SERVICE_URL=http://localhost:3001/api/ai
-VITE_PRODUCT_SERVICE_URL=http://localhost:3002/api/products
 VITE_IMAGE_UPLOAD_URL=http://localhost:3001/api/upload
 ```
 

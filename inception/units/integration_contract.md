@@ -13,14 +13,12 @@ This document defines the API contracts between the three units of the Castlery 
 │                        (Web Client)                          │
 └──────────────────────────┬──────────────────────────────────┘
                            │
-         ┌─────────────────┴─────────────────┐
-         │                                   │
-         ▼                                   ▼
-┌─────────────────┐                 ┌─────────────────┐
-│  Unit 2: AI     │                 │  Unit 3: Product│
-│    Service      │────────────────▶│    Service      │
-│                 │                 │  (In-Memory)    │
-└─────────────────┘                 └─────────────────┘
+                           ▼
+                 ┌─────────────────┐
+                 │  Unit 2: AI     │
+                 │    Service      │
+                 │ (with Products) │
+                 └─────────────────┘
 ```
 
 ---
@@ -36,6 +34,10 @@ Base URL: `/api/ai`
 | POST | `/detect` | Detect furniture in image | ImageUrl + Dimensions | DetectedItems |
 | POST | `/replace` | Apply furniture replacement | ImageUrl + Replacements | ResultImage |
 | POST | `/place` | Place furniture in empty room | ImageUrl + Placements | ResultImage |
+| POST | `/upload` | Upload room image | Image file | ImageUrl |
+| GET | `/products/search` | Search products | Query params | ProductList |
+| GET | `/products/categories` | Get all categories | - | CategoryList |
+| GET | `/products/{id}` | Get product details | Path param | ProductDetail |
 
 ### POST /api/ai/recommend
 
@@ -242,24 +244,41 @@ Base URL: `/api/ai`
 
 ---
 
-## Unit 3: Product Service APIs
+### POST /api/ai/upload
 
-Base URL: `/api/products`
+**Purpose:** Upload room image to server for analysis and processing.
 
-| Method | Endpoint | Description | Request | Response |
-|--------|----------|-------------|---------|----------|
-| GET | `/search` | Search products | Query params | ProductList |
-| GET | `/categories` | Get all categories | - | CategoryList |
-| GET | `/collections` | Get all collections | - | CollectionList |
-| GET | `/{id}` | Get product details | Path param | ProductDetail |
-| GET | `/by-type/{type}` | Get products by type | Path param | ProductList |
-| GET | `/{id}/price` | Get product price | Path param | PriceInfo |
-| POST | `/prices` | Get bulk prices | ProductIds | PriceList |
+**Request:** Multipart form data with image file
+- Content-Type: multipart/form-data
+- Field name: `image`
+- Max file size: 10MB
+- Allowed types: image/jpeg, image/png, image/webp
 
-### GET /api/products/search
+**Response:**
+```json
+{
+  "success": boolean,
+  "imageUrl": string,
+  "imageId": string,
+  "filename": string,
+  "size": number,
+  "dimensions": {
+    "width": number,
+    "height": number
+  }
+}
+```
+
+---
+
+### GET /api/ai/products/search
+
+**Purpose:** Search products from local catalog.
 
 **Query Parameters:**
-- `q` (string, required): Search query
+- `q` (string, optional): Search query
+- `category` (string, optional): Filter by category
+- `maxPrice` (number, optional): Maximum price filter
 - `limit` (number, optional): Max results, default 10
 
 **Response:**
@@ -271,9 +290,16 @@ Base URL: `/api/products`
       "id": string,
       "name": string,
       "category": string,
-      "collection": string,
-      "thumbnailUrl": string,
-      "price": number
+      "price": number,
+      "originalPrice": number | null,
+      "images": [
+        {
+          "url": string,
+          "alt": string
+        }
+      ],
+      "tags": string[],
+      "inStock": boolean
     }
   ],
   "total": number
@@ -282,7 +308,9 @@ Base URL: `/api/products`
 
 ---
 
-### GET /api/products/categories
+### GET /api/ai/products/categories
+
+**Purpose:** Get all available product categories.
 
 **Response:**
 ```json
@@ -292,7 +320,6 @@ Base URL: `/api/products`
     {
       "id": string,
       "name": string,
-      "icon": string,
       "productCount": number
     }
   ]
@@ -301,27 +328,9 @@ Base URL: `/api/products`
 
 ---
 
-### GET /api/products/collections
+### GET /api/ai/products/{id}
 
-**Response:**
-```json
-{
-  "success": boolean,
-  "collections": [
-    {
-      "id": string,
-      "name": string,
-      "description": string,
-      "imageUrl": string,
-      "productCount": number
-    }
-  ]
-}
-```
-
----
-
-### GET /api/products/{id}
+**Purpose:** Get detailed product information.
 
 **Response:**
 ```json
@@ -331,95 +340,28 @@ Base URL: `/api/products`
     "id": string,
     "name": string,
     "description": string,
-    "category": { "id": string, "name": string },
-    "collection": { "id": string, "name": string },
+    "detailedDescription": string,
+    "category": string,
+    "price": number,
+    "originalPrice": number | null,
+    "currency": string,
+    "images": [
+      {
+        "url": string,
+        "alt": string
+      }
+    ],
+    "tags": string[],
     "dimensions": {
       "width": number,
       "depth": number,
       "height": number,
-      "unit": "cm" | "inches"
+      "unit": string
     },
-    "images": string[],
-    "thumbnailUrl": string,
-    "model3dUrl": string,
-    "price": number,
-    "currency": string,
     "inStock": boolean,
-    "stockQuantity": number,
-    "productPageUrl": string
+    "delivery": string,
+    "externalUrl": string
   }
-}
-```
-
----
-
-### GET /api/products/by-type/{type}
-
-**Path Parameters:**
-- `type`: "sofa" | "table" | "chair" | "bed" | "desk" | "storage"
-
-**Query Parameters:**
-- `limit` (number, optional): Max results, default 10
-- `priceMax` (number, optional): Maximum price filter
-
-**Response:**
-```json
-{
-  "success": boolean,
-  "products": [
-    {
-      "id": string,
-      "name": string,
-      "dimensions": object,
-      "price": number,
-      "thumbnailUrl": string,
-      "model3dUrl": string
-    }
-  ],
-  "total": number
-}
-```
-
----
-
-### GET /api/products/{id}/price
-
-**Response:**
-```json
-{
-  "success": boolean,
-  "productId": string,
-  "price": number,
-  "currency": string,
-  "originalPrice": number | null,
-  "discount": number | null,
-  "inStock": boolean
-}
-```
-
----
-
-### POST /api/products/prices
-
-**Request:**
-```json
-{
-  "productIds": string[]
-}
-```
-
-**Response:**
-```json
-{
-  "success": boolean,
-  "prices": [
-    {
-      "productId": string,
-      "price": number,
-      "inStock": boolean
-    }
-  ],
-  "totalPrice": number
 }
 ```
 
@@ -479,47 +421,52 @@ All APIs return errors in the following format:
 ### Flow 1: Get Furniture Recommendations
 
 ```
-Frontend                    AI Service              Product Service
-   │                            │                         │
-   │ POST /api/ai/recommend     │                         │
-   │ ─────────────────────────▶ │                         │
-   │                            │ GET /api/products/search│
-   │                            │ ───────────────────────▶│
-   │                            │ ◀─────────────────────── │
-   │                            │                         │
-   │                            │ GET /api/products/{id}  │
-   │                            │ ───────────────────────▶│
-   │                            │ ◀─────────────────────── │
-   │ ◀───────────────────────── │                         │
-   │  recommendations           │                         │
+Frontend                    AI Service (with Local Products)
+   │                                    │
+   │ POST /api/ai/recommend             │
+   │ ─────────────────────────────────▶ │
+   │                                    │ (Load from local YAML)
+   │ ◀─────────────────────────────────  │
+   │  recommendations                   │
 ```
 
 ### Flow 2: Furniture Detection & Replacement
 
 ```
-Frontend                    AI Service              Product Service
-   │                            │                         │
-   │ POST /api/ai/detect        │                         │
-   │ ─────────────────────────▶ │                         │
-   │ ◀───────────────────────── │                         │
-   │  detectedItems             │                         │
-   │                            │                         │
-   │ POST /api/ai/replace       │                         │
-   │ ─────────────────────────▶ │                         │
-   │                            │ GET /api/products/{id}  │
-   │                            │ ───────────────────────▶│
-   │                            │ ◀─────────────────────── │
-   │ ◀───────────────────────── │                         │
-   │  resultImageUrl            │                         │
+Frontend                    AI Service (with Local Products)
+   │                                    │
+   │ POST /api/ai/detect                │
+   │ ─────────────────────────────────▶ │
+   │ ◀─────────────────────────────────  │
+   │  detectedItems                     │
+   │                                    │
+   │ POST /api/ai/replace               │
+   │ ─────────────────────────────────▶ │
+   │                                    │ (Load product from local config)
+   │ ◀─────────────────────────────────  │
+   │  resultImageUrl                    │
 ```
 
 ### Flow 3: View Product Details
 
 ```
-Frontend                                          Product Service
-   │                                                    │
-   │ GET /api/products/{id}                             │
-   │ ─────────────────────────────────────────────────▶ │
-   │ ◀───────────────────────────────────────────────── │
-   │  productDetails                                    │
+Frontend                    AI Service (with Local Products)
+   │                                    │
+   │ GET /api/ai/products/{id}          │
+   │ ─────────────────────────────────▶ │
+   │                                    │ (Load from local YAML)
+   │ ◀─────────────────────────────────  │
+   │  productDetails                    │
+```
+
+### Flow 4: Search Products
+
+```
+Frontend                    AI Service (with Local Products)
+   │                                    │
+   │ GET /api/ai/products/search?q=sofa │
+   │ ─────────────────────────────────▶ │
+   │                                    │ (Search local YAML)
+   │ ◀─────────────────────────────────  │
+   │  productList                       │
 ```

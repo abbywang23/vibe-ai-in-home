@@ -13,10 +13,9 @@
 ## Phase 3: Domain Driven Design - Domain Model (Completed)
 
 ### Scope
-Design DDD domain models for all 3 units:
+Design DDD domain models for 2 units (Unit 3 integrated into Unit 2):
 - Unit 1: Frontend Application (Room Planning Context)
-- Unit 2: AI Service (AI Recommendation Context)  
-- Unit 3: Product Service (Product Catalog Context)
+- Unit 2: AI Service (AI Recommendation Context + Product Catalog Context)
 
 ### Recent Updates for US-4.5
 
@@ -40,9 +39,13 @@ Design DDD domain models for all 3 units:
 - Updated FurnitureReplacementService to handle both replacement and placement
 - New domain events: `EmptyRoomDetected`, `PlacementRequested`, `PlacementRendered`
 - Added `POST /api/ai/place` endpoint for empty room furniture placement
+- **Integrated Product Catalog**: Now manages product data via local YAML configuration
+- **Added Product APIs**: `GET /api/ai/products/*` endpoints for product search and details
 
 **Unit 3 (Product Service):**
-- No changes required - existing product APIs support the new functionality
+- Removed as standalone service - functionality integrated into AI Service
+- Product data now managed via local YAML configuration
+- Simplified deployment and maintenance
 
 **Integration Contract:**
 - Added `POST /api/ai/place` API specification
@@ -76,10 +79,9 @@ Design DDD domain models for all 3 units:
 ## Phase 4: Logical Design for Event-Driven Architecture (In Progress)
 
 ### Scope
-Create logical design documents for scalable, event-driven system architecture for all 3 units:
+Create logical design documents for scalable system architecture for 2 units (Unit 3 integrated):
 - Unit 1: Frontend Application
-- Unit 2: AI Service
-- Unit 3: Product Service
+- Unit 2: AI Service (with integrated Product Management)
 
 ### Design Decisions
 
@@ -88,9 +90,10 @@ Create logical design documents for scalable, event-driven system architecture f
 | Communication Pattern | REST APIs | Simple, stateless, easy to implement for demo |
 | Frontend Framework | React | Modern, component-based, large ecosystem |
 | Backend Language | Node.js/TypeScript | Unified language stack, async-friendly |
-| Deployment | Monorepo with separate services | Easy local development, can split later |
-| Database (Production) | PostgreSQL | Relational data, ACID compliance |
+| Deployment | Single AI Service with integrated products | Simplified deployment, reduced complexity |
+| Database (Production) | Local YAML + PostgreSQL (future) | Start simple, can migrate later |
 | Image Storage | Local filesystem (demo) / S3 (production) | Cost-effective, scalable |
+| Product Management | Local YAML configuration | Simple, version-controlled, no database needed |
 | Caching | None (demo) / Redis (production) | Performance optimization for production |
 | API Gateway | None (demo) / Optional (production) | Direct service calls for simplicity |
 | API Security | API keys for external services | Simple authentication for demo |
@@ -107,8 +110,8 @@ Create logical design documents for scalable, event-driven system architecture f
 - [x] Step 5: Review and finalize domain models
 - [x] Step 6: Update all models for US-4.5 empty room functionality
 - [x] Step 7: Create logical design for Unit 1 (Frontend Application)
-- [x] Step 8: Create logical design for Unit 2 (AI Service)
-- [x] Step 9: Create logical design for Unit 3 (Product Service)
+- [x] Step 8: Create logical design for Unit 2 (AI Service with integrated Product Management)
+- [x] Step 9: ~~Create logical design for Unit 3 (Product Service)~~ - Integrated into Unit 2
 - [x] Step 10: Review and finalize logical designs
 
 ---
