@@ -1,74 +1,45 @@
 import axios from 'axios';
-import {
-  RoomConfig,
-  UserPreferences,
-  RecommendationResponse,
-  ProductSearchResponse,
-  CategoryResponse,
-  ChatResponse,
-} from '../types';
 
-const API_BASE_URL = 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_AI_SERVICE_URL || 'http://localhost:3001/api/ai';
 
-const api = axios.create({
+export const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-export const apiService = {
-  // Get recommendations
-  async getRecommendations(
-    roomConfig: RoomConfig,
-    preferences?: UserPreferences,
-    language: string = 'en'
-  ): Promise<RecommendationResponse> {
-    const response = await api.post('/api/ai/recommend', {
-      roomType: roomConfig.roomType,
-      dimensions: roomConfig.dimensions,
-      budget: preferences?.budget,
-      preferences: {
-        selectedCategories: preferences?.selectedCategories,
-        selectedCollections: preferences?.selectedCollections,
-      },
-      language,
-    });
-    return response.data;
+// Request interceptor
+apiClient.interceptors.request.use(
+  (config) => {
+    // Add any auth tokens or custom headers here
+    return config;
   },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
-  // Search products
-  async searchProducts(query?: string, limit: number = 10): Promise<ProductSearchResponse> {
-    const response = await api.get('/api/ai/products/search', {
-      params: { q: query, limit },
-    });
-    return response.data;
+// Response interceptor
+apiClient.interceptors.response.use(
+  (response) => {
+    return response;
   },
+  (error) => {
+    // Handle errors globally
+    if (error.response) {
+      // Server responded with error status
+      console.error('API Error:', error.response.data);
+    } else if (error.request) {
+      // Request made but no response
+      console.error('Network Error:', error.message);
+    } else {
+      // Something else happened
+      console.error('Error:', error.message);
+    }
+    return Promise.reject(error);
+  }
+);
 
-  // Get categories
-  async getCategories(): Promise<CategoryResponse> {
-    const response = await api.get('/api/ai/products/categories');
-    return response.data;
-  },
-
-  // Get product by ID
-  async getProductById(id: string): Promise<any> {
-    const response = await api.get(`/api/ai/products/${id}`);
-    return response.data;
-  },
-
-  // Chat
-  async sendChatMessage(
-    sessionId: string,
-    message: string,
-    language: 'en' | 'zh' = 'en'
-  ): Promise<ChatResponse> {
-    const response = await api.post('/api/ai/chat', {
-      sessionId,
-      message,
-      language,
-      context: {},
-    });
-    return response.data;
-  },
-};
+export default apiClient;

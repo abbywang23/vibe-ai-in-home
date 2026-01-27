@@ -1,261 +1,178 @@
-# 前端应用演示指南 / Frontend Demo Guide
+# Frontend Application - Demo Guide
 
-## 🎉 应用已启动！/ Application is Running!
+## Overview
 
-- **前端地址 / Frontend**: http://localhost:5174
-- **后端地址 / Backend**: http://localhost:3001
+This is a React-based furniture planning application that integrates with an AI service to provide intelligent furniture recommendations.
 
-## 📱 如何使用 / How to Use
+## Prerequisites
 
-### 步骤 1: 打开应用
+Before running the demo, ensure:
 
-在浏览器中访问: **http://localhost:5174**
+1. **Node.js** v18.12.0 is installed
+2. **Backend AI Service** is running at `http://localhost:3001`
+3. **Dependencies** are installed: `npm install`
 
-### 步骤 2: 配置房间
+## Starting the Application
 
-1. **选择房间类型** / Select Room Type
-   - 客厅 Living Room
-   - 卧室 Bedroom
-   - 餐厅 Dining Room
-   - 书房 Home Office
-
-2. **选择单位** / Select Unit
-   - 米 Meters
-   - 英尺 Feet
-
-3. **输入尺寸** / Enter Dimensions
-   - 长度 Length: 5
-   - 宽度 Width: 4
-   - 高度 Height: 3
-
-4. 点击 **"下一步 / Next"**
-
-### 步骤 3: 设置偏好
-
-1. **输入预算** / Enter Budget
-   - 例如: 5000 SGD
-   - 可以留空表示无限制
-
-2. **选择家具类别** / Select Categories
-   - 默认已选择 "Sofas"
-   - 可以选择多个类别
-
-3. 点击 **"获取推荐 / Get Recommendations"**
-
-### 步骤 4: 查看推荐
-
-应用会显示：
-
-1. **推荐的家具列表**
-   - 每件家具的名称
-   - 价格
-   - 在房间中的位置坐标
-   - 旋转角度
-   - AI 推荐理由
-
-2. **总价信息**
-   - 所有家具的总价
-   - 是否超出预算
-
-3. **聊天功能**
-   - 可以与 AI 助手对话
-   - 询问关于家具的问题
-   - 支持中英文
-
-### 步骤 5: 与 AI 聊天
-
-在聊天框中输入问题，例如：
-
-**英文示例：**
-- "I need a sofa for my living room"
-- "What about the budget?"
-- "Can you suggest a different style?"
-
-**中文示例：**
-- "我需要一个沙发"
-- "预算怎么办？"
-- "能推荐不同风格的吗？"
-
-## 🎯 测试场景 / Test Scenarios
-
-### 场景 1: 客厅布置（预算充足）
-
-```
-房间类型: Living Room
-尺寸: 5m × 4m × 3m
-预算: 5000 SGD
-类别: Sofas
+```bash
+cd vibe-ai-in-home/construction/unit_1_frontend_application
+npm run dev
 ```
 
-**预期结果**: 推荐 1-2 件沙发，总价在预算内
+The application will start at: **http://localhost:5173**
 
-### 场景 2: 卧室布置（预算有限）
+## Demo Walkthrough
 
+### Step 1: Configure Room
+
+1. Open the application in your browser
+2. You'll see three tabs: **Configure**, **Preferences**, and **Chat**
+3. In the **Configure** tab:
+   - Select a **Room Type** (Living Room, Bedroom, Dining Room, or Home Office)
+   - Choose your preferred **Unit** (Meters or Feet)
+   - Enter room dimensions:
+     - Length (e.g., 5 meters)
+     - Width (e.g., 4 meters)
+     - Height (e.g., 3 meters)
+   - Click **Continue**
+
+### Step 2: Set Preferences
+
+1. Switch to the **Preferences** tab
+2. Set your preferences:
+   - **Budget**: Enter your total budget in USD (optional)
+   - **Categories**: Click on furniture categories you're interested in (e.g., Sofas, Tables, Chairs)
+   - **Collections**: Select Castlery collections you prefer
+3. Click **Get Recommendations**
+
+### Step 3: View Recommendations
+
+1. The right panel will display AI-generated furniture recommendations
+2. Each furniture item shows:
+   - Product name
+   - Whether it's AI-recommended or manually added
+   - **Add to Cart** button
+   - **Remove** button
+
+### Step 4: Chat with AI
+
+1. Switch to the **Chat** tab
+2. Type a message to the AI assistant, such as:
+   - "Can you suggest a sofa for my living room?"
+   - "I need a desk for my home office"
+   - "What's the total price of my design?"
+3. The AI will respond with helpful suggestions
+
+### Step 5: Manage Cart
+
+1. Click **Add to Cart** on any furniture item
+2. The cart count in the top-right corner will update
+3. The status bar at the bottom shows:
+   - Current session status
+   - Room type
+   - Number of furniture items
+   - Number of items in cart
+
+## Features Demonstrated
+
+### ✅ Implemented
+- Room configuration with type and dimensions
+- Unit conversion (Meters/Feet)
+- User preferences (budget, categories, collections)
+- AI chat interface
+- Furniture recommendations display
+- Shopping cart integration
+- Redux state management
+- Real-time status updates
+
+### 🚧 Coming Soon
+- 3D room visualization
+- 2D floor plan view
+- Room image upload
+- Furniture detection in images
+- Drag-and-drop furniture placement
+- Export design as image
+- Shareable design links
+
+## Testing Without Backend
+
+If the backend AI service is not running, you can still:
+- Configure the room
+- Set preferences
+- View the UI components
+- Test the chat interface (will show errors in console)
+
+The application will display error messages if the backend is unavailable.
+
+## Sample Data
+
+### Room Configurations
+- **Living Room**: 5m × 4m × 3m
+- **Bedroom**: 4m × 3.5m × 2.8m
+- **Dining Room**: 4.5m × 3m × 3m
+- **Home Office**: 3m × 2.5m × 2.8m
+
+### Budget Examples
+- Small budget: $1,000 - $2,000
+- Medium budget: $3,000 - $5,000
+- Large budget: $7,000 - $10,000
+
+## Troubleshooting
+
+### Port Already in Use
+If port 5173 is occupied:
+```bash
+# Kill the process using port 5173
+lsof -ti:5173 | xargs kill -9
+# Or change the port in vite.config.ts
 ```
-房间类型: Bedroom
-尺寸: 4m × 3m × 3m
-预算: 2000 SGD
-类别: Sofas
+
+### Backend Connection Error
+Ensure the AI service is running:
+```bash
+cd vibe-ai-in-home/construction/unit_2_ai_service
+npm run dev
 ```
 
-**预期结果**: 推荐 1 件沙发，可能提示预算紧张
-
-### 场景 3: 无预算限制
-
-```
-房间类型: Living Room
-尺寸: 6m × 5m × 3m
-预算: (留空)
-类别: Sofas
+### Dependencies Issues
+Reinstall dependencies:
+```bash
+rm -rf node_modules package-lock.json
+npm install
 ```
 
-**预期结果**: 推荐多件家具，不考虑价格限制
+## Architecture Highlights
 
-## 🎨 界面特点 / UI Features
+### State Management
+- **Redux Toolkit** for centralized state
+- **RTK Query** for API calls and caching
+- Type-safe actions and reducers
 
-### 响应式设计
-- 自动适应不同屏幕尺寸
-- 移动端友好
+### Component Structure
+- **Functional components** with hooks
+- **Material-UI** for consistent design
+- **Responsive layout** with Grid system
 
-### 双语支持
-- 所有界面元素都有中英文标签
-- AI 聊天支持中英文
+### Domain-Driven Design
+- Clear separation of concerns
+- Aggregates: PlanningSession, RoomDesign, ShoppingCart
+- Value Objects: Money, RoomDimensions, UserPreferences
+- Entities: FurniturePlacement, CartItem
 
-### 实时反馈
-- 加载状态提示
-- 错误信息显示
-- 成功/警告提醒
+## Next Demo Features
 
-### 美观的卡片布局
-- Material-UI 设计风格
-- 清晰的信息层次
-- 舒适的配色方案
+In the next iteration, you'll be able to:
+1. **Upload room photos** and detect existing furniture
+2. **View 3D visualization** of your room design
+3. **Drag and drop** furniture in 2D/3D views
+4. **Export designs** as images with Castlery watermark
+5. **Share designs** via unique links
+6. **Switch languages** between English and Chinese
 
-## 🔧 功能演示 / Feature Demo
+## Feedback
 
-### 1. 房间配置验证
-- 尺寸必须在合理范围内
-- 所有字段必填
-- 实时表单验证
-
-### 2. 动态类别加载
-- 从后端 API 获取可用类别
-- 显示每个类别的产品数量
-- 支持多选
-
-### 3. 智能推荐
-- 基于房间类型选择合适家具
-- 考虑预算约束
-- 提供详细的摆放建议
-
-### 4. 聊天交互
-- 实时消息显示
-- 自动滚动到最新消息
-- 时间戳显示
-- 用户/AI 头像区分
-
-## 📊 数据流 / Data Flow
-
-```
-用户输入
-  ↓
-前端验证
-  ↓
-API 请求 (Axios)
-  ↓
-后端处理
-  ↓
-返回推荐
-  ↓
-前端展示
-```
-
-## 🐛 常见问题 / Troubleshooting
-
-### 无法获取推荐
-
-**检查**:
-1. 后端服务是否运行？
-2. 打开浏览器控制台查看错误
-3. 检查网络请求状态
-
-### 聊天无响应
-
-**检查**:
-1. 后端 /api/ai/chat 端点是否正常
-2. 查看控制台错误信息
-
-### 样式显示异常
-
-**解决**:
-1. 清除浏览器缓存
-2. 刷新页面 (Ctrl+F5 / Cmd+Shift+R)
-
-## 🎓 技术亮点 / Technical Highlights
-
-### React Hooks
-- useState - 状态管理
-- useEffect - 副作用处理
-- useRef - DOM 引用
-
-### TypeScript
-- 完整的类型定义
-- 类型安全的 API 调用
-- 接口和枚举
-
-### Material-UI
-- 现代化 UI 组件
-- 主题定制
-- 响应式布局
-
-### Axios
-- HTTP 请求封装
-- 统一的 API 服务
-- 错误处理
-
-## 🚀 下一步 / Next Steps
-
-### 可以尝试：
-
-1. **修改房间尺寸** - 看看推荐如何变化
-2. **调整预算** - 测试预算约束功能
-3. **切换房间类型** - 不同房间的推荐策略
-4. **与 AI 对话** - 测试聊天功能
-5. **查看控制台** - 了解数据流动
-
-### 未来可以添加：
-
-- 3D 可视化
-- 拖拽调整家具位置
-- 保存设计方案
-- 分享功能
-- 购物车
-- 用户登录
-
-## 📸 截图说明 / Screenshots
-
-### 步骤 1: 房间配置
-- 简洁的表单界面
-- 清晰的标签
-- 单位切换按钮
-
-### 步骤 2: 偏好设置
-- 预算输入
-- 多选类别
-- 加载状态
-
-### 步骤 3: 推荐展示
-- 卡片式布局
-- 详细信息
-- 价格汇总
-
-### 步骤 4: 聊天界面
-- 消息气泡
-- 头像区分
-- 时间戳
-
-## 🎉 享受使用！/ Enjoy!
-
-现在你可以在浏览器中体验完整的家具规划流程了！
-
-有任何问题或建议，欢迎反馈。
+For issues or suggestions, please check:
+- `IMPLEMENTATION_STATUS.md` - Current implementation status
+- `QUICKSTART.md` - Quick start guide
+- `domain_model.md` - Domain model documentation
+- `logical_design.md` - Logical design documentation
