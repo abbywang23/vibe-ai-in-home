@@ -22,10 +22,10 @@ export const brandColors = {
   black: '#000000',
 };
 
-// Typography - Aime (Display) and Sanomat Sans (Body)
+// Typography - Google Fonts: Playfair Display (Display) and Inter (Body)
 export const typography = {
   display: {
-    fontFamily: 'aime, "Playfair Display", serif',
+    fontFamily: '"Playfair Display", serif',
     weights: {
       bold: 700,
       medium: 500,
@@ -33,7 +33,7 @@ export const typography = {
     }
   },
   body: {
-    fontFamily: 'sanomat-sans, "Inter", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"Inter", "Helvetica", "Arial", sans-serif',
     weights: {
       bold: 700,
       medium: 500,
