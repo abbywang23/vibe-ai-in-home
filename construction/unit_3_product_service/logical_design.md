@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Product Service is a Node.js/TypeScript backend service that manages the Castlery product catalog. It provides REST APIs for product search, category/collection browsing, and pricing information. The service is designed with the Repository Pattern to support both in-memory demo mode and production database integration.
+The Product Service is a Node.js/TypeScript backend service that manages the Castlery product catalog. It provides REST APIs for product search, category/collection browsing, and pricing information. Both demo and production environments use **in-memory storage** (JavaScript Map/Set) for fast access without external dependencies.
 
 ---
 
@@ -13,15 +13,13 @@ The Product Service is a Node.js/TypeScript backend service that manages the Cas
 - **Language**: TypeScript 5+
 - **Framework**: Express.js
 - **Validation**: Zod
-- **Database (Production)**: PostgreSQL with TypeORM
-- **In-Memory Store (Demo)**: JavaScript Map/Set
+- **Storage (Demo & Production)**: In-memory (JavaScript Map/Set)
 
 ### Development Tools
 - **Package Manager**: npm
 - **Linting**: ESLint + Prettier
 - **Testing**: Jest + Supertest
 - **API Documentation**: Swagger/OpenAPI
-- **Database Migrations**: TypeORM migrations
 
 ---
 
@@ -57,12 +55,9 @@ The Product Service is a Node.js/TypeScript backend service that manages the Cas
 │  ┌────────────────────────────────────────────────────────────┐ │
 │  │                  Infrastructure Layer                       │ │
 │  │  ┌──────────────────────────────────────────────────────┐  │ │
-│  │  │           Repository Implementations                  │  │ │
-│  │  │  ┌───────────────┐        ┌───────────────┐          │  │ │
-│  │  │  │  InMemory     │   OR   │  PostgreSQL   │          │  │ │
-│  │  │  │  Repository   │        │  Repository   │          │  │ │
-│  │  │  │   (Demo)      │        │ (Production)  │          │  │ │
-│  │  │  └───────────────┘        └───────────────┘          │  │ │
+│  │  │       In-Memory Repository (Demo & Production)       │  │ │
+│  │  │  • JavaScript Map/Set for fast read/write              │  │ │
+│  │  │  • No external dependencies                            │  │ │
 │  │  └──────────────────────────────────────────────────────┘  │ │
 │  └────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
@@ -315,7 +310,7 @@ interface IPriceRepository {
 }
 ```
 
-### In-Memory Repository Implementation (Demo)
+### In-Memory Repository Implementation (Demo & Production)
 
 ```typescript
 class InMemoryProductRepository implements IProductRepository {
@@ -368,60 +363,7 @@ class InMemoryProductRepository implements IProductRepository {
 }
 ```
 
-### PostgreSQL Repository Implementation (Production)
-
-```typescript
-import { Repository } from 'typeorm';
-import { ProductEntity } from './entities/ProductEntity';
-
-class PostgresProductRepository implements IProductRepository {
-  private repository: Repository<ProductEntity>;
-
-  constructor(repository: Repository<ProductEntity>) {
-    this.repository = repository;
-  }
-
-  async save(product: Product): Promise<Product> {
-    const entity = this.toEntity(product);
-    const saved = await this.repository.save(entity);
-    return this.toDomain(saved);
-  }
-
-  async findById(id: string): Promise<Product | null> {
-    const entity = await this.repository.findOne({ where: { id } });
-    return entity ? this.toDomain(entity) : null;
-  }
-
-  async findByIds(ids: string[]): Promise<Product[]> {
-    const entities = await this.repository.findByIds(ids);
-    return entities.map(e => this.toDomain(e));
-  }
-
-  async findByCategory(categoryId: string): Promise<Product[]> {
-    const entities = await this.repository.find({ where: { categoryId } });
-    return entities.map(e => this.toDomain(e));
-  }
-
-  async search(query: string, limit: number): Promise<Product[]> {
-    const entities = await this.repository
-      .createQueryBuilder('product')
-      .where('LOWER(product.name) LIKE LOWER(:query)', { query: `%${query}%` })
-      .limit(limit)
-      .getMany();
-    return entities.map(e => this.toDomain(e));
-  }
-
-  private toEntity(product: Product): ProductEntity {
-    // Map domain model to database entity
-    return { ...product };
-  }
-
-  private toDomain(entity: ProductEntity): Product {
-    // Map database entity to domain model
-    return { ...entity };
-  }
-}
-```
+Similar `InMemoryCategoryRepository`, `InMemoryCollectionRepository`, and `InMemoryPriceRepository` implementations use JavaScript `Map` for fast in-memory operations.
 
 ---
 
@@ -676,20 +618,7 @@ class ServiceContainer {
   private collectionService: CollectionService;
 
   private constructor() {
-    // Initialize repositories based on environment
-    if (process.env.REPOSITORY_MODE === 'postgres') {
-      this.initializePostgresRepositories();
-    } else {
-      this.initializeInMemoryRepositories();
-    }
-    
-    // Initialize services
-    this.productService = new ProductService(this.productRepo, this.priceRepo);
-    this.categoryService = new CategoryService(this.categoryRepo, this.productRepo);
-    this.collectionService = new CollectionService(this.collectionRepo, this.productRepo);
-  }
-
-  private initializeInMemoryRepositories() {
+    // Initialize in-memory repositories (demo & production)
     this.productRepo = new InMemoryProductRepository();
     this.categoryRepo = new InMemoryCategoryRepository();
     this.collectionRepo = new InMemoryCollectionRepository();
@@ -697,12 +626,11 @@ class ServiceContainer {
     
     // Seed with mock data
     this.seedMockData();
-  }
-
-  private initializePostgresRepositories() {
-    // Initialize TypeORM repositories
-    // this.productRepo = new PostgresProductRepository(...);
-    // ...
+    
+    // Initialize services
+    this.productService = new ProductService(this.productRepo, this.priceRepo);
+    this.categoryService = new CategoryService(this.categoryRepo, this.productRepo);
+    this.collectionService = new CollectionService(this.collectionRepo, this.productRepo);
   }
 
   private seedMockData() {
@@ -894,110 +822,8 @@ const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
 PORT=3002
 NODE_ENV=development
 
-# Repository Mode
-REPOSITORY_MODE=inmemory  # or 'postgres'
-
-# PostgreSQL (Production)
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=castlery_products
-DB_USER=postgres
-DB_PASSWORD=password
-
 # CORS
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3001
-```
-
-### TypeORM Configuration (Production)
-
-```typescript
-import { DataSource } from 'typeorm';
-
-export const AppDataSource = new DataSource({
-  type: 'postgres',
-  host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT || '5432'),
-  username: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  entities: ['src/entities/*.ts'],
-  migrations: ['src/migrations/*.ts'],
-  synchronize: false, // Use migrations in production
-  logging: process.env.NODE_ENV === 'development',
-});
-```
-
----
-
-## Database Schema (Production)
-
-### Products Table
-
-```sql
-CREATE TABLE products (
-  id VARCHAR(50) PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  description TEXT,
-  category_id VARCHAR(50) NOT NULL,
-  collection_id VARCHAR(50) NOT NULL,
-  furniture_type VARCHAR(50) NOT NULL,
-  dimensions JSONB NOT NULL,
-  images JSONB NOT NULL,
-  thumbnail_url VARCHAR(500),
-  model_3d_url VARCHAR(500),
-  product_page_url VARCHAR(500),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (category_id) REFERENCES categories(id),
-  FOREIGN KEY (collection_id) REFERENCES collections(id)
-);
-
-CREATE INDEX idx_products_category ON products(category_id);
-CREATE INDEX idx_products_collection ON products(collection_id);
-CREATE INDEX idx_products_furniture_type ON products(furniture_type);
-CREATE INDEX idx_products_name ON products USING gin(to_tsvector('english', name));
-```
-
-### Categories Table
-
-```sql
-CREATE TABLE categories (
-  id VARCHAR(50) PRIMARY KEY,
-  name VARCHAR(100) NOT NULL UNIQUE,
-  icon VARCHAR(10),
-  description TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Collections Table
-
-```sql
-CREATE TABLE collections (
-  id VARCHAR(50) PRIMARY KEY,
-  name VARCHAR(100) NOT NULL UNIQUE,
-  description TEXT,
-  image_url VARCHAR(500),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Prices Table
-
-```sql
-CREATE TABLE prices (
-  id VARCHAR(50) PRIMARY KEY,
-  product_id VARCHAR(50) NOT NULL,
-  current_price DECIMAL(10, 2) NOT NULL,
-  original_price DECIMAL(10, 2),
-  currency VARCHAR(3) NOT NULL,
-  discount_percentage DECIMAL(5, 2),
-  valid_from TIMESTAMP NOT NULL,
-  valid_until TIMESTAMP,
-  FOREIGN KEY (product_id) REFERENCES products(id)
-);
-
-CREATE INDEX idx_prices_product ON prices(product_id);
 ```
 
 ---
@@ -1083,7 +909,6 @@ npm run dev  # Starts server with nodemon on http://localhost:3002
 
 ```bash
 npm run build  # Compiles TypeScript to /dist
-npm run migrate  # Run database migrations (if using PostgreSQL)
 npm start  # Runs compiled code
 ```
 
@@ -1108,28 +933,11 @@ CMD ["node", "dist/index.js"]
 
 ## Performance Optimization
 
-### Caching
-
-```typescript
-import NodeCache from 'node-cache';
-
-const cache = new NodeCache({ stdTTL: 600 }); // 10 minutes
-
-class CachedProductService extends ProductService {
-  async searchProducts(query: string, limit: number): Promise<ProductSummary[]> {
-    const cacheKey = `search:${query}:${limit}`;
-    const cached = cache.get<ProductSummary[]>(cacheKey);
-    
-    if (cached) {
-      return cached;
-    }
-
-    const results = await super.searchProducts(query, limit);
-    cache.set(cacheKey, results);
-    return results;
-  }
-}
-```
+### In-Memory Performance
+- All data is stored in JavaScript `Map` structures for O(1) lookup
+- No network latency (no database or cache calls)
+- Fast read/write operations suitable for high-throughput APIs
+- Data persists only during service runtime; reloaded on restart
 
 ---
 
@@ -1151,11 +959,9 @@ class CachedProductService extends ProductService {
       ICategoryRepository.ts
     /inmemory
       InMemoryProductRepository.ts
-    /postgres
-      PostgresProductRepository.ts
-  /entities         # TypeORM entities (for PostgreSQL)
-    ProductEntity.ts
-    CategoryEntity.ts
+      InMemoryCategoryRepository.ts
+      InMemoryCollectionRepository.ts
+      InMemoryPriceRepository.ts
   /models           # Domain models
     Product.ts
     Category.ts
@@ -1168,7 +974,6 @@ class CachedProductService extends ProductService {
   /routes           # Route definitions
     index.ts
   /config           # Configuration
-    database.ts
     container.ts
   index.ts          # Entry point
   app.ts            # Express app setup
@@ -1185,10 +990,7 @@ class CachedProductService extends ProductService {
     "zod": "^3.22.0",
     "dotenv": "^16.3.0",
     "cors": "^2.8.5",
-    "helmet": "^7.1.0",
-    "node-cache": "^5.1.2",
-    "typeorm": "^0.3.17",
-    "pg": "^8.11.0"
+    "helmet": "^7.1.0"
   },
   "devDependencies": {
     "typescript": "^5.3.0",
@@ -1208,4 +1010,4 @@ class CachedProductService extends ProductService {
 
 ## Summary
 
-The Product Service provides a clean, maintainable API for managing the Castlery product catalog. The Repository Pattern enables seamless switching between in-memory demo mode and production PostgreSQL database. The service is designed for scalability, with caching support, comprehensive error handling, and production-ready features.
+The Product Service provides a clean, maintainable API for managing the Castlery product catalog. Both demo and production environments use in-memory storage (JavaScript Map/Set) for fast access without external dependencies. The service is designed for simplicity and performance, with comprehensive error handling and production-ready features.

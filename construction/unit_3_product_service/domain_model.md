@@ -2,7 +2,7 @@
 
 ## Bounded Context: Product Catalog Context
 
-The Product Service manages the Castlery product catalog including products, categories, collections, and pricing information. Designed with Repository Pattern for easy migration from in-memory demo to production database.
+The Product Service manages the Castlery product catalog including products, categories, collections, and pricing information. Both demo and production environments use **in-memory storage** (JavaScript Map/Set) for fast access without external dependencies.
 
 ---
 
@@ -53,10 +53,11 @@ The Product Service manages the Castlery product catalog including products, cat
 │                   Infrastructure Layer                           │
 │  ┌─────────────────────────────────────────────────────────┐    │
 │  │              Repository Implementation                    │    │
-│  │  ┌───────────────┐              ┌───────────────┐        │    │
-│  │  │ InMemoryRepo  │  ──────▶     │ PostgresRepo  │        │    │
-│  │  │   (Demo)      │   Future     │ (Production)  │        │    │
-│  │  └───────────────┘              └───────────────┘        │    │
+│  │  ┌─────────────────────────────────────────────────┐     │    │
+│  │  │  In-Memory Repository (Demo & Production)        │     │    │
+│  │  │  • JavaScript Map/Set for fast read/write      │     │    │
+│  │  │  • No external dependencies                      │     │    │
+│  │  └─────────────────────────────────────────────────┘     │    │
 │  └─────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -379,8 +380,7 @@ The Product Service manages the Castlery product catalog including products, cat
 - delete(productId): Remove product
 
 **Implementation Strategy:**
-- Demo: InMemoryProductRepository (HashMap-based)
-- Production: PostgresProductRepository (JPA/JDBC)
+- Demo & Production: InMemoryProductRepository (JavaScript Map-based)
 
 ---
 
@@ -394,8 +394,7 @@ The Product Service manages the Castlery product catalog including products, cat
 - delete(categoryId): Remove category
 
 **Implementation Strategy:**
-- Demo: InMemoryCategoryRepository
-- Production: PostgresCategoryRepository
+- Demo & Production: InMemoryCategoryRepository (JavaScript Map-based)
 
 ---
 
@@ -409,8 +408,7 @@ The Product Service manages the Castlery product catalog including products, cat
 - delete(collectionId): Remove collection
 
 **Implementation Strategy:**
-- Demo: InMemoryCollectionRepository
-- Production: PostgresCollectionRepository
+- Demo & Production: InMemoryCollectionRepository (JavaScript Map-based)
 
 ---
 
@@ -423,8 +421,7 @@ The Product Service manages the Castlery product catalog including products, cat
 - findHistorical(productId, dateRange): Get price history
 
 **Implementation Strategy:**
-- Demo: InMemoryPriceRepository
-- Production: PostgresPriceRepository
+- Demo & Production: InMemoryPriceRepository (JavaScript Map-based)
 
 ---
 
@@ -558,31 +555,26 @@ Relationship: Open Host Service with Published Language
 
 ---
 
-## Migration Strategy (Demo → Production)
+## Storage Strategy (Demo & Production)
 
-### Phase 1: Demo (Current)
-- InMemory repositories with mock data
-- MockDataFactory seeds data on startup
-- No persistence between restarts
+Both demo and production use **in-memory storage**:
 
-### Phase 2: Database Integration
-- Implement PostgresRepository classes
-- Add database migration scripts
-- Configure connection pooling
+### In-Memory Store
+- JavaScript `Map` for each entity (products, categories, collections, prices)
+- Fast read/write for API operations
+- No external dependencies (no database, no Redis)
+- Data loaded on startup via MockDataFactory
 
-### Phase 3: Production
-- Switch repository implementations via DI
-- Add caching layer (Redis)
-- Implement read replicas for scaling
+### Demo vs Production
+- **Demo**: InMemory repositories with mock data seeded on startup
+- **Production**: Same in-memory implementation; data persists only during service runtime
+- **Note**: Data is lost on service restart; suitable for stateless services or when data can be reloaded
 
 ### Configuration Example
 ```
-# Demo mode
-repository.implementation=inmemory
-
-# Production mode
-repository.implementation=postgres
-database.url=jdbc:postgresql://...
+# Both demo and production use in-memory storage
+# No database or cache configuration needed
+NODE_ENV=production
 ```
 
 ---
