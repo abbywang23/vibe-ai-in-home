@@ -77,17 +77,23 @@ function App() {
 
     try {
       const result = await sendChat({
+        sessionId: session.sessionId || 'default',
         message,
-        language: session.userSettings.language,
-        conversationHistory: session.chatHistory,
-        sessionContext: {
-          roomType: design.roomType || undefined,
-          budget: session.preferences.budget || undefined,
+        language: session.userSettings.language as 'en' | 'zh',
+        context: {
+          currentDesign: design,
         },
       }).unwrap();
 
       // Add AI response to chat history
-      dispatch(addChatMessage(result.message));
+      const aiMessage: ChatMessageType = {
+        messageId: `msg-${Date.now()}_ai`,
+        content: result.reply,
+        sender: MessageSender.AI,
+        timestamp: new Date().toISOString(),
+        language: session.userSettings.language,
+      };
+      dispatch(addChatMessage(aiMessage));
     } catch (error) {
       console.error('Failed to send message:', error);
     }
