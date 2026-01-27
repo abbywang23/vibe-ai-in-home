@@ -2,7 +2,7 @@
 
 ## Overview
 
-The AI Service is a Node.js/TypeScript backend service that provides AI-powered furniture recommendations, natural language chat interactions, furniture detection in images, and furniture replacement/placement rendering. It integrates with external AI models (OpenAI GPT-4/GPT-4V, Stability AI) and the Product Service.
+The AI Service is a Node.js/TypeScript backend service that provides AI-powered furniture recommendations, natural language chat interactions, furniture detection in images, and furniture replacement/placement rendering. It integrates with external AI models (OpenAI GPT-4/GPT-4V, Replicate) and local product configuration.
 
 ---
 
@@ -35,32 +35,32 @@ The AI Service is a Node.js/TypeScript backend service that provides AI-powered 
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        AI Service                                │
-│                                                                  │
+│                        AI Service                               │
+│                                                                 │
 │  ┌────────────────────────────────────────────────────────────┐ │
-│  │                    API Layer (Express)                      │ │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │ │
-│  │  │Recommend │  │   Chat   │  │  Detect  │  │ Replace  │   │ │
-│  │  │Controller│  │Controller│  │Controller│  │Controller│   │ │
-│  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │ │
+│  │                    API Layer (Express)                     │ │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐    │ │
+│  │  │Recommend │  │   Chat   │  │  Detect  │  │ Replace  │    │ │
+│  │  │Controller│  │Controller│  │Controller│  │Controller│    │ │
+│  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘    │ │
 │  └────────────────────────────────────────────────────────────┘ │
-│                              │                                   │
+│                              │                                  │
 │  ┌────────────────────────────────────────────────────────────┐ │
-│  │                    Application Layer                        │ │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │ │
-│  │  │Recommendation│  │     Chat     │  │    Image     │     │ │
-│  │  │   Service    │  │   Service    │  │   Service    │     │ │
-│  │  └──────────────┘  └──────────────┘  └──────────────┘     │ │
+│  │                    Application Layer                       │ │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │ │
+│  │  │Recommendation│  │     Chat     │  │    Image     │      │ │
+│  │  │   Service    │  │   Service    │  │   Service    │      │ │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘      │ │
 │  └────────────────────────────────────────────────────────────┘ │
-│                              │                                   │
+│                              │                                  │
 │  ┌────────────────────────────────────────────────────────────┐ │
 │  │                      Domain Layer                           │ │
 │  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │ │
 │  │  │  Models  │  │  Types   │  │Validators│  │  Utils   │   │ │
 │  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │ │
-│  └────────────────────────────────────────────────────────────┘ │
-│                              │                                   │
-│  ┌────────────────────────────────────────────────────────────┐ │
+│  └────────────────────────────────────────────────────────────┘│
+│                              │                                 │
+│  ┌────────────────────────────────────────────────────────────┐│
 │  │                  Infrastructure Layer                       │ │
 │  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │ │
 │  │  │  OpenAI  │  │Replicate │  │ Product  │  │  Image   │   │ │
@@ -74,7 +74,6 @@ The AI Service is a Node.js/TypeScript backend service that provides AI-powered 
                     │  External APIs   │
                     │  - OpenAI API    │
                     │  - Replicate API │
-                    │  - Product API   │
                     └──────────────────┘
 ```
 
@@ -239,7 +238,7 @@ interface UploadResponse {
 
 **Responsibilities**:
 - Generate furniture recommendations using GPT-4
-- Query Product Service for available products
+- Load available products from local configuration
 - Optimize furniture placement for room layout
 - Apply budget constraints
 
@@ -250,7 +249,7 @@ class RecommendationService {
   async generateRecommendations(
     request: RecommendationRequest
   ): Promise<Recommendation[]> {
-    // 1. Query Product Service for available products
+    // 1. Load available products from local configuration
     const products = await this.productClient.searchProducts({
       categories: request.preferences?.selectedCategories,
       collections: request.preferences?.selectedCollections,
@@ -405,7 +404,7 @@ class ImageService {
   }
 
   async applyReplacements(request: ReplacementRequest): Promise<ReplacementResponse> {
-    // 1. Get product images from Product Service
+    // 1. Get product images from local configuration
     const products = await this.productClient.getProductsByIds(
       request.replacements.map(r => r.newProductId)
     );
@@ -1035,7 +1034,7 @@ const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     return res.status(err.statusCode).json({
       success: false,
       error: {
-        code: 'PRODUCT_SERVICE_ERROR',
+        code: 'PRODUCT_CONFIG_ERROR',
         message: err.message,
       },
     });
@@ -1433,7 +1432,7 @@ import NodeCache from 'node-cache';
 
 const cache = new NodeCache({ stdTTL: 600 }); // 10 minutes
 
-class CachedProductServiceClient extends ProductServiceClient {
+class CachedProductClient extends ProductServiceClient {
   async searchProducts(params: SearchParams): Promise<Product[]> {
     const cacheKey = `products:${JSON.stringify(params)}`;
     const cached = cache.get<Product[]>(cacheKey);
