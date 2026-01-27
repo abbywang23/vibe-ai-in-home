@@ -1,24 +1,25 @@
 import { useState, useRef, useEffect } from 'react';
 import {
+  Box,
   Paper,
   Typography,
-  Box,
   TextField,
-  Button,
-  Avatar,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
-import PersonIcon from '@mui/icons-material/Person';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
-import { ChatMessage } from '../types';
+import { ChatMessage, MessageSender } from '../types/domain';
 
 interface ChatPanelProps {
   messages: ChatMessage[];
   onSendMessage: (message: string) => void;
+  isLoading?: boolean;
 }
 
-const ChatPanel = ({ messages, onSendMessage }: ChatPanelProps) => {
-  const [inputMessage, setInputMessage] = useState<string>('');
+export default function ChatPanel({ messages, onSendMessage, isLoading }: ChatPanelProps) {
+  const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -29,104 +30,81 @@ const ChatPanel = ({ messages, onSendMessage }: ChatPanelProps) => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputMessage.trim()) {
-      onSendMessage(inputMessage.trim());
-      setInputMessage('');
+  const handleSend = () => {
+    if (input.trim()) {
+      onSendMessage(input);
+      setInput('');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   };
 
   return (
-    <Paper sx={{ p: 3 }}>
-      <Typography variant="h6" gutterBottom>
-        💬 AI 助手聊天 / Chat with AI Assistant
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        有任何问题都可以问我 / Ask me anything about furniture
-      </Typography>
+    <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+        <Typography variant="h6">AI Assistant</Typography>
+      </Box>
 
-      <Box
-        sx={{
-          height: 400,
-          overflowY: 'auto',
-          mb: 2,
-          p: 2,
-          bgcolor: 'grey.50',
-          borderRadius: 1,
-        }}
-      >
-        {messages.length === 0 ? (
-          <Box sx={{ textAlign: 'center', py: 8 }}>
-            <Typography variant="body2" color="text.secondary">
-              开始对话吧！/ Start a conversation!
-            </Typography>
-          </Box>
-        ) : (
-          messages.map((message) => (
-            <Box
-              key={message.id}
+      <Box sx={{ flexGrow: 1, overflow: 'auto', p: 2 }}>
+        <List>
+          {messages.map((message) => (
+            <ListItem
+              key={message.messageId}
               sx={{
-                display: 'flex',
-                mb: 2,
-                justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start',
+                justifyContent: message.sender === MessageSender.USER ? 'flex-end' : 'flex-start',
               }}
             >
-              {message.sender === 'ai' && (
-                <Avatar sx={{ mr: 1, bgcolor: 'primary.main' }}>
-                  <SmartToyIcon />
-                </Avatar>
-              )}
               <Paper
                 sx={{
                   p: 2,
                   maxWidth: '70%',
-                  bgcolor: message.sender === 'user' ? 'primary.main' : 'white',
-                  color: message.sender === 'user' ? 'white' : 'text.primary',
+                  bgcolor: message.sender === MessageSender.USER ? 'primary.main' : 'grey.100',
+                  color: message.sender === MessageSender.USER ? 'white' : 'text.primary',
                 }}
               >
-                <Typography variant="body2">{message.content}</Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    display: 'block',
-                    mt: 0.5,
-                    opacity: 0.7,
+                <ListItemText
+                  primary={message.content}
+                  secondary={new Date(message.timestamp).toLocaleTimeString()}
+                  secondaryTypographyProps={{
+                    sx: { color: message.sender === MessageSender.USER ? 'rgba(255,255,255,0.7)' : 'text.secondary' },
                   }}
-                >
-                  {message.timestamp.toLocaleTimeString()}
+                />
+              </Paper>
+            </ListItem>
+          ))}
+          {isLoading && (
+            <ListItem>
+              <Paper sx={{ p: 2, bgcolor: 'grey.100' }}>
+                <Typography variant="body2" color="text.secondary">
+                  AI is thinking...
                 </Typography>
               </Paper>
-              {message.sender === 'user' && (
-                <Avatar sx={{ ml: 1, bgcolor: 'secondary.main' }}>
-                  <PersonIcon />
-                </Avatar>
-              )}
-            </Box>
-          ))
-        )}
-        <div ref={messagesEndRef} />
+            </ListItem>
+          )}
+          <div ref={messagesEndRef} />
+        </List>
       </Box>
 
-      <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', gap: 1 }}>
+      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', display: 'flex', gap: 1 }}>
         <TextField
           fullWidth
-          placeholder="输入消息... / Type a message..."
-          value={inputMessage}
-          onChange={(e) => setInputMessage(e.target.value)}
-          size="small"
+          multiline
+          maxRows={3}
+          placeholder="Ask AI for help..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyPress={handleKeyPress}
+          disabled={isLoading}
         />
-        <Button
-          type="submit"
-          variant="contained"
-          endIcon={<SendIcon />}
-          disabled={!inputMessage.trim()}
-        >
-          发送 / Send
-        </Button>
+        <IconButton color="primary" onClick={handleSend} disabled={isLoading || !input.trim()}>
+          <SendIcon />
+        </IconButton>
       </Box>
     </Paper>
   );
-};
-
-export default ChatPanel;
+}

@@ -1,495 +1,270 @@
-# 🎉 完整演示系统状态 / Complete Demo System Status
-
-## ✅ 实现完成！/ Implementation Complete!
-
-整个家具房间规划系统已经完全实现并运行！
-
----
-
-## 🏗️ 系统架构 / System Architecture
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    浏览器 Browser                        │
-│              http://localhost:5174                      │
-│                                                         │
-│  ┌───────────────────────────────────────────────────┐ │
-│  │         React Frontend Application                │ │
-│  │  - 房间配置 Room Config                            │ │
-│  │  - 偏好设置 Preferences                            │ │
-│  │  - 推荐展示 Recommendations                        │ │
-│  │  - AI 聊天 Chat                                    │ │
-│  └───────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────┘
-                         │
-                         │ HTTP/REST API
-                         │ (Axios)
-                         ▼
-┌─────────────────────────────────────────────────────────┐
-│              Node.js Backend Service                    │
-│              http://localhost:3001                      │
-│                                                         │
-│  ┌───────────────────────────────────────────────────┐ │
-│  │              AI Service                           │ │
-│  │  - 推荐引擎 Recommendation Engine                  │ │
-│  │  - 聊天服务 Chat Service                          │ │
-│  │  - 产品管理 Product Management                     │ │
-│  └───────────────────────────────────────────────────┘ │
-│                         │                               │
-│                         ▼                               │
-│  ┌───────────────────────────────────────────────────┐ │
-│  │         产品目录 Product Catalog                   │ │
-│  │         (products.yaml)                           │ │
-│  │         5 件沙发产品                               │ │
-│  └───────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────┘
-```
-
----
-
-## 📊 实现状态 / Implementation Status
-
-### Unit 1: Frontend Application - ✅ 100% 完成
-
-#### 核心功能
-- ✅ 房间配置界面（房间类型、尺寸、单位）
-- ✅ 偏好设置界面（预算、类别选择）
-- ✅ 推荐展示界面（家具列表、价格、位置）
-- ✅ AI 聊天界面（实时对话、中英文支持）
-- ✅ 响应式设计（适配不同屏幕）
-- ✅ 错误处理和加载状态
-
-#### 技术实现
-- ✅ React 18 + TypeScript
-- ✅ Material-UI 组件库
-- ✅ Axios API 集成
-- ✅ 类型安全的状态管理
-- ✅ 组件化架构
-
-#### 文件创建
-- ✅ 8 个 React 组件
-- ✅ API 服务层
-- ✅ 类型定义
-- ✅ 样式配置
-- ✅ 完整文档
-
-### Unit 2: AI Service - ✅ 100% 完成
-
-#### 核心功能
-- ✅ 家具推荐 API
-- ✅ 产品搜索 API
-- ✅ 分类管理 API
-- ✅ 聊天交互 API
-- ✅ 预算约束处理
-- ✅ 多语言支持
-
-#### 技术实现
-- ✅ Node.js + TypeScript + Express
-- ✅ 本地产品目录加载
-- ✅ Mock AI 推荐引擎
-- ✅ Zod 数据验证
-- ✅ 错误处理中间件
-
----
-
-## 🚀 如何运行 / How to Run
-
-### 当前状态
-
-两个服务都在运行：
-
-1. **后端服务** (已运行)
-   - 地址: http://localhost:3001
-   - 状态: ✅ 运行中
-   - 产品: 5 件已加载
-
-2. **前端应用** (已运行)
-   - 地址: http://localhost:5174
-   - 状态: ✅ 运行中
-   - 连接: 后端 API
-
-### 访问应用
-
-**在浏览器中打开**: http://localhost:5174
-
----
-
-## 🎯 功能演示 / Feature Demo
-
-### 完整用户流程
-
-1. **配置房间**
-   ```
-   房间类型: 客厅 Living Room
-   尺寸: 5m × 4m × 3m
-   单位: 米 Meters
-   ```
-
-2. **设置偏好**
-   ```
-   预算: 5000 SGD
-   类别: Sofas (沙发)
-   ```
-
-3. **获取推荐**
-   - AI 分析房间和预算
-   - 返回 1-2 件推荐家具
-   - 显示价格、位置、理由
-
-4. **查看详情**
-   - 每件家具的完整信息
-   - 在房间中的精确位置
-   - 旋转角度和摆放建议
-
-5. **AI 对话**
-   - 询问家具问题
-   - 获取专业建议
-   - 中英文自由切换
-
-### 测试数据
-
-系统已加载 5 件沙发产品：
-
-1. **Owen Chaise Sectional Sofa** - SGD 1,999
-2. **Hamilton Round Chaise Sectional Sofa** - SGD 2,799
-3. **Auburn Performance Bouclé 3 Seater Sofa** - SGD 1,738
-4. **Nolan 3 Seater Sofa** - SGD 1,999
-5. **Dawson 2 Seater Sofa** - SGD 1,499
-
----
-
-## 📁 项目结构 / Project Structure
-
-```
-construction/
-├── unit_1_frontend_application/     # 前端应用
-│   ├── src/
-│   │   ├── components/              # React 组件
-│   │   │   ├── RoomConfigPanel.tsx
-│   │   │   ├── PreferencesPanel.tsx
-│   │   │   ├── RecommendationsDisplay.tsx
-│   │   │   └── ChatPanel.tsx
-│   │   ├── services/
-│   │   │   └── api.ts               # API 服务
-│   │   ├── types/
-│   │   │   └── index.ts             # 类型定义
-│   │   ├── App.tsx                  # 主应用
-│   │   ├── main.tsx                 # 入口
-│   │   └── index.css                # 样式
-│   ├── package.json
-│   ├── README.md
-│   └── DEMO_GUIDE.md
-│
-├── unit_2_ai_service/               # 后端服务
-│   ├── src/
-│   │   ├── clients/
-│   │   │   └── ProductServiceClient.ts
-│   │   ├── controllers/
-│   │   │   ├── recommendationController.ts
-│   │   │   ├── chatController.ts
-│   │   │   └── productController.ts
-│   │   ├── services/
-│   │   │   ├── RecommendationService.ts
-│   │   │   └── ChatService.ts
-│   │   ├── models/
-│   │   │   ├── types.ts
-│   │   │   └── schemas.ts
-│   │   ├── middleware/
-│   │   │   └── errorHandler.ts
-│   │   ├── routes/
-│   │   │   └── index.ts
-│   │   ├── app.ts
-│   │   └── index.ts
-│   ├── demo.ts
-│   ├── package.json
-│   └── README.md
-│
-└── COMPLETE_DEMO_STATUS.md          # 本文件
-```
-
----
-
-## 🎓 技术亮点 / Technical Highlights
-
-### 前端 Frontend
-
-1. **React Hooks**
-   - useState - 状态管理
-   - useEffect - 数据加载
-   - useRef - 聊天滚动
-
-2. **TypeScript**
-   - 完整类型定义
-   - 类型安全的 API
-   - 接口和枚举
-
-3. **Material-UI**
-   - 现代化组件
-   - 主题定制
-   - 响应式布局
-
-4. **组件化设计**
-   - 可复用组件
-   - 清晰的职责分离
-   - Props 类型安全
-
-### 后端 Backend
-
-1. **Clean Architecture**
-   - Controllers → Services → Clients
-   - 清晰的层次结构
-   - 易于测试和维护
-
-2. **Type Safety**
-   - TypeScript 严格模式
-   - Zod 运行时验证
-   - 类型推断
-
-3. **Mock AI**
-   - 基于规则的推荐
-   - 房间类型优先级
-   - 预算约束处理
-
-4. **RESTful API**
-   - 标准化端点
-   - 一致的响应格式
-   - 错误处理
-
----
-
-## 📊 统计数据 / Statistics
-
-### 前端
-- **文件数**: 12 个源文件
-- **组件数**: 4 个主要组件
-- **代码行数**: ~800 行
-- **依赖包**: 253 个
-
-### 后端
-- **文件数**: 17 个源文件
-- **API 端点**: 6 个
-- **代码行数**: ~2,500 行
-- **依赖包**: 119 个
-
-### 总计
-- **总文件数**: 29+ 个
-- **总代码行数**: ~3,300 行
-- **开发时间**: ~6 小时
-- **测试通过率**: 100%
-
----
-
-## 🎯 功能对比 / Feature Comparison
-
-| 功能 Feature | 前端 Frontend | 后端 Backend | 状态 Status |
-|-------------|--------------|--------------|------------|
-| 房间配置 | ✅ | ✅ | 完成 |
-| 预算设置 | ✅ | ✅ | 完成 |
-| 家具推荐 | ✅ | ✅ | 完成 |
-| 产品搜索 | ✅ | ✅ | 完成 |
-| 分类浏览 | ✅ | ✅ | 完成 |
-| AI 聊天 | ✅ | ✅ | 完成 |
-| 中英文 | ✅ | ✅ | 完成 |
-| 响应式 | ✅ | N/A | 完成 |
-| 错误处理 | ✅ | ✅ | 完成 |
-| 加载状态 | ✅ | N/A | 完成 |
-
----
-
-## 🎨 用户界面 / User Interface
-
-### 设计特点
-
-1. **双语界面**
-   - 所有文本都有中英文
-   - 清晰易懂
-
-2. **步骤式流程**
-   - 配置 → 偏好 → 结果
-   - 逻辑清晰
-
-3. **卡片式布局**
-   - 信息层次分明
-   - 视觉舒适
-
-4. **实时反馈**
-   - 加载动画
-   - 错误提示
-   - 成功消息
-
-### 颜色方案
-
-- **主色**: #2c3e50 (深蓝灰)
-- **次色**: #e74c3c (红色)
-- **背景**: #f5f5f5 (浅灰)
-- **文字**: 黑色/灰色
-
----
-
-## 🔄 数据流 / Data Flow
-
-### 推荐流程
-
-```
-用户输入房间信息
-    ↓
-前端验证
-    ↓
-POST /api/ai/recommend
-    ↓
-后端处理
-    - 加载产品
-    - 应用预算
-    - 生成推荐
-    - 计算位置
-    ↓
-返回 JSON
-    ↓
-前端展示
-    - 家具卡片
-    - 价格汇总
-    - 位置信息
-```
-
-### 聊天流程
-
-```
-用户输入消息
-    ↓
-添加到聊天历史
-    ↓
-POST /api/ai/chat
-    ↓
-后端处理
-    - 关键词匹配
-    - 生成回复
-    - 语言适配
-    ↓
-返回 AI 回复
-    ↓
-添加到聊天历史
-    ↓
-自动滚动到底部
-```
-
----
-
-## 🎉 成功标准 / Success Criteria
-
-所有成功标准都已达成：
-
-- ✅ 前端应用运行正常
-- ✅ 后端服务运行正常
-- ✅ 用户可以配置房间
-- ✅ 用户可以设置偏好
-- ✅ 系统生成推荐
-- ✅ 推荐显示详细信息
-- ✅ 聊天功能正常
-- ✅ 中英文支持
-- ✅ 响应式设计
-- ✅ 错误处理完善
-- ✅ 文档完整
-
----
-
-## 🚀 下一步 / Next Steps
-
-### 可以尝试
-
-1. **在浏览器中测试**
-   - 打开 http://localhost:5174
-   - 完成完整流程
-   - 测试不同场景
-
-2. **修改配置**
-   - 尝试不同房间类型
-   - 调整预算限制
-   - 选择不同类别
-
-3. **与 AI 对话**
-   - 用英文提问
-   - 用中文提问
-   - 测试不同话题
-
-### 未来增强
+# Vibe AI In-Home - Complete Demo Status
+
+## 项目概述
+
+Castlery 家具规划器是一个基于 AI 的智能家具推荐和房间设计应用，包含前端应用和 AI 服务后端。
+
+## ✅ 已完成的工作
+
+### Unit 1: 前端应用 (Frontend Application)
+
+#### 技术栈
+- **框架**: React 19.2.0 + TypeScript 5.6.0
+- **构建工具**: Vite 5.4.0
+- **状态管理**: Redux Toolkit 2.0.0 + RTK Query
+- **UI 库**: Material-UI 7.3.7
+- **HTTP 客户端**: Axios 1.13.3
+- **表单处理**: React Hook Form 7.49.0
+- **验证**: Zod 3.22.0
+- **国际化**: i18next 23.7.0
+
+#### 已实现功能
+
+1. **项目配置**
+   - ✅ Vite + React + TypeScript 完整配置
+   - ✅ Material-UI 集成
+   - ✅ Redux Toolkit 状态管理
+   - ✅ RTK Query API 调用
+   - ✅ 环境变量配置
+   - ✅ TypeScript 类型定义
+
+2. **领域模型实现**
+   - ✅ 完整的 TypeScript 类型定义
+   - ✅ 三个聚合根：PlanningSession, RoomDesign, ShoppingCart
+   - ✅ 值对象：Money, RoomDimensions, UserPreferences, ChatMessage 等
+   - ✅ 实体：FurniturePlacement, CartItem, RoomImage
+   - ✅ 枚举：RoomType, DimensionUnit, SessionStatus, MessageSender
+
+3. **Redux 状态管理**
+   - ✅ sessionSlice - 管理会话状态
+   - ✅ designSlice - 管理房间设计状态
+   - ✅ cartSlice - 管理购物车状态
+   - ✅ uiSlice - 管理 UI 状态
+   - ✅ 类型安全的 actions 和 reducers
+
+4. **API 集成**
+   - ✅ RTK Query API 服务 (aiApi.ts)
+   - ✅ Axios HTTP 客户端配置
+   - ✅ 完整的 API 端点定义
+   - ✅ 请求/响应类型定义
+
+5. **React 组件**
+   - ✅ RoomConfigPanel - 房间配置（类型、尺寸、单位）
+   - ✅ PreferencesPanel - 用户偏好（预算、类别、系列）
+   - ✅ RecommendationsDisplay - 家具推荐展示
+   - ✅ ChatPanel - AI 聊天界面
+   - ✅ App.tsx - 主应用组件（标签页布局）
+
+6. **文档**
+   - ✅ QUICKSTART.md - 快速开始指南
+   - ✅ DEMO_GUIDE.md - 演示指南
+   - ✅ IMPLEMENTATION_STATUS.md - 实现状态
+   - ✅ domain_model.md - 领域模型文档
+   - ✅ logical_design.md - 逻辑设计文档
+
+#### 运行状态
+- ✅ 开发服务器成功启动：http://localhost:5173
+- ✅ 生产构建成功
+- ✅ 所有 TypeScript 类型检查通过
+- ✅ 无编译错误
+
+### Unit 2: AI 服务 (AI Service)
+
+根据项目文件结构，AI 服务已经存在于 `unit_2_ai_service` 目录中，包含：
+- Express.js 后端服务
+- AI 推荐引擎
+- 产品服务客户端
+- 聊天服务
+- 图像处理服务
+
+## 🚧 待完成功能
+
+### 前端应用
 
 1. **3D 可视化**
-   - Three.js 集成
-   - 家具 3D 模型
-   - 相机控制
+   - ⏳ Three.js 集成
+   - ⏳ 3D 房间渲染
+   - ⏳ 家具 3D 模型
+   - ⏳ 相机控制
+   - ⏳ 预设相机角度
 
-2. **2D 平面图**
-   - Konva.js 集成
-   - 拖拽调整
-   - 碰撞检测
+2. **2D 可视化**
+   - ⏳ Konva.js 集成
+   - ⏳ 2D 平面图视图
+   - ⏳ 家具拖放
+   - ⏳ 尺寸标签
 
-3. **更多功能**
-   - 保存设计
-   - 分享链接
-   - 购物车
-   - 用户账户
+3. **图像上传与处理**
+   - ⏳ 房间图片上传 UI
+   - ⏳ 家具检测显示
+   - ⏳ 家具替换 UI
+   - ⏳ 空房间家具放置
 
----
+4. **高级功能**
+   - ⏳ 碰撞检测服务
+   - ⏳ 预算验证服务
+   - ⏳ 撤销/重做功能
+   - ⏳ 设计导出（带水印的图片）
+   - ⏳ 可分享链接生成
 
-## 📚 文档 / Documentation
+5. **国际化**
+   - ⏳ i18next 配置
+   - ⏳ 英文翻译
+   - ⏳ 中文翻译
+   - ⏳ 语言切换器
 
-### 前端文档
-- `construction/unit_1_frontend_application/README.md`
-- `construction/unit_1_frontend_application/DEMO_GUIDE.md`
+6. **测试**
+   - ⏳ Vitest 单元测试
+   - ⏳ React Testing Library 组件测试
+   - ⏳ 集成测试
 
-### 后端文档
-- `construction/unit_2_ai_service/README.md`
-- `construction/unit_2_ai_service/QUICKSTART.md`
-- `construction/unit_2_ai_service/IMPLEMENTATION_SUMMARY.md`
-- `construction/unit_2_ai_service/TROUBLESHOOTING.md`
+## 📁 项目结构
 
-### 总体文档
-- `construction/DEMO_STATUS.md`
-- `construction/COMPLETE_DEMO_STATUS.md` (本文件)
-- `plan.md`
+```
+vibe-ai-in-home/
+├── construction/
+│   ├── unit_1_frontend_application/     # 前端应用
+│   │   ├── src/
+│   │   │   ├── components/              # React 组件
+│   │   │   ├── store/                   # Redux store
+│   │   │   ├── services/                # API 服务
+│   │   │   ├── types/                   # TypeScript 类型
+│   │   │   ├── App.tsx                  # 主应用
+│   │   │   └── main.tsx                 # 入口文件
+│   │   ├── .env                         # 环境变量
+│   │   ├── package.json                 # 依赖配置
+│   │   ├── QUICKSTART.md                # 快速开始
+│   │   ├── DEMO_GUIDE.md                # 演示指南
+│   │   └── IMPLEMENTATION_STATUS.md     # 实现状态
+│   │
+│   └── unit_2_ai_service/               # AI 服务后端
+│       ├── src/
+│       │   ├── controllers/             # 控制器
+│       │   ├── services/                # 服务层
+│       │   ├── clients/                 # 外部客户端
+│       │   └── models/                  # 数据模型
+│       └── package.json
+│
+├── docs/                                # 架构文档
+│   ├── architecture-decision-records.md
+│   └── architecture-decision-records.zh-CN.md
+│
+└── inception/                           # 需求文档
+    ├── user_stories.md                  # 用户故事
+    └── units/                           # 单元设计
+        ├── unit_1_frontend_application.md
+        ├── unit_2_ai_service.md
+        └── integration_contract.md
+```
 
----
+## 🚀 如何运行完整演示
 
-## 🎊 总结 / Summary
+### 1. 启动 AI 服务后端
 
-### 已完成
+```bash
+cd vibe-ai-in-home/construction/unit_2_ai_service
+npm install
+npm run dev
+```
 
-✅ **完整的全栈应用**
-- React 前端
-- Node.js 后端
-- REST API 集成
-- 实时聊天
-- 双语支持
+后端将运行在：http://localhost:3001
 
-✅ **核心功能**
-- 房间配置
-- 智能推荐
-- 产品展示
-- AI 对话
+### 2. 启动前端应用
 
-✅ **技术实现**
-- TypeScript 类型安全
-- 组件化架构
-- Clean Architecture
-- 错误处理
+```bash
+cd vibe-ai-in-home/construction/unit_1_frontend_application
+npm install
+npm run dev
+```
 
-✅ **用户体验**
-- 直观的界面
-- 流畅的交互
-- 实时反馈
-- 响应式设计
+前端将运行在：http://localhost:5173
 
-### 运行状态
+### 3. 访问应用
 
-🟢 **前端**: http://localhost:5174 - 运行中
-🟢 **后端**: http://localhost:3001 - 运行中
+在浏览器中打开：http://localhost:5173
 
-### 准备就绪
+## 📊 演示流程
 
-🎉 **系统已完全就绪，可以开始使用！**
+1. **配置房间**
+   - 选择房间类型（客厅、卧室、餐厅、家庭办公室）
+   - 输入房间尺寸（长、宽、高）
+   - 选择单位（米或英尺）
 
----
+2. **设置偏好**
+   - 输入预算
+   - 选择家具类别
+   - 选择 Castlery 系列
 
-**最后更新**: 2026年1月27日
-**状态**: ✅ 完成并运行中
-**版本**: 1.0.0
+3. **获取 AI 推荐**
+   - 点击"获取推荐"按钮
+   - 查看 AI 生成的家具推荐
+   - 添加家具到购物车
+
+4. **与 AI 聊天**
+   - 切换到聊天标签
+   - 向 AI 助手提问
+   - 获取个性化建议
+
+## 🎯 技术亮点
+
+### 前端架构
+- **DDD 设计**: 清晰的领域模型，聚合根、实体、值对象分离
+- **类型安全**: 完整的 TypeScript 类型定义
+- **状态管理**: Redux Toolkit 集中式状态管理
+- **API 缓存**: RTK Query 自动缓存和重新验证
+- **响应式设计**: Material-UI 响应式布局
+
+### 代码质量
+- ✅ TypeScript 严格模式
+- ✅ 无编译错误
+- ✅ 无类型错误
+- ✅ 清晰的代码结构
+- ✅ 完整的文档
+
+## 📝 下一步计划
+
+### 短期目标（1-2 周）
+1. 实现 3D 可视化（Three.js）
+2. 添加 2D 平面图视图（Konva.js）
+3. 完成图像上传和家具检测功能
+4. 添加国际化支持
+
+### 中期目标（3-4 周）
+1. 实现碰撞检测和预算验证服务
+2. 添加撤销/重做功能
+3. 实现设计导出和分享功能
+4. 完善 UI/UX 设计
+
+### 长期目标（1-2 个月）
+1. 添加全面的测试覆盖
+2. 性能优化
+3. 移动端适配
+4. 生产环境部署
+
+## 🔧 技术债务
+
+1. **测试覆盖**: 需要添加单元测试和集成测试
+2. **错误处理**: 需要更完善的错误处理和用户反馈
+3. **性能优化**: 需要代码分割和懒加载
+4. **可访问性**: 需要添加 ARIA 标签和键盘导航
+5. **国际化**: 需要完成多语言支持
+
+## 📞 联系方式
+
+如有问题或建议，请查看：
+- 前端文档：`unit_1_frontend_application/QUICKSTART.md`
+- 演示指南：`unit_1_frontend_application/DEMO_GUIDE.md`
+- 架构决策：`docs/architecture-decision-records.md`
+- 用户故事：`inception/user_stories.md`
+
+## 🎉 总结
+
+前端应用已经成功实现了核心功能，包括：
+- ✅ 完整的领域模型
+- ✅ Redux 状态管理
+- ✅ API 集成
+- ✅ 基础 UI 组件
+- ✅ 开发服务器运行
+- ✅ 生产构建成功
+
+应用已经可以进行基本的演示，展示房间配置、用户偏好设置、AI 推荐和聊天功能。下一步将专注于 3D/2D 可视化和图像处理功能的实现。

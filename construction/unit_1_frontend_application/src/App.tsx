@@ -1,175 +1,176 @@
 import { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Container,
   Box,
   Typography,
   Paper,
-  ThemeProvider,
-  createTheme,
-  CssBaseline,
+  Tabs,
+  Tab,
   AppBar,
   Toolbar,
 } from '@mui/material';
+import { RootState, AppDispatch } from './store';
+import { configureRoom, updatePreferences, addChatMessage } from './store/slices/sessionSlice';
+import { placeFurniture, removeFurniture } from './store/slices/designSlice';
+import { addItem } from './store/slices/cartSlice';
 import RoomConfigPanel from './components/RoomConfigPanel';
 import PreferencesPanel from './components/PreferencesPanel';
 import RecommendationsDisplay from './components/RecommendationsDisplay';
 import ChatPanel from './components/ChatPanel';
-import {
-  RoomConfig,
-  UserPreferences,
-  Recommendation,
-  ChatMessage,
-} from './types';
-import { apiService } from './services/api';
-
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#2c3e50',
-    },
-    secondary: {
-      main: '#e74c3c',
-    },
-  },
-});
+import { RoomType, RoomDimensions, UserPreferences, MessageSender, ChatMessage as ChatMessageType } from './types/domain';
+import { useGetRecommendationsMutation, useSendChatMessageMutation } from './services/aiApi';
 
 function App() {
-  const [step, setStep] = useState<'config' | 'preferences' | 'results'>('config');
-  const [roomConfig, setRoomConfig] = useState<RoomConfig | null>(null);
-  const [preferences, setPreferences] = useState<UserPreferences>({});
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-  const [totalPrice, setTotalPrice] = useState<number>(0);
-  const [budgetExceeded, setBudgetExceeded] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [sessionId] = useState<string>(() => 
-    `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-  );
+  const dispatch = useDispatch<AppDispatch>();
+  const session = useSelector((state: RootState) => state.session);
+  const design = useSelector((state: RootState) => state.design);
+  const cart = useSelector((state: RootState) => state.cart);
+  const [activeTab, setActiveTab] = useState(0);
+  
+  const [getRecommendations] = useGetRecommendationsMutation();
+  const [sendChat, { isLoading: isLoadingChat }] = useSendChatMessageMutation();
 
-  const handleRoomConfigComplete = (config: RoomConfig) => {
-    setRoomConfig(config);
-    setStep('preferences');
+  const handleRoomConfig = (config: { roomType: RoomType; dimensions: RoomDimensions }) => {
+    dispatch(configureRoom(config));
   };
 
-  const handlePreferencesComplete = async (prefs: UserPreferences) => {
-    setPreferences(prefs);
-    setLoading(true);
-    setError(null);
+  const handlePreferences = async (prefs: UserPreferences) => {
+    dispatch(updatePreferences(prefs));
+    
+    // Request AI recommendations
+    if (design.roomType && design.roomDimensions) {
+      try {
+        const result = await getRecommendations({
+          roomType: design.roomType,
+          dimensions: design.roomDimensions,
+          budget: prefs.budget || undefined,
+          preferences: prefs,
+          language: session.userSettings.language,
+        }).unwrap();
 
-    try {
-      if (!roomConfig) {
-        throw new Error('Room configuration is missing');
+        // Add recommendations to design
+        result.recommendations.forEach((placement) => {
+          dispatch(placeFurniture(placement));
+        });
+      } catch (error) {
+        console.error('Failed to get recommendations:', error);
       }
-
-      const response = await apiService.getRecommendations(roomConfig, prefs);
-      
-      setRecommendations(response.recommendations);
-      setTotalPrice(response.totalPrice);
-      setBudgetExceeded(response.budgetExceeded);
-      setStep('results');
-    } catch (err: any) {
-      setError(err.message || 'Failed to get recommendations');
-      console.error('Error getting recommendations:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleSendMessage = async (message: string) => {
-    // Add user message
-    const userMessage: ChatMessage = {
-      id: `msg-${Date.now()}`,
+    // Add user message to chat history
+    const userMessage: ChatMessageType = {
+      messageId: `msg-${Date.now()}`,
       content: message,
-      sender: 'user',
-      timestamp: new Date(),
+      sender: MessageSender.USER,
+      timestamp: new Date().toISOString(),
+      language: session.userSettings.language,
     };
-    setChatMessages((prev) => [...prev, userMessage]);
+    dispatch(addChatMessage(userMessage));
 
     try {
-      const response = await apiService.sendChatMessage(sessionId, message, 'en');
-      
-      // Add AI response
-      const aiMessage: ChatMessage = {
-        id: `msg-${Date.now()}-ai`,
-        content: response.reply,
-        sender: 'ai',
-        timestamp: new Date(),
-      };
-      setChatMessages((prev) => [...prev, aiMessage]);
-    } catch (err) {
-      console.error('Error sending chat message:', err);
+      const result = await sendChat({
+        message,
+        language: session.userSettings.language,
+        conversationHistory: session.chatHistory,
+        sessionContext: {
+          roomType: design.roomType || undefined,
+          budget: session.preferences.budget || undefined,
+        },
+      }).unwrap();
+
+      // Add AI response to chat history
+      dispatch(addChatMessage(result.message));
+    } catch (error) {
+      console.error('Failed to send message:', error);
     }
   };
 
-  const handleStartOver = () => {
-    setStep('config');
-    setRoomConfig(null);
-    setPreferences({});
-    setRecommendations([]);
-    setTotalPrice(0);
-    setBudgetExceeded(false);
-    setError(null);
-    setChatMessages([]);
+  const handleAddToCart = (placementId: string) => {
+    const placement = design.furniturePlacements.find((p: any) => p.placementId === placementId);
+    if (placement) {
+      const cartItem = {
+        itemId: `item_${Date.now()}`,
+        productId: placement.productId,
+        productName: placement.productName,
+        quantity: 1,
+        unitPrice: { amount: 0, currency: 'USD' }, // Price would come from product service
+        thumbnailUrl: '',
+        isInStock: true,
+        addedAt: new Date().toISOString(),
+      };
+      dispatch(addItem(cartItem));
+    }
+  };
+
+  const handleRemove = (placementId: string) => {
+    dispatch(removeFurniture(placementId));
   };
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box sx={{ flexGrow: 1 }}>
-        <AppBar position="static">
-          <Toolbar>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              🏠 Castlery 家具规划助手
-            </Typography>
-            <Typography variant="body2">
-              Furniture Room Planner
-            </Typography>
-          </Toolbar>
-        </AppBar>
+    <Box sx={{ flexGrow: 1 }}>
+      <AppBar position="static">
+        <Toolbar>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            🏠 Castlery Furniture Planner
+          </Typography>
+          <Typography variant="body2">
+            Cart: {cart.items.length} items
+          </Typography>
+        </Toolbar>
+      </AppBar>
 
-        <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-          {error && (
-            <Paper sx={{ p: 2, mb: 2, bgcolor: 'error.light', color: 'error.contrastText' }}>
-              <Typography>错误: {error}</Typography>
+      <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom align="center">
+          AI-Powered Room Design
+        </Typography>
+
+        <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
+          {/* Left Panel */}
+          <Box sx={{ flex: { xs: '1', md: '0 0 33%' } }}>
+            <Paper sx={{ mb: 2 }}>
+              <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} variant="fullWidth">
+                <Tab label="Configure" />
+                <Tab label="Preferences" />
+                <Tab label="Chat" />
+              </Tabs>
             </Paper>
-          )}
 
-          {step === 'config' && (
-            <RoomConfigPanel onComplete={handleRoomConfigComplete} />
-          )}
-
-          {step === 'preferences' && roomConfig && (
-            <PreferencesPanel
-              roomConfig={roomConfig}
-              onComplete={handlePreferencesComplete}
-              onBack={() => setStep('config')}
-              loading={loading}
-            />
-          )}
-
-          {step === 'results' && (
-            <Box>
-              <RecommendationsDisplay
-                recommendations={recommendations}
-                totalPrice={totalPrice}
-                budgetExceeded={budgetExceeded}
-                budget={preferences.budget}
-                roomConfig={roomConfig!}
-                onStartOver={handleStartOver}
-              />
-              
-              <Box sx={{ mt: 4 }}>
+            {activeTab === 0 && <RoomConfigPanel onConfigComplete={handleRoomConfig} />}
+            {activeTab === 1 && <PreferencesPanel onPreferencesChange={handlePreferences} />}
+            {activeTab === 2 && (
+              <Box sx={{ height: 600 }}>
                 <ChatPanel
-                  messages={chatMessages}
+                  messages={session.chatHistory}
                   onSendMessage={handleSendMessage}
+                  isLoading={isLoadingChat}
                 />
               </Box>
-            </Box>
-          )}
-        </Container>
-      </Box>
-    </ThemeProvider>
+            )}
+          </Box>
+
+          {/* Right Panel - Recommendations */}
+          <Box sx={{ flex: 1 }}>
+            <RecommendationsDisplay
+              placements={design.furniturePlacements}
+              onAddToCart={handleAddToCart}
+              onRemove={handleRemove}
+            />
+          </Box>
+        </Box>
+
+        {/* Status Bar */}
+        <Paper sx={{ mt: 3, p: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            Status: {session.status} | Room: {design.roomType || 'Not configured'} | 
+            Furniture: {design.furniturePlacements.length} items | 
+            Cart: {cart.items.length} items
+          </Typography>
+        </Paper>
+      </Container>
+    </Box>
   );
 }
 
