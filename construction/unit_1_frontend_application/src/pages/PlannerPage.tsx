@@ -29,6 +29,7 @@ import RoomImageManager from '../components/RoomImageManager';
 import { RoomType, RoomDimensions, UserPreferences, MessageSender, ChatMessage as ChatMessageType, PlanningSession, RoomDesign, ShoppingCart as ShoppingCartType, RoomImage, DetectedFurnitureItem } from '../types/domain';
 import { useGetRecommendationsMutation, useSendChatMessageMutation, useUploadImageMutation, useDetectFurnitureMutation, useReplaceFurnitureMutation, usePlaceFurnitureMutation } from '../services/aiApi';
 import ImageProcessingService from '../services/ImageProcessingService';
+import { brandColors, spacing } from '../theme/brandTheme';
 
 export default function PlannerPage() {
   const navigate = useNavigate();
@@ -300,37 +301,91 @@ export default function PlannerPage() {
   };
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <Box sx={{ flexGrow: 1, backgroundColor: brandColors.white, minHeight: '100vh' }}>
       <NotificationSnackbar />
-      <AppBar position="static">
+      <AppBar 
+        position="static" 
+        elevation={0}
+        sx={{ 
+          backgroundColor: brandColors.white,
+          borderBottom: `1px solid ${brandColors.mediumGray}`,
+        }}
+      >
         <Toolbar>
           <Button
-            color="inherit"
             startIcon={<HomeIcon />}
             onClick={() => navigate('/')}
-            sx={{ mr: 2 }}
+            sx={{ 
+              mr: 2,
+              color: brandColors.terracotta,
+              '&:hover': {
+                backgroundColor: 'rgba(217, 116, 73, 0.08)',
+              }
+            }}
           >
             Home
           </Button>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            🏠 Castlery Furniture Planner
+          <Typography 
+            variant="h6" 
+            component="div" 
+            sx={{ 
+              flexGrow: 1,
+              color: brandColors.sienna,
+              fontWeight: 600,
+            }}
+          >
+            Castlery Furniture Planner
           </Typography>
-          <Typography variant="body2">
+          <Typography 
+            variant="body2"
+            sx={{ color: brandColors.darkGray }}
+          >
             Cart: {cart.items.length} items
           </Typography>
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom align="center">
+      <Container maxWidth="xl" sx={{ mt: spacing.lg / 8, mb: spacing.lg / 8 }}>
+        <Typography 
+          variant="h3" 
+          component="h1" 
+          gutterBottom 
+          align="center"
+          sx={{ 
+            color: brandColors.sienna,
+            mb: spacing.lg / 8,
+          }}
+        >
           AI-Powered Room Design
         </Typography>
 
         <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
           {/* Left Panel */}
           <Box sx={{ flex: { xs: '1', md: '0 0 33%' } }}>
-            <Paper sx={{ mb: 2 }}>
-              <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} variant="fullWidth">
+            <Paper 
+              elevation={0}
+              sx={{ 
+                mb: 2,
+                border: `1px solid ${brandColors.mediumGray}`,
+              }}
+            >
+              <Tabs 
+                value={activeTab} 
+                onChange={(_, v) => setActiveTab(v)} 
+                variant="fullWidth"
+                sx={{
+                  '& .MuiTab-root': {
+                    color: brandColors.darkGray,
+                    fontWeight: 500,
+                  },
+                  '& .Mui-selected': {
+                    color: brandColors.terracotta,
+                  },
+                  '& .MuiTabs-indicator': {
+                    backgroundColor: brandColors.terracotta,
+                  },
+                }}
+              >
                 <Tab label="Configure" />
                 <Tab label="Preferences" />
                 <Tab label="Image" />

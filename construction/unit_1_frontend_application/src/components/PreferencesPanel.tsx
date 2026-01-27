@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { UserPreferences } from '../types/domain';
 import { useGetCategoriesQuery } from '../services/aiApi';
+import { brandColors, spacing } from '../theme/brandTheme';
 
 interface PreferencesPanelProps {
   onPreferencesChange: (prefs: UserPreferences) => void;
@@ -51,8 +52,22 @@ export default function PreferencesPanel({ onPreferencesChange }: PreferencesPan
   };
 
   return (
-    <Paper sx={{ p: 3 }}>
-      <Typography variant="h6" gutterBottom>
+    <Paper 
+      elevation={0}
+      sx={{ 
+        p: spacing.lg / 8,
+        border: `1px solid ${brandColors.mediumGray}`,
+      }}
+    >
+      <Typography 
+        variant="h5" 
+        gutterBottom
+        sx={{ 
+          color: brandColors.sienna,
+          fontWeight: 600,
+          mb: spacing.md / 8,
+        }}
+      >
         Your Preferences
       </Typography>
 
@@ -62,34 +77,79 @@ export default function PreferencesPanel({ onPreferencesChange }: PreferencesPan
         type="number"
         value={budget}
         onChange={(e) => setBudget(e.target.value)}
-        sx={{ mb: 3 }}
+        sx={{ mb: spacing.lg / 8 }}
       />
 
-      <Typography variant="subtitle1" gutterBottom>
+      <Typography 
+        variant="subtitle1" 
+        gutterBottom
+        sx={{ 
+          color: brandColors.darkGray,
+          fontWeight: 500,
+          mb: spacing.sm / 8,
+        }}
+      >
         Categories
       </Typography>
-      <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 3 }}>
+      <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: spacing.lg / 8 }}>
         {categoriesData?.categories.map((category) => (
           <Chip
             key={category.id}
             label={category.name}
             onClick={() => handleCategoryToggle(category.id)}
-            color={selectedCategories.includes(category.id) ? 'primary' : 'default'}
-            sx={{ mb: 1 }}
+            sx={{ 
+              mb: 1,
+              backgroundColor: selectedCategories.includes(category.id) 
+                ? brandColors.terracotta 
+                : brandColors.cream,
+              color: selectedCategories.includes(category.id) 
+                ? brandColors.white 
+                : brandColors.sienna,
+              '&:hover': {
+                backgroundColor: selectedCategories.includes(category.id)
+                  ? brandColors.sienna
+                  : brandColors.mediumGray,
+              },
+            }}
           />
         ))}
       </Stack>
 
-      <Typography variant="subtitle1" gutterBottom>
+      <Typography 
+        variant="subtitle1" 
+        gutterBottom
+        sx={{ 
+          color: brandColors.darkGray,
+          fontWeight: 500,
+          mb: spacing.sm / 8,
+        }}
+      >
         Collections
       </Typography>
-      <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 3 }}>
-        <Typography variant="body2" color="text.secondary">
+      <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: spacing.lg / 8 }}>
+        <Typography 
+          variant="body2" 
+          sx={{ color: brandColors.darkGray }}
+        >
           Collections feature coming soon...
         </Typography>
       </Stack>
 
-      <Button variant="contained" fullWidth onClick={handleSubmit}>
+      <Button 
+        variant="contained" 
+        fullWidth 
+        onClick={handleSubmit}
+        sx={{
+          backgroundColor: brandColors.terracotta,
+          color: brandColors.white,
+          py: spacing.sm / 8,
+          fontSize: '1rem',
+          fontWeight: 500,
+          '&:hover': {
+            backgroundColor: brandColors.sienna,
+          },
+        }}
+      >
         Get Recommendations
       </Button>
     </Paper>

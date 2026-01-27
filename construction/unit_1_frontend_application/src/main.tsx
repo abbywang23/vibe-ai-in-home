@@ -2,27 +2,17 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { ThemeProvider, CssBaseline } from '@mui/material';
 import './index.css';
 import HomePage from './pages/HomePage';
 import PlannerPage from './pages/PlannerPage';
 import { store } from './store';
-
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#2c3e50',
-    },
-    secondary: {
-      main: '#e74c3c',
-    },
-  },
-});
+import { brandTheme } from './theme/brandTheme';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Provider store={store}>
-      <ThemeProvider theme={theme}>
+      <ThemeProvider theme={brandTheme}>
         <CssBaseline />
         <BrowserRouter>
           <Routes>

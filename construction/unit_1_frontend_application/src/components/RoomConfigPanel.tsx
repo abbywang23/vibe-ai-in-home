@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { RoomType, DimensionUnit, RoomDimensions } from '../types/domain';
 import RoomConfigurationService from '../services/RoomConfigurationService';
+import { brandColors, spacing } from '../theme/brandTheme';
 
 interface RoomConfigPanelProps {
   onConfigComplete: (config: { roomType: RoomType; dimensions: RoomDimensions }) => void;
@@ -66,17 +67,45 @@ export default function RoomConfigPanel({ onConfigComplete }: RoomConfigPanelPro
   };
 
   return (
-    <Paper sx={{ p: 3 }}>
-      <Typography variant="h6" gutterBottom>
+    <Paper 
+      elevation={0}
+      sx={{ 
+        p: spacing.lg / 8,
+        border: `1px solid ${brandColors.mediumGray}`,
+      }}
+    >
+      <Typography 
+        variant="h5" 
+        gutterBottom
+        sx={{ 
+          color: brandColors.sienna,
+          fontWeight: 600,
+          mb: spacing.md / 8,
+        }}
+      >
         Room Configuration
       </Typography>
 
-      <FormControl fullWidth sx={{ mb: 2 }}>
+      <FormControl 
+        fullWidth 
+        sx={{ mb: spacing.md / 8 }}
+      >
         <InputLabel>Room Type</InputLabel>
         <Select
           value={roomType}
           label="Room Type"
           onChange={(e) => setRoomType(e.target.value as RoomType)}
+          sx={{
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: brandColors.mediumGray,
+            },
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: brandColors.darkGray,
+            },
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              borderColor: brandColors.terracotta,
+            },
+          }}
         >
           <MenuItem value={RoomType.LIVING_ROOM}>Living Room</MenuItem>
           <MenuItem value={RoomType.BEDROOM}>Bedroom</MenuItem>
@@ -85,8 +114,16 @@ export default function RoomConfigPanel({ onConfigComplete }: RoomConfigPanelPro
         </Select>
       </FormControl>
 
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="subtitle2" gutterBottom>
+      <Box sx={{ mb: spacing.md / 8 }}>
+        <Typography 
+          variant="subtitle2" 
+          gutterBottom
+          sx={{ 
+            color: brandColors.darkGray,
+            fontWeight: 500,
+            mb: spacing.xs / 8,
+          }}
+        >
           Unit
         </Typography>
         <ToggleButtonGroup
@@ -94,6 +131,19 @@ export default function RoomConfigPanel({ onConfigComplete }: RoomConfigPanelPro
           exclusive
           onChange={(_, newUnit) => handleUnitChange(newUnit)}
           size="small"
+          sx={{
+            '& .MuiToggleButton-root': {
+              color: brandColors.darkGray,
+              borderColor: brandColors.mediumGray,
+              '&.Mui-selected': {
+                backgroundColor: brandColors.terracotta,
+                color: brandColors.white,
+                '&:hover': {
+                  backgroundColor: brandColors.sienna,
+                },
+              },
+            },
+          }}
         >
           <ToggleButton value={DimensionUnit.METERS}>Meters</ToggleButton>
           <ToggleButton value={DimensionUnit.FEET}>Feet</ToggleButton>
@@ -106,7 +156,7 @@ export default function RoomConfigPanel({ onConfigComplete }: RoomConfigPanelPro
         type="number"
         value={length}
         onChange={(e) => setLength(e.target.value)}
-        sx={{ mb: 2 }}
+        sx={{ mb: spacing.md / 8 }}
       />
 
       <TextField
@@ -115,7 +165,7 @@ export default function RoomConfigPanel({ onConfigComplete }: RoomConfigPanelPro
         type="number"
         value={width}
         onChange={(e) => setWidth(e.target.value)}
-        sx={{ mb: 2 }}
+        sx={{ mb: spacing.md / 8 }}
       />
 
       <TextField
@@ -124,10 +174,24 @@ export default function RoomConfigPanel({ onConfigComplete }: RoomConfigPanelPro
         type="number"
         value={height}
         onChange={(e) => setHeight(e.target.value)}
-        sx={{ mb: 2 }}
+        sx={{ mb: spacing.md / 8 }}
       />
 
-      <Button variant="contained" fullWidth onClick={handleSubmit}>
+      <Button 
+        variant="contained" 
+        fullWidth 
+        onClick={handleSubmit}
+        sx={{
+          backgroundColor: brandColors.terracotta,
+          color: brandColors.white,
+          py: spacing.sm / 8,
+          fontSize: '1rem',
+          fontWeight: 500,
+          '&:hover': {
+            backgroundColor: brandColors.sienna,
+          },
+        }}
+      >
         Continue
       </Button>
     </Paper>
