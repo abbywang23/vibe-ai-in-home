@@ -2,8 +2,10 @@ import { Router } from 'express';
 import { RecommendationController } from '../controllers/recommendationController';
 import { ChatController } from '../controllers/chatController';
 import { ProductController } from '../controllers/productController';
+import { ImageController } from '../controllers/imageController';
 import { RecommendationService } from '../services/RecommendationService';
 import { ChatService } from '../services/ChatService';
+import { ImageProcessingService } from '../services/ImageProcessingService';
 import { ProductServiceClient } from '../clients/ProductServiceClient';
 import { AIClientFactory } from '../clients/AIClientFactory';
 
@@ -17,11 +19,13 @@ export function setupRoutes(): Router {
   const productClient = new ProductServiceClient();
   const recommendationService = new RecommendationService(productClient);
   const chatService = new ChatService();
+  const imageService = new ImageProcessingService(productClient);
 
   // Initialize controllers
   const recommendationController = new RecommendationController(recommendationService);
   const chatController = new ChatController(chatService);
   const productController = new ProductController(productClient);
+  const imageController = new ImageController(imageService);
 
   // Health check
   router.get('/health', (req, res) => {
@@ -59,6 +63,24 @@ export function setupRoutes(): Router {
 
   router.get('/api/ai/products/:id', (req, res, next) =>
     productController.getProductById(req, res, next)
+  );
+
+  // Image processing endpoints
+  router.post('/api/ai/upload', 
+    imageController.uploadMiddleware,
+    (req, res, next) => imageController.uploadImage(req, res, next)
+  );
+
+  router.post('/api/ai/detect', (req, res, next) =>
+    imageController.detectFurniture(req, res, next)
+  );
+
+  router.post('/api/ai/replace', (req, res, next) =>
+    imageController.replaceFurniture(req, res, next)
+  );
+
+  router.post('/api/ai/place', (req, res, next) =>
+    imageController.placeFurniture(req, res, next)
   );
 
   return router;

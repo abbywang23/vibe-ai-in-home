@@ -1,36 +1,47 @@
-import { Box, Container, Typography, Button, Paper, Grid } from '@mui/material';
+import { Box, Container, Typography, Button, Paper, Grid, Card, CardMedia, CardContent } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import HomeIcon from '@mui/icons-material/Home';
 import ChatIcon from '@mui/icons-material/Chat';
 import ViewInArIcon from '@mui/icons-material/ViewInAr';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { brandColors, spacing } from '../theme/brandTheme';
 
 export default function HomePage() {
   const navigate = useNavigate();
 
-  const features = [
+  // AI-generated room examples for instant engagement
+  const aiExamples = [
     {
-      icon: <HomeIcon sx={{ fontSize: 48 }} />,
-      title: 'Configure Your Room',
-      description: 'Enter room dimensions and select your room type',
+      title: 'Modern Living Room',
+      before: '/assets/livingroom.jpg',
+      after: '/assets/livingroom02.jpg',
+      description: 'AI transformed this space with contemporary furniture',
     },
     {
-      icon: <ChatIcon sx={{ fontSize: 48 }} />,
-      title: 'AI Assistant',
-      description: 'Get personalized furniture recommendations from AI',
+      title: 'Cozy Bedroom',
+      before: '/assets/livingroom.jpg',
+      after: '/assets/livingroom02.jpg', 
+      description: 'Warm, inviting bedroom design by AI',
     },
     {
-      icon: <ViewInArIcon sx={{ fontSize: 48 }} />,
-      title: '2D/3D Visualization',
-      description: 'See your room design in 2D or 3D view',
-    },
-    {
-      icon: <ShoppingCartIcon sx={{ fontSize: 48 }} />,
-      title: 'Easy Shopping',
-      description: 'Add furniture to cart and checkout seamlessly',
+      title: 'Minimalist Office',
+      before: '/assets/livingroom.jpg',
+      after: '/assets/livingroom02.jpg',
+      description: 'Clean, productive workspace created by AI',
     },
   ];
+
+  const handleQuickUpload = () => {
+    // Navigate directly to planner with image upload focus
+    navigate('/planner?tab=image&quick=true');
+  };
+
+  const handleTryAI = () => {
+    // Navigate to AI-guided setup
+    navigate('/planner?mode=ai-guided');
+  };
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: brandColors.white }}>

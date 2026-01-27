@@ -120,6 +120,7 @@ export interface ProductSearchParams {
   query?: string;
   categories?: string[];
   collections?: string[];
+  productIds?: string[];
   maxPrice?: number;
   limit?: number;
 }

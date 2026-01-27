@@ -276,6 +276,11 @@ export class ProductServiceClient {
   async searchProducts(params: ProductSearchParams): Promise<Product[]> {
     let results = [...this.productsArray];
 
+    // Filter by product IDs (if specified)
+    if (params.productIds && params.productIds.length > 0) {
+      results = results.filter((p) => params.productIds!.includes(p.id));
+    }
+
     // Filter by query
     if (params.query) {
       const lowerQuery = params.query.toLowerCase();
