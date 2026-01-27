@@ -5,6 +5,7 @@ import { ProductController } from '../controllers/productController';
 import { RecommendationService } from '../services/RecommendationService';
 import { ChatService } from '../services/ChatService';
 import { ProductServiceClient } from '../clients/ProductServiceClient';
+import { AIClientFactory } from '../clients/AIClientFactory';
 
 /**
  * Setup all API routes
@@ -24,11 +25,17 @@ export function setupRoutes(): Router {
 
   // Health check
   router.get('/health', (req, res) => {
+    const availableProviders = AIClientFactory.listAvailableProviders();
+    
     res.json({
       status: 'ok',
       service: 'ai-service',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
+      aiProviders: {
+        available: availableProviders,
+        fallback: 'mock',
+      },
     });
   });
 

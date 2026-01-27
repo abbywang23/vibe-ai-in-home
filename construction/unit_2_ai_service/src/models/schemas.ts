@@ -29,7 +29,7 @@ export const RecommendationRequestSchema = z.object({
 });
 
 export const ChatRequestSchema = z.object({
-  sessionId: z.string().uuid(),
+  sessionId: z.string().min(1), // 改为简单的字符串验证，不要求UUID格式
   message: z.string().min(1).max(1000),
   language: z.enum(['en', 'zh']),
   context: z.object({

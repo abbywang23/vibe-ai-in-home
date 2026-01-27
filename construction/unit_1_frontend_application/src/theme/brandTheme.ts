@@ -1,5 +1,6 @@
 import { createTheme } from '@mui/material/styles';
 
+<<<<<<< HEAD
 // Brand Colors from demo UI design system
 export const brandColors = {
   // Primary colors (from demo UI)
@@ -45,9 +46,39 @@ export const brandColors = {
 };
 
 // Typography - Aime (Display) and Sanomat Sans (Body) from demo UI
+=======
+// Brand Colors from Castlery design system
+export const brandColors = {
+  // Primary palette
+  terracotta500: '#A84025',      // Primary brand color
+  primaryText: '#2C1B1E',        // Dark text color
+  leafGreen500: '#4D4228',       // Accent green
+  
+  // Secondary palette
+  burntOrange500: '#D25C36',     // Secondary orange
+  freshwaterBlue500: '#6A85C1',  // Secondary blue
+  
+  // Extended neutrals
+  cream: '#F5E6D3',
+  white: '#FFFFFF',
+  lightGray: '#F5F5F5',
+  mediumGray: '#E0E0E0',
+  darkGray: '#757575',
+  black: '#000000',
+  
+  // Legacy colors (for backward compatibility)
+  sienna: '#A84025',
+  plum: '#2C1B1E',
+  olive: '#4D4228',
+  terracotta: '#D25C36',
+  slate: '#6A85C1',
+};
+
+// Typography - Google Fonts: Playfair Display (Display) and Inter (Body)
+>>>>>>> 15e0fed867648ee45a16db94eea2068bf2036072
 export const typography = {
   display: {
-    fontFamily: 'aime, "Playfair Display", serif',
+    fontFamily: '"Playfair Display", serif',
     weights: {
       regular: 400,
       medium: 500,
@@ -55,7 +86,7 @@ export const typography = {
     }
   },
   body: {
-    fontFamily: 'sanomat-sans, "Inter", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"Inter", "Helvetica", "Arial", sans-serif',
     weights: {
       regular: 400,
       medium: 500,
@@ -92,6 +123,7 @@ export const spacing = {
 export const brandTheme = createTheme({
   palette: {
     primary: {
+<<<<<<< HEAD
       main: brandColors.primary,
       light: brandColors.primaryForeground,
       dark: brandColors.sienna,
@@ -101,20 +133,47 @@ export const brandTheme = createTheme({
       main: brandColors.secondary,
       light: brandColors.secondaryForeground,
       contrastText: brandColors.secondaryForeground,
+=======
+      main: brandColors.terracotta500,
+      dark: brandColors.primaryText,
+      light: brandColors.cream,
+      contrastText: brandColors.white,
+    },
+    secondary: {
+      main: brandColors.burntOrange500,
+      light: brandColors.freshwaterBlue500,
+      dark: brandColors.leafGreen500,
+      contrastText: brandColors.white,
+>>>>>>> 15e0fed867648ee45a16db94eea2068bf2036072
     },
     background: {
       default: brandColors.background,
       paper: brandColors.card,
     },
     text: {
+<<<<<<< HEAD
       primary: brandColors.foreground,
       secondary: brandColors.mutedForeground,
+=======
+      primary: brandColors.primaryText,
+      secondary: brandColors.darkGray,
+>>>>>>> 15e0fed867648ee45a16db94eea2068bf2036072
     },
     error: {
       main: brandColors.destructive,
     },
     success: {
+<<<<<<< HEAD
       main: '#4CAF50',
+=======
+      main: brandColors.leafGreen500,
+    },
+    info: {
+      main: brandColors.freshwaterBlue500,
+    },
+    warning: {
+      main: brandColors.burntOrange500,
+>>>>>>> 15e0fed867648ee45a16db94eea2068bf2036072
     },
     divider: brandColors.border,
   },
@@ -198,13 +257,19 @@ export const brandTheme = createTheme({
           },
         },
         containedPrimary: {
+<<<<<<< HEAD
           backgroundColor: brandColors.primary,
           color: brandColors.primaryForeground,
+=======
+          backgroundColor: brandColors.terracotta500,
+          color: brandColors.white,
+>>>>>>> 15e0fed867648ee45a16db94eea2068bf2036072
           '&:hover': {
-            backgroundColor: brandColors.sienna,
+            backgroundColor: brandColors.primaryText,
           },
         },
         containedSecondary: {
+<<<<<<< HEAD
           backgroundColor: brandColors.secondary,
           color: brandColors.secondaryForeground,
           '&:hover': {
@@ -223,6 +288,26 @@ export const brandTheme = createTheme({
           color: brandColors.mutedForeground,
           '&:hover': {
             backgroundColor: 'rgba(132, 64, 37, 0.04)',
+=======
+          backgroundColor: brandColors.burntOrange500,
+          color: brandColors.white,
+          '&:hover': {
+            backgroundColor: brandColors.leafGreen500,
+          },
+        },
+        outlined: {
+          borderColor: brandColors.terracotta500,
+          color: brandColors.terracotta500,
+          '&:hover': {
+            borderColor: brandColors.primaryText,
+            backgroundColor: 'rgba(168, 64, 37, 0.04)',
+          },
+        },
+        text: {
+          color: brandColors.terracotta500,
+          '&:hover': {
+            backgroundColor: 'rgba(168, 64, 37, 0.04)',
+>>>>>>> 15e0fed867648ee45a16db94eea2068bf2036072
           },
         },
       },
@@ -240,8 +325,12 @@ export const brandTheme = createTheme({
               borderColor: brandColors.mutedForeground,
             },
             '&.Mui-focused fieldset': {
+<<<<<<< HEAD
               borderColor: brandColors.ring,
               borderWidth: '2px',
+=======
+              borderColor: brandColors.terracotta500,
+>>>>>>> 15e0fed867648ee45a16db94eea2068bf2036072
             },
           },
         },
@@ -279,6 +368,7 @@ export const brandTheme = createTheme({
         },
         filled: {
           backgroundColor: brandColors.cream,
+<<<<<<< HEAD
           color: brandColors.primary,
         },
       },
@@ -295,6 +385,9 @@ export const brandTheme = createTheme({
         label: {
           fontFamily: typography.display.fontFamily,
           fontSize: typography.sizes.caption,
+=======
+          color: brandColors.terracotta500,
+>>>>>>> 15e0fed867648ee45a16db94eea2068bf2036072
         },
       },
     },
