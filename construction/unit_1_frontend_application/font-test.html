@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Font Test - Google Fonts</title>
+    <!-- Preconnect to Google Fonts for better performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Helvetica', 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 40px;
+            background-color: #FFFFFF;
+            color: #000000;
+        }
+        
+        .display-font {
+            font-family: 'Playfair Display', serif;
+        }
+        
+        .body-font {
+            font-family: 'Inter', 'Helvetica', 'Arial', sans-serif;
+        }
+        
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+        }
+        
+        h1 { font-size: 3rem; font-weight: 700; }
+        h2 { font-size: 2.5rem; font-weight: 500; }
+        h3 { font-size: 2rem; font-weight: 500; }
+        h4 { font-size: 1.5rem; font-weight: 700; }
+        h5 { font-size: 1.25rem; font-weight: 500; }
+        
+        .weight-400 { font-weight: 400; }
+        .weight-500 { font-weight: 500; }
+        .weight-700 { font-weight: 700; }
+    </style>
+</head>
+<body>
+    <div class="test-section">
+        <h1>字体测试 - Font Test</h1>
+        <p class="body-font">这是使用 Inter 字体的正文内容。This is body text using Inter font.</p>
+    </div>
+
+    <div class="test-section">
+        <h2 class="display-font">Display Font - Playfair Display</h2>
+        <h1 class="display-font weight-700">标题 H1 - 粗体 (Bold 700)</h1>
+        <h2 class="display-font weight-500">标题 H2 - 中等 (Medium 500)</h2>
+        <h3 class="display-font weight-400">标题 H3 - 常规 (Regular 400)</h3>
+    </div>
+
+    <div class="test-section">
+        <h2 class="body-font">Body Font - Inter</h2>
+        <h4 class="body-font weight-700">副标题 H4 - 粗体 (Bold 700)</h4>
+        <h5 class="body-font weight-500">副标题 H5 - 中等 (Medium 500)</h5>
+        <p class="body-font weight-400">正文内容 - 常规 (Regular 400)</p>
+        <p class="body-font weight-400">
+            这是一段较长的正文内容，用来测试 Inter 字体在不同语言下的显示效果。
+            This is a longer paragraph to test how Inter font renders in different languages.
+            字体应该清晰易读，具有良好的可读性。The font should be clear and readable with good legibility.
+        </p>
+    </div>
+
+    <div class="test-section">
+        <h2>字体权重测试 - Font Weight Test</h2>
+        <div class="display-font">
+            <p class="weight-400">Playfair Display Regular (400)</p>
+            <p class="weight-500">Playfair Display Medium (500)</p>
+            <p class="weight-700">Playfair Display Bold (700)</p>
+        </div>
+        <div class="body-font">
+            <p class="weight-400">Inter Regular (400)</p>
+            <p class="weight-500">Inter Medium (500)</p>
+            <p class="weight-700">Inter Bold (700)</p>
+        </div>
+    </div>
+</body>
+</html>
