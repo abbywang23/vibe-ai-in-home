@@ -71,8 +71,48 @@ Design DDD domain models for all 3 units:
 
 ---
 
+---
+
+## Phase 4: Logical Design for Event-Driven Architecture (In Progress)
+
+### Scope
+Create logical design documents for scalable, event-driven system architecture for all 3 units:
+- Unit 1: Frontend Application
+- Unit 2: AI Service
+- Unit 3: Product Service
+
+### Design Decisions
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Communication Pattern | REST APIs | Simple, stateless, easy to implement for demo |
+| Frontend Framework | React | Modern, component-based, large ecosystem |
+| Backend Language | Node.js/TypeScript | Unified language stack, async-friendly |
+| Deployment | Monorepo with separate services | Easy local development, can split later |
+| Database (Production) | PostgreSQL | Relational data, ACID compliance |
+| Image Storage | Local filesystem (demo) / S3 (production) | Cost-effective, scalable |
+| Caching | None (demo) / Redis (production) | Performance optimization for production |
+| API Gateway | None (demo) / Optional (production) | Direct service calls for simplicity |
+| API Security | API keys for external services | Simple authentication for demo |
+| Monitoring | Console logs (demo) / CloudWatch (production) | Progressive enhancement |
+
+---
+
+## Execution Plan
+
+- [x] Step 1: Create `/construction/` directory structure
+- [x] Step 2: Design Unit 1 (Frontend Application) Domain Model
+- [x] Step 3: Design Unit 2 (AI Service) Domain Model
+- [x] Step 4: Design Unit 3 (Product Service) Domain Model
+- [x] Step 5: Review and finalize domain models
+- [x] Step 6: Update all models for US-4.5 empty room functionality
+- [x] Step 7: Create logical design for Unit 1 (Frontend Application)
+- [x] Step 8: Create logical design for Unit 2 (AI Service)
+- [x] Step 9: Create logical design for Unit 3 (Product Service)
+- [x] Step 10: Review and finalize logical designs
+
+---
+
 ## Next Phase: Implementation
 
-The domain models are now complete and updated to support the new empty room furniture placement functionality. Ready to proceed with implementation phase.
-
-**Architecture supports both furniture replacement (existing rooms) and furniture placement (empty rooms) with seamless AI-driven mode detection.**
+The domain models are complete. Logical design documents will define the technical architecture, component structure, and deployment strategy for each unit.
