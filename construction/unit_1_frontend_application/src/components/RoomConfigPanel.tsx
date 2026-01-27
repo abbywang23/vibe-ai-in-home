@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -13,6 +13,7 @@ import {
   ToggleButton,
 } from '@mui/material';
 import { RoomType, DimensionUnit, RoomDimensions } from '../types/domain';
+import RoomConfigurationService from '../services/RoomConfigurationService';
 
 interface RoomConfigPanelProps {
   onConfigComplete: (config: { roomType: RoomType; dimensions: RoomDimensions }) => void;
@@ -24,6 +25,35 @@ export default function RoomConfigPanel({ onConfigComplete }: RoomConfigPanelPro
   const [length, setLength] = useState<string>('5');
   const [width, setWidth] = useState<string>('4');
   const [height, setHeight] = useState<string>('3');
+  const [currentDimensions, setCurrentDimensions] = useState<RoomDimensions>({
+    length: 5,
+    width: 4,
+    height: 3,
+    unit: DimensionUnit.METERS,
+  });
+
+  // Handle unit conversion
+  const handleUnitChange = (newUnit: DimensionUnit | null) => {
+    if (!newUnit || newUnit === unit) return;
+
+    const converted = RoomConfigurationService.convertDimensions(currentDimensions, newUnit);
+    
+    setUnit(newUnit);
+    setLength(converted.length.toFixed(2));
+    setWidth(converted.width.toFixed(2));
+    setHeight(converted.height.toFixed(2));
+    setCurrentDimensions(converted);
+  };
+
+  // Update current dimensions when values change
+  useEffect(() => {
+    setCurrentDimensions({
+      length: parseFloat(length) || 0,
+      width: parseFloat(width) || 0,
+      height: parseFloat(height) || 0,
+      unit,
+    });
+  }, [length, width, height, unit]);
 
   const handleSubmit = () => {
     const dimensions: RoomDimensions = {
@@ -62,7 +92,7 @@ export default function RoomConfigPanel({ onConfigComplete }: RoomConfigPanelPro
         <ToggleButtonGroup
           value={unit}
           exclusive
-          onChange={(_, newUnit) => newUnit && setUnit(newUnit)}
+          onChange={(_, newUnit) => handleUnitChange(newUnit)}
           size="small"
         >
           <ToggleButton value={DimensionUnit.METERS}>Meters</ToggleButton>

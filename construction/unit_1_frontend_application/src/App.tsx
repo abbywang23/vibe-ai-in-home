@@ -12,20 +12,24 @@ import {
 } from '@mui/material';
 import { RootState, AppDispatch } from './store';
 import { configureRoom, updatePreferences, addChatMessage } from './store/slices/sessionSlice';
-import { placeFurniture, removeFurniture } from './store/slices/designSlice';
-import { addItem } from './store/slices/cartSlice';
+import { placeFurniture, removeFurniture, setRoomConfig } from './store/slices/designSlice';
+import { addItem, updateQuantity, removeItem as removeCartItem } from './store/slices/cartSlice';
+import { switchViewMode } from './store/slices/designSlice';
 import RoomConfigPanel from './components/RoomConfigPanel';
 import PreferencesPanel from './components/PreferencesPanel';
 import RecommendationsDisplay from './components/RecommendationsDisplay';
 import ChatPanel from './components/ChatPanel';
-import { RoomType, RoomDimensions, UserPreferences, MessageSender, ChatMessage as ChatMessageType } from './types/domain';
+import ShoppingCart from './components/ShoppingCart';
+import FurnitureList from './components/FurnitureList';
+import VisualizationCanvas from './components/VisualizationCanvas';
+import { RoomType, RoomDimensions, UserPreferences, MessageSender, ChatMessage as ChatMessageType, PlanningSession, RoomDesign, ShoppingCart } from './types/domain';
 import { useGetRecommendationsMutation, useSendChatMessageMutation } from './services/aiApi';
 
 function App() {
   const dispatch = useDispatch<AppDispatch>();
-  const session = useSelector((state: RootState) => state.session);
-  const design = useSelector((state: RootState) => state.design);
-  const cart = useSelector((state: RootState) => state.cart);
+  const session = useSelector((state: RootState) => state.session) as PlanningSession;
+  const design = useSelector((state: RootState) => state.design) as RoomDesign;
+  const cart = useSelector((state: RootState) => state.cart) as ShoppingCart;
   const [activeTab, setActiveTab] = useState(0);
   
   const [getRecommendations] = useGetRecommendationsMutation();
@@ -33,6 +37,7 @@ function App() {
 
   const handleRoomConfig = (config: { roomType: RoomType; dimensions: RoomDimensions }) => {
     dispatch(configureRoom(config));
+    dispatch(setRoomConfig(config));
   };
 
   const handlePreferences = async (prefs: UserPreferences) => {
@@ -109,6 +114,22 @@ function App() {
     dispatch(removeFurniture(placementId));
   };
 
+  const handleAddAllToCart = () => {
+    design.furniturePlacements.forEach((placement) => {
+      const cartItem = {
+        itemId: `item_${Date.now()}_${placement.placementId}`,
+        productId: placement.productId,
+        productName: placement.productName,
+        quantity: 1,
+        unitPrice: { amount: 0, currency: 'USD' },
+        thumbnailUrl: '',
+        isInStock: true,
+        addedAt: new Date().toISOString(),
+      };
+      dispatch(addItem(cartItem));
+    });
+  };
+
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
@@ -135,6 +156,7 @@ function App() {
                 <Tab label="Configure" />
                 <Tab label="Preferences" />
                 <Tab label="Chat" />
+                <Tab label="Cart" />
               </Tabs>
             </Paper>
 
@@ -149,15 +171,39 @@ function App() {
                 />
               </Box>
             )}
+            {activeTab === 3 && (
+              <ShoppingCart
+                items={cart.items}
+                onUpdateQuantity={(itemId, quantity) => dispatch(updateQuantity({ itemId, quantity }))}
+                onRemove={(itemId) => dispatch(removeCartItem(itemId))}
+                onCheckout={() => alert('Checkout feature coming soon!')}
+              />
+            )}
           </Box>
 
-          {/* Right Panel - Recommendations */}
+          {/* Right Panel - Visualization and Furniture */}
           <Box sx={{ flex: 1 }}>
-            <RecommendationsDisplay
-              placements={design.furniturePlacements}
-              onAddToCart={handleAddToCart}
-              onRemove={handleRemove}
+            <VisualizationCanvas
+              mode={design.viewState.mode}
+              design={design}
+              onModeChange={(mode) => dispatch(switchViewMode(mode))}
             />
+            
+            <Box sx={{ mt: 3 }}>
+              <FurnitureList
+                placements={design.furniturePlacements}
+                onAddToCart={handleAddToCart}
+                onRemove={handleRemove}
+              />
+            </Box>
+            
+            <Box sx={{ mt: 3 }}>
+              <RecommendationsDisplay
+                placements={design.furniturePlacements}
+                onAddToCart={handleAddToCart}
+                onRemove={handleRemove}
+              />
+            </Box>
           </Box>
         </Box>
 

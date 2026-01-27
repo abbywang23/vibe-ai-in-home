@@ -59,6 +59,43 @@ interface DetectionResponse {
   estimatedRoomDimensions?: RoomDimensions;
 }
 
+interface ReplacementRequest {
+  imageUrl: string;
+  detectedItemId: string;
+  replacementProductId: string;
+}
+
+interface ReplacementResponse {
+  processedImageUrl: string;
+  replacement: {
+    detectedItemId: string;
+    replacementProductId: string;
+    replacementProductName: string;
+    appliedAt: string;
+  };
+}
+
+interface PlacementRequest {
+  imageUrl: string;
+  productId: string;
+  imagePosition: { x: number; y: number };
+  rotation: number;
+  scale: number;
+}
+
+interface PlacementResponse {
+  processedImageUrl: string;
+  placement: {
+    placementId: string;
+    productId: string;
+    productName: string;
+    imagePosition: { x: number; y: number };
+    scale: number;
+    rotation: number;
+    appliedAt: string;
+  };
+}
+
 export const aiApi = createApi({
   reducerPath: 'aiApi',
   baseQuery: fetchBaseQuery({ baseUrl: API_BASE_URL }),
@@ -94,6 +131,24 @@ export const aiApi = createApi({
     detectFurniture: builder.mutation<DetectionResponse, DetectionRequest>({
       query: (data) => ({
         url: '/detect',
+        method: 'POST',
+        body: data,
+      }),
+    }),
+    
+    // Furniture Replacement (for furnished rooms)
+    replaceFurniture: builder.mutation<ReplacementResponse, ReplacementRequest>({
+      query: (data) => ({
+        url: '/replace',
+        method: 'POST',
+        body: data,
+      }),
+    }),
+    
+    // Furniture Placement (for empty rooms)
+    placeFurniture: builder.mutation<PlacementResponse, PlacementRequest>({
+      query: (data) => ({
+        url: '/place',
         method: 'POST',
         body: data,
       }),
@@ -135,6 +190,8 @@ export const {
   useSendChatMessageMutation,
   useUploadImageMutation,
   useDetectFurnitureMutation,
+  useReplaceFurnitureMutation,
+  usePlaceFurnitureMutation,
   useSearchProductsQuery,
   useGetProductByIdQuery,
   useGetCategoriesQuery,
