@@ -6,16 +6,10 @@ import {
   FurniturePlacement,
   RoomImage,
   ViewState,
-  CameraAngle,
 } from '../../types/domain';
 
 const initialViewState: ViewState = {
   mode: '2D',
-  cameraAngle: {
-    horizontalAngle: 0,
-    verticalAngle: 30,
-    preset: 'front',
-  },
   showDimensions: true,
   zoomLevel: 1.0,
 };
@@ -89,13 +83,8 @@ const designSlice = createSlice({
       state.updatedAt = new Date().toISOString();
     },
     
-    switchViewMode: (state, action: PayloadAction<'2D' | '3D'>) => {
+    switchViewMode: (state, action: PayloadAction<'2D'>) => {
       state.viewState.mode = action.payload;
-      state.updatedAt = new Date().toISOString();
-    },
-    
-    setCameraAngle: (state, action: PayloadAction<CameraAngle>) => {
-      state.viewState.cameraAngle = action.payload;
       state.updatedAt = new Date().toISOString();
     },
     
@@ -121,7 +110,6 @@ export const {
   rotateFurniture,
   removeFurniture,
   switchViewMode,
-  setCameraAngle,
   toggleDimensions,
   setRoomImage,
   resetDesign,

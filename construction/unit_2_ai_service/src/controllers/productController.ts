@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ProductServiceClient } from '../clients/ProductServiceClient';
+import { ProductRecommendationService } from '../services/ProductRecommendationService';
 import {
   ProductSearchParams,
   ProductSearchResponse,
@@ -8,7 +9,10 @@ import {
 } from '../models/types';
 
 export class ProductController {
-  constructor(private productClient: ProductServiceClient) {}
+  constructor(
+    private productClient: ProductServiceClient,
+    private recommendationService?: ProductRecommendationService
+  ) {}
 
   /**
    * GET /api/ai/products/search
@@ -84,6 +88,106 @@ export class ProductController {
       };
 
       res.json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/ai/products/categories/by-room-type
+   * Get categories by room type
+   */
+  async getCategoriesByRoomType(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { roomType } = req.query;
+
+      if (!roomType || typeof roomType !== 'string') {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_REQUEST',
+            message: 'roomType query parameter is required',
+          },
+        });
+        return;
+      }
+
+      const categories = await this.productClient.getCategoriesByRoomType(roomType);
+
+      res.json({
+        success: true,
+        roomType,
+        categories,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/ai/products/collections
+   * Get all collections
+   */
+  async getCollections(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const collections = await this.productClient.getCollections();
+
+      res.json({
+        success: true,
+        collections,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/ai/products/smart-recommend
+   * Get AI-powered smart product recommendations
+   */
+  async getSmartRecommendations(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!this.recommendationService) {
+        res.status(503).json({
+          success: false,
+          error: {
+            code: 'SERVICE_UNAVAILABLE',
+            message: 'Recommendation service not available',
+          },
+        });
+        return;
+      }
+
+      const { roomType, roomDimensions, preferences, language } = req.body;
+
+      console.log('getSmartRecommendations - Request body:', JSON.stringify(req.body, null, 2));
+
+      if (!roomType || !roomDimensions) {
+        console.error('getSmartRecommendations - Missing required fields:', { roomType, roomDimensions });
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_REQUEST',
+            message: 'roomType and roomDimensions are required',
+          },
+        });
+        return;
+      }
+
+      const result = await this.recommendationService.generateSmartRecommendations({
+        roomType,
+        roomDimensions,
+        preferences: preferences || {},
+        language: language || 'en',
+      });
+
+      console.log('getSmartRecommendations - Response:', {
+        success: result.success,
+        productCount: result.products?.length || 0,
+        recommendedIds: result.recommendedProductIds?.length || 0,
+      });
+
+      res.json(result);
     } catch (error) {
       next(error);
     }

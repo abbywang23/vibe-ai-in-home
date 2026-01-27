@@ -27,7 +27,7 @@ export default function EmptyRoomPlacementPanel({
   const [scale, setScale] = useState(1.0);
 
   const { data: productsData } = useSearchProductsQuery(
-    { query: searchQuery },
+    { q: searchQuery },
     { skip: searchQuery.length < 2 }
   );
 

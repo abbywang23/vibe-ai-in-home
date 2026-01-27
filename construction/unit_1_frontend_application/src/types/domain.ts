@@ -80,16 +80,9 @@ export interface ChatMessage {
 }
 
 export interface ViewState {
-  mode: '2D' | '3D';
-  cameraAngle: CameraAngle;
+  mode: '2D';
   showDimensions: boolean;
   zoomLevel: number;
-}
-
-export interface CameraAngle {
-  horizontalAngle: number; // 0-360
-  verticalAngle: number; // -90 to 90
-  preset?: 'front' | 'side' | 'corner' | 'top-down';
 }
 
 export interface DetectedFurnitureItem {
@@ -137,7 +130,7 @@ export interface FurniturePlacement {
   productId: string;
   productName: string;
   productDimensions: FurnitureDimensions;
-  position: Position3D;
+  position: Position2D;
   rotation: number;
   isFromAI: boolean;
   addedAt: string;

@@ -17,10 +17,14 @@ import {
 export class ProductServiceClient {
   private products: Map<string, Product>;
   private productsArray: Product[];
+  private roomTypeCategories: Map<string, Array<{ id: string; name: string; priority: number }>>;
+  private collections: Array<{ id: string; name: string }>;
 
   constructor() {
     this.products = new Map();
     this.productsArray = [];
+    this.roomTypeCategories = new Map();
+    this.collections = [];
     this.loadProducts();
   }
 
@@ -45,6 +49,19 @@ export class ProductServiceClient {
 
       const fileContents = fs.readFileSync(resolvedPath, 'utf8');
       const config = yaml.load(fileContents) as YamlProductsConfig | ProductsConfig;
+
+      // Load room type categories and collections if available
+      if ('room_type_categories' in config && config.room_type_categories) {
+        Object.entries(config.room_type_categories).forEach(([roomType, categories]) => {
+          this.roomTypeCategories.set(roomType, categories);
+        });
+        console.log(`Loaded room type categories for ${this.roomTypeCategories.size} room types`);
+      }
+
+      if ('collections' in config && config.collections) {
+        this.collections = config.collections;
+        console.log(`Loaded ${this.collections.length} collections`);
+      }
 
       // Check if it's the new format (categories) or old format (products)
       if ('categories' in config && config.categories) {
@@ -290,15 +307,35 @@ export class ProductServiceClient {
       );
     }
 
-    // Filter by category
+    // Filter by category (case-insensitive and normalize)
     if (params.categories && params.categories.length > 0) {
-      results = results.filter((p) => params.categories!.includes(p.category));
+      const normalizedCategories = params.categories.map(cat => 
+        cat.toLowerCase().trim()
+      );
+      results = results.filter((p) => {
+        const productCategory = p.category.toLowerCase().trim();
+        return normalizedCategories.some(cat => 
+          productCategory === cat || 
+          productCategory.includes(cat) || 
+          cat.includes(productCategory)
+        );
+      });
     }
 
-    // Filter by tags (collections)
+    // Filter by tags (collections) - case-insensitive and normalize spaces/underscores
     if (params.collections && params.collections.length > 0) {
+      const normalizedCollections = params.collections.map(col => 
+        col.toLowerCase().replace(/_/g, ' ').trim()
+      );
       results = results.filter((p) =>
-        p.tags.some((tag) => params.collections!.includes(tag))
+        p.tags.some((tag) => {
+          const normalizedTag = tag.toLowerCase().replace(/_/g, ' ').trim();
+          return normalizedCollections.some(col => 
+            normalizedTag === col || 
+            normalizedTag.includes(col) || 
+            col.includes(normalizedTag)
+          );
+        })
       );
     }
 
@@ -364,7 +401,27 @@ export class ProductServiceClient {
       bed: 'Beds',
       storage: 'Storage',
       furniture: 'Furniture',
+      desk: 'Desks',
     };
     return nameMap[categoryId] || categoryId;
+  }
+
+  /**
+   * Get categories by room type
+   */
+  async getCategoriesByRoomType(roomType: string): Promise<Array<{ id: string; name: string; priority: number }>> {
+    const categories = this.roomTypeCategories.get(roomType);
+    if (categories) {
+      return categories;
+    }
+    // Fallback to default if room type not found
+    return [];
+  }
+
+  /**
+   * Get all collections
+   */
+  async getCollections(): Promise<Array<{ id: string; name: string }>> {
+    return [...this.collections];
   }
 }

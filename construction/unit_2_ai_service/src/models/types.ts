@@ -175,7 +175,22 @@ export interface YamlCategory {
   products: YamlProduct[];
 }
 
+export interface RoomTypeCategory {
+  id: string;
+  name: string;
+  priority: number;
+}
+
+export interface Collection {
+  id: string;
+  name: string;
+}
+
 export interface YamlProductsConfig {
+  room_type_categories?: {
+    [roomType: string]: RoomTypeCategory[];
+  };
+  collections?: Collection[];
   categories: YamlCategory[];
 }
 

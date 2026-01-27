@@ -1,3 +1,63 @@
+# Room Type to Furniture Categories Mapping
+room_type_categories:
+  living_room:
+    - id: sofa
+      name: Sofa
+      priority: 1
+    - id: table
+      name: Table
+      priority: 2
+    - id: chair
+      name: Chair
+      priority: 3
+    - id: storage
+      name: Storage
+      priority: 4
+  bedroom:
+    - id: bed
+      name: Bed
+      priority: 1
+    - id: storage
+      name: Storage
+      priority: 2
+    - id: chair
+      name: Chair
+      priority: 3
+    - id: table
+      name: Table
+      priority: 4
+  dining_room:
+    - id: table
+      name: Table
+      priority: 1
+    - id: chair
+      name: Chair
+      priority: 2
+    - id: storage
+      name: Storage
+      priority: 3
+  home_office:
+    - id: desk
+      name: Desk
+      priority: 1
+    - id: chair
+      name: Chair
+      priority: 2
+    - id: storage
+      name: Storage
+      priority: 3
+
+# Available Collections
+collections:
+  - id: sideboard
+    name: Sideboard
+  - id: dining_room_sets
+    name: Dining Room Sets
+  - id: dining_tables
+    name: Dining Tables
+  - id: desks
+    name: Desks
+
 categories:
 - name: Sofas
   url: https://www.castlery.com/sg/sofas/all-sofas

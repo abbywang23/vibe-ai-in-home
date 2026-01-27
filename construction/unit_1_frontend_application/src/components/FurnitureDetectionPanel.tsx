@@ -28,7 +28,7 @@ export default function FurnitureDetectionPanel({
     return (
       <Paper sx={{ p: 3 }}>
         <Typography variant="body2" color="text.secondary">
-          No furniture detected in the image
+          No furniture detected in the image. Please upload an image with furniture, or switch to empty room mode to add furniture.
         </Typography>
       </Paper>
     );
@@ -44,7 +44,8 @@ export default function FurnitureDetectionPanel({
       </Box>
       
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        AI has detected the following furniture items. Click to view replacement options.
+        AI has detected the following furniture items. You can select which items to replace. 
+        Note: Only detected furniture can be replaced. Manual addition of furniture is not supported.
       </Typography>
 
       <List>

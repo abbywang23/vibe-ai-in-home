@@ -61,13 +61,37 @@ export class ImageProcessingService {
   constructor(private productClient: ProductServiceClient) {}
 
   /**
+   * Helper function to safely append query parameters to a URL
+   * Handles URLs that may already have query parameters or special characters
+   */
+  private appendQueryParams(baseUrl: string, params: Record<string, string | number>): string {
+    try {
+      // Try to parse as a complete URL
+      const url = new URL(baseUrl);
+      Object.entries(params).forEach(([key, value]) => {
+        url.searchParams.append(key, String(value));
+      });
+      return url.toString();
+    } catch (error) {
+      // If URL parsing fails (e.g., relative URL or malformed), manually construct
+      const separator = baseUrl.includes('?') ? '&' : '?';
+      const queryString = Object.entries(params)
+        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+        .join('&');
+      return `${baseUrl}${separator}${queryString}`;
+    }
+  }
+
+  /**
    * Upload and process image
    */
   async uploadImage(imageBuffer: Buffer, filename: string): Promise<ImageUploadResponse> {
     try {
       // For demo purposes, we'll simulate image upload
       // In production, you would upload to cloud storage (OSS, S3, etc.)
-      const imageUrl = `https://demo-storage.example.com/uploads/${Date.now()}-${filename}`;
+      // URL encode the filename to handle special characters like spaces, parentheses, etc.
+      const encodedFilename = encodeURIComponent(filename);
+      const imageUrl = `https://demo-storage.example.com/uploads/${Date.now()}-${encodedFilename}`;
       
       console.log(`Image uploaded: ${filename} -> ${imageUrl}`);
       
@@ -335,7 +359,11 @@ export class ImageProcessingService {
     });
 
     // For demo, generate a mock processed image URL
-    const processedImageUrl = `${imageUrl}?replaced=${detectedItemId}&with=${product.id}&t=${Date.now()}`;
+    const processedImageUrl = this.appendQueryParams(imageUrl, {
+      replaced: detectedItemId,
+      with: product.id,
+      t: Date.now()
+    });
 
     return {
       success: true,
@@ -404,7 +432,13 @@ export class ImageProcessingService {
     });
 
     // For demo, generate a mock processed image URL
-    const processedImageUrl = `${imageUrl}?placed=${product.id}&pos=${imagePosition.x},${imagePosition.y}&rot=${rotation}&scale=${scale}&t=${Date.now()}`;
+    const processedImageUrl = this.appendQueryParams(imageUrl, {
+      placed: product.id,
+      pos: `${imagePosition.x},${imagePosition.y}`,
+      rot: rotation,
+      scale: scale,
+      t: Date.now()
+    });
 
     return {
       success: true,
@@ -479,7 +513,11 @@ export class ImageProcessingService {
     detectedItemId: string,
     product: any
   ): FurnitureReplacementResponse {
-    const processedImageUrl = `${imageUrl}?mock_replaced=${detectedItemId}&with=${product.id}&t=${Date.now()}`;
+    const processedImageUrl = this.appendQueryParams(imageUrl, {
+      mock_replaced: detectedItemId,
+      with: product.id,
+      t: Date.now()
+    });
 
     return {
       success: true,
@@ -503,7 +541,11 @@ export class ImageProcessingService {
     rotation: number,
     scale: number
   ): FurniturePlacementResponse {
-    const processedImageUrl = `${imageUrl}?mock_placed=${product.id}&pos=${imagePosition.x},${imagePosition.y}&t=${Date.now()}`;
+    const processedImageUrl = this.appendQueryParams(imageUrl, {
+      mock_placed: product.id,
+      pos: `${imagePosition.x},${imagePosition.y}`,
+      t: Date.now()
+    });
 
     return {
       success: true,

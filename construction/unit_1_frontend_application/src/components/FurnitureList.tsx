@@ -72,7 +72,7 @@ export default function FurnitureList({
                     <Chip label="AI" size="small" color="primary" />
                   )}
                   <Typography variant="caption">
-                    {placement.productDimensions.length} × {placement.productDimensions.width} × {placement.productDimensions.height} {placement.productDimensions.unit}
+                    {placement.productDimensions.width} × {placement.productDimensions.depth} × {placement.productDimensions.height} {placement.productDimensions.unit}
                   </Typography>
                 </Box>
               }

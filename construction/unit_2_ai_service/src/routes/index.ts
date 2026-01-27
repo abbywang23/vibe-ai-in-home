@@ -7,6 +7,7 @@ import { RecommendationService } from '../services/RecommendationService';
 import { ChatService } from '../services/ChatService';
 import { ImageProcessingService } from '../services/ImageProcessingService';
 import { ProductServiceClient } from '../clients/ProductServiceClient';
+import { ProductRecommendationService } from '../services/ProductRecommendationService';
 import { AIClientFactory } from '../clients/AIClientFactory';
 
 /**
@@ -18,13 +19,14 @@ export function setupRoutes(): Router {
   // Initialize clients and services
   const productClient = new ProductServiceClient();
   const recommendationService = new RecommendationService(productClient);
+  const productRecommendationService = new ProductRecommendationService(productClient);
   const chatService = new ChatService();
   const imageService = new ImageProcessingService(productClient);
 
   // Initialize controllers
   const recommendationController = new RecommendationController(recommendationService);
   const chatController = new ChatController(chatService);
-  const productController = new ProductController(productClient);
+  const productController = new ProductController(productClient, productRecommendationService);
   const imageController = new ImageController(imageService);
 
   // Health check
@@ -53,14 +55,28 @@ export function setupRoutes(): Router {
   );
 
   // Product endpoints
+  // Note: More specific routes must be defined before parameterized routes
   router.get('/api/ai/products/search', (req, res, next) =>
     productController.searchProducts(req, res, next)
+  );
+
+  router.get('/api/ai/products/categories/by-room-type', (req, res, next) =>
+    productController.getCategoriesByRoomType(req, res, next)
   );
 
   router.get('/api/ai/products/categories', (req, res, next) =>
     productController.getCategories(req, res, next)
   );
 
+  router.get('/api/ai/products/collections', (req, res, next) =>
+    productController.getCollections(req, res, next)
+  );
+
+  router.post('/api/ai/products/smart-recommend', (req, res, next) =>
+    productController.getSmartRecommendations(req, res, next)
+  );
+
+  // This must be last to avoid matching other routes
   router.get('/api/ai/products/:id', (req, res, next) =>
     productController.getProductById(req, res, next)
   );

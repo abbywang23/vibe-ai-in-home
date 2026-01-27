@@ -18,7 +18,6 @@ interface PreferencesPanelProps {
 export default function PreferencesPanel({ onPreferencesChange }: PreferencesPanelProps) {
   const [budget, setBudget] = useState<string>('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
 
   const { data: categoriesData } = useGetCategoriesQuery();
   // const { data: collectionsData } = useGetCollectionsQuery(); // Removed as backend doesn't support collections
@@ -31,13 +30,6 @@ export default function PreferencesPanel({ onPreferencesChange }: PreferencesPan
     );
   };
 
-  const handleCollectionToggle = (collectionId: string) => {
-    setSelectedCollections((prev) =>
-      prev.includes(collectionId)
-        ? prev.filter((id) => id !== collectionId)
-        : [...prev, collectionId]
-    );
-  };
 
   const handleSubmit = () => {
     const preferences: UserPreferences = {

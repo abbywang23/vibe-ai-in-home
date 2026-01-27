@@ -4,12 +4,9 @@ import {
   RoomDimensions,
   Money,
   UserPreferences,
-  FurniturePlacement,
-  ChatMessage,
   DetectedFurnitureItem,
   Product,
-  Category,
-  Collection,
+  Position2D,
 } from '../types/domain';
 
 const API_BASE_URL = import.meta.env.VITE_AI_SERVICE_URL || 'http://localhost:3001/api/ai';
@@ -28,7 +25,7 @@ interface RecommendationResponse {
   recommendations: Array<{
     productId: string;
     productName: string;
-    position: Position3D;
+    position: Position2D;
     rotation: number;
     reasoning: string;
     price: number;
@@ -184,10 +181,38 @@ export const aiApi = createApi({
       query: () => '/products/categories',
     }),
     
-    // Get Collections - Remove this as backend doesn't have collections endpoint
-    // getCollections: builder.query<{ collections: Collection[] }, void>({
-    //   query: () => '/products/collections',
-    // }),
+    // Get Categories by Room Type
+    getCategoriesByRoomType: builder.query<{ success: boolean; roomType: string; categories: Array<{ id: string; name: string; priority: number }> }, string>({
+      query: (roomType) => `/products/categories/by-room-type?roomType=${roomType}`,
+    }),
+    
+    // Get Collections
+    getCollections: builder.query<{ success: boolean; collections: Array<{ id: string; name: string }> }, void>({
+      query: () => '/products/collections',
+    }),
+    
+    // Smart Product Recommendations
+    getSmartProductRecommendations: builder.mutation<{
+      success: boolean;
+      recommendedProductIds: string[];
+      reasoning?: string;
+      products: Product[];
+    }, {
+      roomType: RoomType;
+      roomDimensions: RoomDimensions;
+      preferences: {
+        selectedCategories?: string[];
+        selectedCollections?: string[];
+        budget?: Money;
+      };
+      language?: string;
+    }>({
+      query: (data) => ({
+        url: '/products/smart-recommend',
+        method: 'POST',
+        body: data,
+      }),
+    }),
   }),
 });
 
@@ -201,5 +226,7 @@ export const {
   useSearchProductsQuery,
   useGetProductByIdQuery,
   useGetCategoriesQuery,
-  // useGetCollectionsQuery, // Removed as backend doesn't support this
+  useGetCategoriesByRoomTypeQuery,
+  useGetCollectionsQuery,
+  useGetSmartProductRecommendationsMutation,
 } = aiApi;

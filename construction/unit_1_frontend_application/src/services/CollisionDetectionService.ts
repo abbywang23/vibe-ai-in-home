@@ -64,9 +64,9 @@ class CollisionDetectionService {
     // Simplified: not considering rotation for now
     return {
       minX: position.x,
-      maxX: position.x + productDimensions.length,
-      minZ: position.z,
-      maxZ: position.z + productDimensions.width,
+      maxX: position.x + productDimensions.width,
+      minZ: position.y,
+      maxZ: position.y + productDimensions.depth,
     };
   }
   
@@ -98,7 +98,7 @@ class CollisionDetectionService {
     }
     
     if (
-      position.x + productDimensions.length > roomDimensions.length ||
+      position.x + productDimensions.width > roomDimensions.length ||
       position.z + productDimensions.width > roomDimensions.width
     ) {
       return false;

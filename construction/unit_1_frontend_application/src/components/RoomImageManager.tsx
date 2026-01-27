@@ -1,9 +1,8 @@
-import { useState } from 'react';
 import { Box, Paper, Typography, Alert, CircularProgress } from '@mui/material';
 import RoomImageUpload from './RoomImageUpload';
 import FurnitureDetectionPanel from './FurnitureDetectionPanel';
 import EmptyRoomPlacementPanel from './EmptyRoomPlacementPanel';
-import { RoomImage, DetectedFurnitureItem } from '../types/domain';
+import { RoomImage } from '../types/domain';
 
 interface RoomImageManagerProps {
   roomImage: RoomImage | null;
@@ -28,10 +27,7 @@ export default function RoomImageManager({
   isDetecting,
   isProcessing,
 }: RoomImageManagerProps) {
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-
   const handleImageUpload = (file: File, previewUrl: string) => {
-    setUploadedFile(file);
     onImageUpload(file, previewUrl);
     // Automatically trigger detection after upload
     setTimeout(() => {
