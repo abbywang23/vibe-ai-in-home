@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Product Service is a Node.js/TypeScript backend service that manages the Castlery product catalog. It provides REST APIs for product search, category/collection browsing, and pricing information. Both demo and production environments use **in-memory storage** (JavaScript Map/Set) for fast access without external dependencies.
+The Product Service is a Node.js/TypeScript backend service that manages the Castlery product catalog. It provides REST APIs for product search, category/collection browsing, and pricing information. The service is designed with the Repository Pattern to support both in-memory demo mode and production database integration.
 
 ---
 
@@ -13,13 +13,15 @@ The Product Service is a Node.js/TypeScript backend service that manages the Cas
 - **Language**: TypeScript 5+
 - **Framework**: Express.js
 - **Validation**: Zod
-- **Storage (Demo & Production)**: In-memory (JavaScript Map/Set)
+- **Database (Production)**: PostgreSQL with TypeORM
+- **In-Memory Store (Demo)**: JavaScript Map/Set
 
 ### Development Tools
 - **Package Manager**: npm
 - **Linting**: ESLint + Prettier
 - **Testing**: Jest + Supertest
 - **API Documentation**: Swagger/OpenAPI
+- **Database Migrations**: TypeORM migrations
 
 ---
 
@@ -55,9 +57,12 @@ The Product Service is a Node.js/TypeScript backend service that manages the Cas
 │  ┌────────────────────────────────────────────────────────────┐ │
 │  │                  Infrastructure Layer                       │ │
 │  │  ┌──────────────────────────────────────────────────────┐  │ │
-│  │  │       In-Memory Repository (Demo & Production)       │  │ │
-│  │  │  • JavaScript Map/Set for fast read/write              │  │ │
-│  │  │  • No external dependencies                            │  │ │
+│  │  │           Repository Implementations                  │  │ │
+│  │  │  ┌───────────────┐        ┌───────────────┐          │  │ │
+│  │  │  │  InMemory     │   OR   │  PostgreSQL   │          │  │ │
+│  │  │  │  Repository   │        │  Repository   │          │  │ │
+│  │  │  │   (Demo)      │        │ (Production)  │          │  │ │
+│  │  │  └───────────────┘        └───────────────┘          │  │ │
 │  │  └──────────────────────────────────────────────────────┘  │ │
 │  └────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
@@ -139,10 +144,97 @@ interface ProductListResponse {
 ### GET /api/products/:id/price
 **Purpose**: Get product price information
 
+**Query Parameters**:
+- `variantId` (string, optional): Get price for specific variant
+
 **Response**:
 ```typescript
 interface PriceResponse {
   success: boolean;
+  productId: string;
+  variantId?: string;
+  price: number;
+  currency: string;
+  originalPrice?: number;
+  discount?: number;
+  inStock: boolean;
+}
+```
+
+### GET /api/products/:id/options
+**Purpose**: Get all available options for a product
+
+**Response**:
+```typescript
+interface ProductOptionsResponse {
+  success: boolean;
+  productId: string;
+  options: Array<{
+    id: string;
+    optionType: OptionType;
+    displayName: string;
+    isRequired: boolean;
+    values: Array<{
+      id: string;
+      value: string;
+      displayName: string;
+      hexColor?: string;
+      imageUrl?: string;
+      priceAdjustment?: number;
+      isDefault: boolean;
+      isAvailable: boolean;
+    }>;
+  }>;
+}
+```
+
+### POST /api/products/:id/find-variant
+**Purpose**: Find product variant matching option selections
+
+**Request Body**:
+```typescript
+interface FindVariantRequest {
+  selections: Record<string, string>;  // optionId -> valueId
+}
+```
+
+**Response**:
+```typescript
+interface FindVariantResponse {
+  success: boolean;
+  variant?: {
+    id: string;
+    sku: string;
+    price: number;
+    stockQuantity: number;
+    images?: string[];
+    isAvailable: boolean;
+  };
+  error?: {
+    code: string;
+    message: string;
+  };
+}
+```
+
+### GET /api/products/:id/variants
+**Purpose**: Get all variants for a product
+
+**Response**:
+```typescript
+interface ProductVariantsResponse {
+  success: boolean;
+  productId: string;
+  variants: Array<{
+    id: string;
+    sku: string;
+    optionSelections: Record<string, string>;
+    price?: number;
+    stockQuantity: number;
+    isAvailable: boolean;
+  }>;
+}
+```
   productId: string;
   price: number;
   currency: string;
@@ -193,6 +285,57 @@ interface Product {
   images: string[];
   thumbnailUrl: string;
   model3dUrl?: string;
+  productPageUrl: string;
+  options: ProductOption[];  // Available customization options
+  variants: ProductVariant[];  // Product variants with different option combinations
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface ProductOption {
+  id: string;
+  productId: string;
+  optionType: OptionType;
+  displayName: string;
+  isRequired: boolean;
+  displayOrder: number;
+  values: ProductOptionValue[];
+}
+
+interface ProductOptionValue {
+  id: string;
+  optionId: string;
+  value: string;  // Internal identifier (e.g., "pearl_beige")
+  displayName: string;  // User-friendly name (e.g., "Pearl Beige")
+  hexColor?: string;  // For color swatches
+  imageUrl?: string;  // Visual representation
+  priceAdjustment?: number;  // Price modifier
+  isDefault: boolean;
+  isAvailable: boolean;
+  displayOrder: number;
+}
+
+interface ProductVariant {
+  id: string;
+  productId: string;
+  sku: string;
+  optionSelections: Record<string, string>;  // optionId -> valueId
+  price?: number;  // Variant-specific price (overrides base if set)
+  stockQuantity: number;
+  images?: string[];  // Variant-specific images
+  isAvailable: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+enum OptionType {
+  MATERIAL = 'material',
+  ORIENTATION = 'orientation',
+  LEG_COLOR = 'leg_color',
+  SIZE = 'size',
+  COLOR = 'color',
+  CONFIGURATION = 'configuration',
+}
   productPageUrl: string;
   createdAt: Date;
   updatedAt: Date;
@@ -310,7 +453,7 @@ interface IPriceRepository {
 }
 ```
 
-### In-Memory Repository Implementation (Demo & Production)
+### In-Memory Repository Implementation (Demo)
 
 ```typescript
 class InMemoryProductRepository implements IProductRepository {
@@ -363,7 +506,60 @@ class InMemoryProductRepository implements IProductRepository {
 }
 ```
 
-Similar `InMemoryCategoryRepository`, `InMemoryCollectionRepository`, and `InMemoryPriceRepository` implementations use JavaScript `Map` for fast in-memory operations.
+### PostgreSQL Repository Implementation (Production)
+
+```typescript
+import { Repository } from 'typeorm';
+import { ProductEntity } from './entities/ProductEntity';
+
+class PostgresProductRepository implements IProductRepository {
+  private repository: Repository<ProductEntity>;
+
+  constructor(repository: Repository<ProductEntity>) {
+    this.repository = repository;
+  }
+
+  async save(product: Product): Promise<Product> {
+    const entity = this.toEntity(product);
+    const saved = await this.repository.save(entity);
+    return this.toDomain(saved);
+  }
+
+  async findById(id: string): Promise<Product | null> {
+    const entity = await this.repository.findOne({ where: { id } });
+    return entity ? this.toDomain(entity) : null;
+  }
+
+  async findByIds(ids: string[]): Promise<Product[]> {
+    const entities = await this.repository.findByIds(ids);
+    return entities.map(e => this.toDomain(e));
+  }
+
+  async findByCategory(categoryId: string): Promise<Product[]> {
+    const entities = await this.repository.find({ where: { categoryId } });
+    return entities.map(e => this.toDomain(e));
+  }
+
+  async search(query: string, limit: number): Promise<Product[]> {
+    const entities = await this.repository
+      .createQueryBuilder('product')
+      .where('LOWER(product.name) LIKE LOWER(:query)', { query: `%${query}%` })
+      .limit(limit)
+      .getMany();
+    return entities.map(e => this.toDomain(e));
+  }
+
+  private toEntity(product: Product): ProductEntity {
+    // Map domain model to database entity
+    return { ...product };
+  }
+
+  private toDomain(entity: ProductEntity): Product {
+    // Map database entity to domain model
+    return { ...entity };
+  }
+}
+```
 
 ---
 
@@ -438,6 +634,74 @@ class ProductService {
     };
   }
 
+  async getProductOptions(productId: string): Promise<ProductOption[]> {
+    const product = await this.productRepo.findById(productId);
+    if (!product) {
+      throw new Error('Product not found');
+    }
+    return product.options || [];
+  }
+
+  async findVariantBySelection(
+    productId: string,
+    selections: Record<string, string>
+  ): Promise<ProductVariant | null> {
+    const product = await this.productRepo.findById(productId);
+    if (!product || !product.variants) {
+      return null;
+    }
+
+    // Find variant that matches all selections
+    const variant = product.variants.find(v => {
+      return Object.entries(selections).every(
+        ([optionId, valueId]) => v.optionSelections[optionId] === valueId
+      );
+    });
+
+    return variant || null;
+  }
+
+  async getProductVariants(productId: string): Promise<ProductVariant[]> {
+    const product = await this.productRepo.findById(productId);
+    if (!product) {
+      throw new Error('Product not found');
+    }
+    return product.variants || [];
+  }
+
+  async calculatePriceWithOptions(
+    productId: string,
+    selections: Record<string, string>
+  ): Promise<number> {
+    const product = await this.productRepo.findById(productId);
+    if (!product) {
+      throw new Error('Product not found');
+    }
+
+    // Check if there's a matching variant with specific price
+    const variant = await this.findVariantBySelection(productId, selections);
+    if (variant && variant.price) {
+      return variant.price;
+    }
+
+    // Otherwise, calculate base price + option adjustments
+    const basePrice = await this.priceRepo.findByProductId(productId);
+    let totalPrice = basePrice?.currentPrice || 0;
+
+    // Add price adjustments from selected options
+    for (const option of product.options || []) {
+      const selectedValueId = selections[option.id];
+      if (selectedValueId) {
+        const value = option.values.find(v => v.id === selectedValueId);
+        if (value && value.priceAdjustment) {
+          totalPrice += value.priceAdjustment;
+        }
+      }
+    }
+
+    return totalPrice;
+  }
+
   private toSummary(product: Product, price?: Price): ProductSummary {
     return {
       id: product.id,
@@ -452,6 +716,8 @@ class ProductService {
   private toDetail(product: Product, price?: Price): ProductDetail {
     return {
       ...product,
+      options: product.options || [],
+      variants: product.variants || [],
       price: price?.currentPrice || 0,
       currency: price?.currency || 'USD',
       originalPrice: price?.originalPrice,
@@ -523,23 +789,169 @@ class CollectionService {
 ```typescript
 class MockDataFactory {
   generateMockProducts(): Product[] {
-    return [
+    const products: Product[] = [
       {
         id: 'prod_001',
-        name: 'Modern Fabric Sofa',
-        description: 'Comfortable 3-seater sofa with clean lines',
+        name: 'Owen Chaise Sectional Sofa',
+        description: 'Removable Covers, Machine Washable',
         categoryId: 'cat_sofa',
         collectionId: 'col_modern',
         dimensions: { width: 220, depth: 90, height: 85, unit: 'cm' },
         furnitureType: FurnitureType.SOFA,
-        images: ['/images/sofa1.jpg'],
-        thumbnailUrl: '/images/sofa1_thumb.jpg',
-        model3dUrl: '/models/sofa1.glb',
-        productPageUrl: 'https://castlery.com/products/modern-fabric-sofa',
+        images: ['/images/owen_sofa_1.jpg', '/images/owen_sofa_2.jpg'],
+        thumbnailUrl: '/images/owen_sofa_thumb.jpg',
+        model3dUrl: '/models/owen_sofa.glb',
+        productPageUrl: 'https://castlery.com/products/owen-chaise-sectional-sofa',
+        options: this.generateOptionsForOwen(),
+        variants: this.generateVariantsForOwen(),
         createdAt: new Date(),
         updatedAt: new Date(),
       },
       // ... more products
+    ];
+    return products;
+  }
+
+  private generateOptionsForOwen(): ProductOption[] {
+    return [
+      {
+        id: 'opt_001_orientation',
+        productId: 'prod_001',
+        optionType: OptionType.ORIENTATION,
+        displayName: 'Orientation',
+        isRequired: true,
+        displayOrder: 1,
+        values: [
+          {
+            id: 'val_001_left',
+            optionId: 'opt_001_orientation',
+            value: 'left_facing',
+            displayName: 'Left Facing',
+            isDefault: true,
+            isAvailable: true,
+            displayOrder: 1,
+          },
+          {
+            id: 'val_001_right',
+            optionId: 'opt_001_orientation',
+            value: 'right_facing',
+            displayName: 'Right Facing',
+            isDefault: false,
+            isAvailable: true,
+            displayOrder: 2,
+          },
+        ],
+      },
+      {
+        id: 'opt_001_material',
+        productId: 'prod_001',
+        optionType: OptionType.MATERIAL,
+        displayName: 'Material',
+        isRequired: true,
+        displayOrder: 2,
+        values: [
+          {
+            id: 'val_001_pearl',
+            optionId: 'opt_001_material',
+            value: 'pearl_beige',
+            displayName: 'Pearl Beige',
+            hexColor: '#F5F5DC',
+            isDefault: true,
+            isAvailable: true,
+            displayOrder: 1,
+          },
+          {
+            id: 'val_001_charcoal',
+            optionId: 'opt_001_material',
+            value: 'charcoal_grey',
+            displayName: 'Charcoal Grey',
+            hexColor: '#36454F',
+            priceAdjustment: 100,
+            isDefault: false,
+            isAvailable: true,
+            displayOrder: 2,
+          },
+        ],
+      },
+      {
+        id: 'opt_001_leg',
+        productId: 'prod_001',
+        optionType: OptionType.LEG_COLOR,
+        displayName: 'Leg Color',
+        isRequired: true,
+        displayOrder: 3,
+        values: [
+          {
+            id: 'val_001_walnut',
+            optionId: 'opt_001_leg',
+            value: 'walnut',
+            displayName: 'Walnut',
+            hexColor: '#5C4033',
+            isDefault: true,
+            isAvailable: true,
+            displayOrder: 1,
+          },
+          {
+            id: 'val_001_oak',
+            optionId: 'opt_001_leg',
+            value: 'oak',
+            displayName: 'Oak',
+            hexColor: '#C19A6B',
+            isDefault: false,
+            isAvailable: true,
+            displayOrder: 2,
+          },
+        ],
+      },
+    ];
+  }
+
+  private generateVariantsForOwen(): ProductVariant[] {
+    return [
+      {
+        id: 'var_001_1',
+        productId: 'prod_001',
+        sku: 'OWEN-LF-PB-WN',
+        optionSelections: {
+          opt_001_orientation: 'val_001_left',
+          opt_001_material: 'val_001_pearl',
+          opt_001_leg: 'val_001_walnut',
+        },
+        stockQuantity: 15,
+        isAvailable: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'var_001_2',
+        productId: 'prod_001',
+        sku: 'OWEN-RF-PB-WN',
+        optionSelections: {
+          opt_001_orientation: 'val_001_right',
+          opt_001_material: 'val_001_pearl',
+          opt_001_leg: 'val_001_walnut',
+        },
+        stockQuantity: 12,
+        isAvailable: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'var_001_3',
+        productId: 'prod_001',
+        sku: 'OWEN-LF-CG-WN',
+        optionSelections: {
+          opt_001_orientation: 'val_001_left',
+          opt_001_material: 'val_001_charcoal',
+          opt_001_leg: 'val_001_walnut',
+        },
+        price: 2099, // Base price + material adjustment
+        stockQuantity: 8,
+        isAvailable: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      // ... more variants
     ];
   }
 
@@ -618,7 +1030,20 @@ class ServiceContainer {
   private collectionService: CollectionService;
 
   private constructor() {
-    // Initialize in-memory repositories (demo & production)
+    // Initialize repositories based on environment
+    if (process.env.REPOSITORY_MODE === 'postgres') {
+      this.initializePostgresRepositories();
+    } else {
+      this.initializeInMemoryRepositories();
+    }
+    
+    // Initialize services
+    this.productService = new ProductService(this.productRepo, this.priceRepo);
+    this.categoryService = new CategoryService(this.categoryRepo, this.productRepo);
+    this.collectionService = new CollectionService(this.collectionRepo, this.productRepo);
+  }
+
+  private initializeInMemoryRepositories() {
     this.productRepo = new InMemoryProductRepository();
     this.categoryRepo = new InMemoryCategoryRepository();
     this.collectionRepo = new InMemoryCollectionRepository();
@@ -626,11 +1051,12 @@ class ServiceContainer {
     
     // Seed with mock data
     this.seedMockData();
-    
-    // Initialize services
-    this.productService = new ProductService(this.productRepo, this.priceRepo);
-    this.categoryService = new CategoryService(this.categoryRepo, this.productRepo);
-    this.collectionService = new CollectionService(this.collectionRepo, this.productRepo);
+  }
+
+  private initializePostgresRepositories() {
+    // Initialize TypeORM repositories
+    // this.productRepo = new PostgresProductRepository(...);
+    // ...
   }
 
   private seedMockData() {
@@ -762,6 +1188,76 @@ class ProductController {
       next(error);
     }
   }
+
+  async getProductOptions(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const options = await this.productService.getProductOptions(id);
+
+      res.json({
+        success: true,
+        productId: id,
+        options,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async findVariant(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { selections } = req.body;
+
+      if (!selections || typeof selections !== 'object') {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_REQUEST', message: 'selections object is required' },
+        });
+      }
+
+      const variant = await this.productService.findVariantBySelection(id, selections);
+
+      if (!variant) {
+        return res.json({
+          success: false,
+          error: {
+            code: 'VARIANT_NOT_FOUND',
+            message: 'No variant matches the selected options',
+          },
+        });
+      }
+
+      res.json({
+        success: true,
+        variant: {
+          id: variant.id,
+          sku: variant.sku,
+          price: variant.price,
+          stockQuantity: variant.stockQuantity,
+          images: variant.images,
+          isAvailable: variant.isAvailable,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getProductVariants(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const variants = await this.productService.getProductVariants(id);
+
+      res.json({
+        success: true,
+        productId: id,
+        variants,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 ```
 
@@ -822,8 +1318,171 @@ const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
 PORT=3002
 NODE_ENV=development
 
+# Repository Mode
+REPOSITORY_MODE=inmemory  # or 'postgres'
+
+# PostgreSQL (Production)
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=castlery_products
+DB_USER=postgres
+DB_PASSWORD=password
+
 # CORS
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3001
+```
+
+### TypeORM Configuration (Production)
+
+```typescript
+import { DataSource } from 'typeorm';
+
+export const AppDataSource = new DataSource({
+  type: 'postgres',
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT || '5432'),
+  username: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  entities: ['src/entities/*.ts'],
+  migrations: ['src/migrations/*.ts'],
+  synchronize: false, // Use migrations in production
+  logging: process.env.NODE_ENV === 'development',
+});
+```
+
+---
+
+## Database Schema (Production)
+
+### Products Table
+
+```sql
+CREATE TABLE products (
+  id VARCHAR(50) PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  category_id VARCHAR(50) NOT NULL,
+  collection_id VARCHAR(50) NOT NULL,
+  furniture_type VARCHAR(50) NOT NULL,
+  dimensions JSONB NOT NULL,
+  images JSONB NOT NULL,
+  thumbnail_url VARCHAR(500),
+  model_3d_url VARCHAR(500),
+  product_page_url VARCHAR(500),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (category_id) REFERENCES categories(id),
+  FOREIGN KEY (collection_id) REFERENCES collections(id)
+);
+
+CREATE INDEX idx_products_category ON products(category_id);
+CREATE INDEX idx_products_collection ON products(collection_id);
+CREATE INDEX idx_products_furniture_type ON products(furniture_type);
+CREATE INDEX idx_products_name ON products USING gin(to_tsvector('english', name));
+```
+
+### Categories Table
+
+```sql
+CREATE TABLE categories (
+  id VARCHAR(50) PRIMARY KEY,
+  name VARCHAR(100) NOT NULL UNIQUE,
+  icon VARCHAR(10),
+  description TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Collections Table
+
+```sql
+CREATE TABLE collections (
+  id VARCHAR(50) PRIMARY KEY,
+  name VARCHAR(100) NOT NULL UNIQUE,
+  description TEXT,
+  image_url VARCHAR(500),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Prices Table
+
+```sql
+CREATE TABLE prices (
+  id VARCHAR(50) PRIMARY KEY,
+  product_id VARCHAR(50) NOT NULL,
+  current_price DECIMAL(10, 2) NOT NULL,
+  original_price DECIMAL(10, 2),
+  currency VARCHAR(3) NOT NULL,
+  discount_percentage DECIMAL(5, 2),
+  valid_from TIMESTAMP NOT NULL,
+  valid_until TIMESTAMP,
+  FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+CREATE INDEX idx_prices_product ON prices(product_id);
+```
+
+### Product Options Table
+
+```sql
+CREATE TABLE product_options (
+  id VARCHAR(50) PRIMARY KEY,
+  product_id VARCHAR(50) NOT NULL,
+  option_type VARCHAR(50) NOT NULL,
+  display_name VARCHAR(100) NOT NULL,
+  is_required BOOLEAN DEFAULT true,
+  display_order INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_product_options_product ON product_options(product_id);
+```
+
+### Product Option Values Table
+
+```sql
+CREATE TABLE product_option_values (
+  id VARCHAR(50) PRIMARY KEY,
+  option_id VARCHAR(50) NOT NULL,
+  value VARCHAR(100) NOT NULL,
+  display_name VARCHAR(100) NOT NULL,
+  hex_color VARCHAR(7),
+  image_url VARCHAR(500),
+  price_adjustment DECIMAL(10, 2) DEFAULT 0,
+  is_default BOOLEAN DEFAULT false,
+  is_available BOOLEAN DEFAULT true,
+  display_order INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (option_id) REFERENCES product_options(id) ON DELETE CASCADE,
+  UNIQUE(option_id, value)
+);
+
+CREATE INDEX idx_option_values_option ON product_option_values(option_id);
+```
+
+### Product Variants Table
+
+```sql
+CREATE TABLE product_variants (
+  id VARCHAR(50) PRIMARY KEY,
+  product_id VARCHAR(50) NOT NULL,
+  sku VARCHAR(100) NOT NULL UNIQUE,
+  option_selections JSONB NOT NULL,
+  price DECIMAL(10, 2),
+  stock_quantity INTEGER DEFAULT 0,
+  images JSONB,
+  is_available BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_variants_product ON product_variants(product_id);
+CREATE INDEX idx_variants_sku ON product_variants(sku);
+CREATE INDEX idx_variants_selections ON product_variants USING gin(option_selections);
 ```
 
 ---
@@ -909,6 +1568,7 @@ npm run dev  # Starts server with nodemon on http://localhost:3002
 
 ```bash
 npm run build  # Compiles TypeScript to /dist
+npm run migrate  # Run database migrations (if using PostgreSQL)
 npm start  # Runs compiled code
 ```
 
@@ -933,11 +1593,28 @@ CMD ["node", "dist/index.js"]
 
 ## Performance Optimization
 
-### In-Memory Performance
-- All data is stored in JavaScript `Map` structures for O(1) lookup
-- No network latency (no database or cache calls)
-- Fast read/write operations suitable for high-throughput APIs
-- Data persists only during service runtime; reloaded on restart
+### Caching
+
+```typescript
+import NodeCache from 'node-cache';
+
+const cache = new NodeCache({ stdTTL: 600 }); // 10 minutes
+
+class CachedProductService extends ProductService {
+  async searchProducts(query: string, limit: number): Promise<ProductSummary[]> {
+    const cacheKey = `search:${query}:${limit}`;
+    const cached = cache.get<ProductSummary[]>(cacheKey);
+    
+    if (cached) {
+      return cached;
+    }
+
+    const results = await super.searchProducts(query, limit);
+    cache.set(cacheKey, results);
+    return results;
+  }
+}
+```
 
 ---
 
@@ -959,9 +1636,11 @@ CMD ["node", "dist/index.js"]
       ICategoryRepository.ts
     /inmemory
       InMemoryProductRepository.ts
-      InMemoryCategoryRepository.ts
-      InMemoryCollectionRepository.ts
-      InMemoryPriceRepository.ts
+    /postgres
+      PostgresProductRepository.ts
+  /entities         # TypeORM entities (for PostgreSQL)
+    ProductEntity.ts
+    CategoryEntity.ts
   /models           # Domain models
     Product.ts
     Category.ts
@@ -974,6 +1653,7 @@ CMD ["node", "dist/index.js"]
   /routes           # Route definitions
     index.ts
   /config           # Configuration
+    database.ts
     container.ts
   index.ts          # Entry point
   app.ts            # Express app setup
@@ -990,7 +1670,10 @@ CMD ["node", "dist/index.js"]
     "zod": "^3.22.0",
     "dotenv": "^16.3.0",
     "cors": "^2.8.5",
-    "helmet": "^7.1.0"
+    "helmet": "^7.1.0",
+    "node-cache": "^5.1.2",
+    "typeorm": "^0.3.17",
+    "pg": "^8.11.0"
   },
   "devDependencies": {
     "typescript": "^5.3.0",
@@ -1010,4 +1693,4 @@ CMD ["node", "dist/index.js"]
 
 ## Summary
 
-The Product Service provides a clean, maintainable API for managing the Castlery product catalog. Both demo and production environments use in-memory storage (JavaScript Map/Set) for fast access without external dependencies. The service is designed for simplicity and performance, with comprehensive error handling and production-ready features.
+The Product Service provides a clean, maintainable API for managing the Castlery product catalog. The Repository Pattern enables seamless switching between in-memory demo mode and production PostgreSQL database. The service is designed for scalability, with caching support, comprehensive error handling, and production-ready features.

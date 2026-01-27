@@ -68,17 +68,27 @@ The Product Service manages the Castlery product catalog including products, cat
 
 ### 1. Product (Aggregate Root)
 
-**Description:** Represents a Castlery furniture product with all its details, dimensions, pricing, and media assets.
+**Description:** Represents a Castlery furniture product with all its details, dimensions, pricing, media assets, and customizable options.
 
 **Responsibilities:**
 - Maintain product information integrity
 - Manage pricing and discount calculations
 - Track stock availability
 - Provide 3D model and image assets
+- Define available product options (material, color, orientation, leg color, etc.)
+- Validate option combinations
+- Track variants based on option selections
 
 **Invariants:**
 - Product must have a unique ID
 - Product must belong to exactly one category
+- Product must belong to exactly one collection
+- Dimensions must be positive values
+- Price must be non-negative
+- Stock quantity must be non-negative
+- Each product option must have at least one valid option value
+- Option values must be unique within their option type
+- Product variants must have unique option combinations
 - Product must belong to exactly one collection
 - Dimensions must be positive values
 - Price must be non-negative
@@ -138,6 +148,74 @@ The Product Service manages the Castlery product catalog including products, cat
 - calculateDiscount(): Compute discount percentage
 - isOnSale(): Check if product is discounted
 - isValid(): Check if price is currently valid
+
+---
+
+### ProductOption
+
+**Description:** Represents a customizable option type for a product (e.g., Material, Orientation, Leg Color). Part of Product aggregate.
+
+**Attributes:**
+- optionId: Unique identifier
+- productId: Reference to parent product
+- optionType: OptionType enum (MATERIAL | ORIENTATION | LEG_COLOR | SIZE | COLOR)
+- displayName: User-friendly name (e.g., "Material", "Orientation")
+- isRequired: Whether customer must select this option
+- displayOrder: Order in which options are displayed
+- createdAt: Timestamp
+
+**Behaviors:**
+- addOptionValue(value): Add a new option value
+- removeOptionValue(valueId): Remove an option value
+- getAvailableValues(): Get all valid option values
+- isValidValue(valueId): Check if value is valid for this option
+
+---
+
+### ProductOptionValue
+
+**Description:** Represents a specific value for a product option (e.g., "Pearl Beige", "Left Facing", "Walnut"). Part of Product aggregate.
+
+**Attributes:**
+- valueId: Unique identifier
+- optionId: Reference to parent option
+- value: Internal value identifier (e.g., "pearl_beige", "left_facing")
+- displayName: User-friendly name (e.g., "Pearl Beige", "Left Facing")
+- hexColor: Optional color hex code for color swatches (e.g., "#F5F5DC")
+- imageUrl: Optional image URL for visual representation
+- priceAdjustment: Optional price modifier (positive or negative)
+- isDefault: Whether this is the default selection
+- isAvailable: Whether this option is currently available
+- displayOrder: Order in which values are displayed
+- createdAt: Timestamp
+
+**Behaviors:**
+- applyPriceAdjustment(basePrice): Calculate adjusted price
+- isInStock(): Check availability status
+
+---
+
+### ProductVariant
+
+**Description:** Represents a specific combination of product options with its own SKU, price, and stock. Part of Product aggregate.
+
+**Attributes:**
+- variantId: Unique identifier
+- productId: Reference to parent product
+- sku: Stock keeping unit (unique identifier)
+- optionSelections: Map of optionId to valueId
+- price: Variant-specific price (overrides base price if set)
+- stockQuantity: Available quantity for this variant
+- images: Variant-specific images (if different from base product)
+- isAvailable: Whether this variant is currently available
+- createdAt: Timestamp
+- updatedAt: Timestamp
+
+**Behaviors:**
+- matchesSelection(selections): Check if variant matches option selections
+- getOptionValue(optionType): Get selected value for specific option
+- updateStock(quantity): Update stock quantity
+- isInStock(): Check if variant has available stock
 
 ---
 
@@ -267,6 +345,36 @@ The Product Service manages the Castlery product catalog including products, cat
 
 ---
 
+### OptionType
+
+**Description:** Enumeration of product option types.
+
+**Values:**
+- MATERIAL: Fabric or material type (e.g., "Pearl Beige", "Performance Brilliant White")
+- ORIENTATION: Furniture orientation (e.g., "Left Facing", "Right Facing")
+- LEG_COLOR: Leg finish color (e.g., "Walnut", "Oak", "Black")
+- SIZE: Size variations (e.g., "3 Seater", "2 Seater")
+- COLOR: General color options (e.g., "Caramel", "Ivory", "Chalk")
+- CONFIGURATION: Configuration type (e.g., "Chaise", "Standard")
+
+---
+
+### OptionSelection
+
+**Description:** Immutable representation of a customer's option selections.
+
+**Attributes:**
+- selections: Map of OptionType to selected value ID
+
+**Behaviors:**
+- addSelection(optionType, valueId): Create new selection with added option
+- hasSelection(optionType): Check if option type is selected
+- getSelection(optionType): Get selected value for option type
+- isComplete(requiredOptions): Check if all required options are selected
+- matches(variant): Check if selections match a product variant
+
+---
+
 ## Domain Events
 
 ### ProductCreated
@@ -301,6 +409,26 @@ The Product Service manages the Castlery product catalog including products, cat
 - Triggered when: New collection is added
 - Contains: collectionId, name
 
+### ProductOptionAdded
+- Triggered when: New option type is added to product
+- Contains: productId, optionId, optionType, displayName
+
+### ProductOptionValueAdded
+- Triggered when: New option value is added to option
+- Contains: productId, optionId, valueId, value, displayName
+
+### ProductVariantCreated
+- Triggered when: New product variant is created
+- Contains: productId, variantId, sku, optionSelections
+
+### ProductVariantStockUpdated
+- Triggered when: Variant stock quantity changes
+- Contains: variantId, oldQuantity, newQuantity
+
+### ProductVariantOutOfStock
+- Triggered when: Variant stock reaches zero
+- Contains: variantId, sku, optionSelections
+
 ---
 
 ## Domain Services
@@ -320,18 +448,38 @@ The Product Service manages the Castlery product catalog including products, cat
 
 ---
 
+### ProductOptionService
+
+**Responsibilities:**
+- Manage product options and values
+- Validate option combinations
+- Find variants matching option selections
+- Calculate prices with option adjustments
+
+**Operations:**
+- getAvailableOptions(productId): Get all options for product
+- getOptionValues(optionId): Get all values for option
+- findVariantBySelection(productId, selections): Find matching variant
+- validateOptionSelection(productId, selections): Check if selection is valid
+- calculatePriceWithOptions(productId, selections): Calculate price with option adjustments
+- getDefaultSelections(productId): Get default option values
+
+---
+
 ### PricingService
 
 **Responsibilities:**
 - Calculate current prices
 - Apply discounts and promotions
 - Calculate bulk pricing for multiple products
+- Handle variant-specific pricing
 
 **Operations:**
-- getCurrentPrice(productId): Get current price
+- getCurrentPrice(productId, variantId?): Get current price for product or variant
 - getBulkPrices(productIds): Get prices for multiple products
 - calculateTotal(productIds): Sum prices for product list
 - applyDiscount(price, discountCode): Apply promotional discount
+- getVariantPrice(variantId): Get variant-specific price
 
 ---
 
@@ -341,12 +489,16 @@ The Product Service manages the Castlery product catalog including products, cat
 - Check product availability
 - Update stock quantities
 - Generate low stock alerts
+- Track variant-level stock
 
 **Operations:**
-- checkAvailability(productId): Check if in stock
+- checkAvailability(productId, variantId?): Check if product or variant is in stock
 - checkBulkAvailability(productIds): Check multiple products
+- checkVariantAvailability(variantId): Check specific variant stock
 - updateStock(productId, quantity): Update stock level
+- updateVariantStock(variantId, quantity): Update variant stock level
 - reserveStock(productId, quantity): Reserve for order
+- reserveVariantStock(variantId, quantity): Reserve variant for order
 
 ---
 
