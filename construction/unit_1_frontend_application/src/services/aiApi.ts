@@ -24,28 +24,33 @@ interface RecommendationRequest {
 }
 
 interface RecommendationResponse {
-  recommendations: FurniturePlacement[];
-  totalPrice: Money;
-  isBudgetExceeded: boolean;
-  exceededAmount?: Money;
+  success: boolean;
+  recommendations: Array<{
+    productId: string;
+    productName: string;
+    position: Position3D;
+    rotation: number;
+    reasoning: string;
+    price: number;
+  }>;
+  totalPrice: number;
+  budgetExceeded: boolean;
+  exceededAmount?: number;
 }
 
 interface ChatRequest {
+  sessionId: string;
   message: string;
-  language: string;
-  conversationHistory: ChatMessage[];
-  sessionContext: {
-    roomType?: RoomType;
-    budget?: Money;
+  language: 'en' | 'zh';
+  context: {
+    currentDesign?: any;
   };
 }
 
 interface ChatResponse {
-  message: ChatMessage;
-  suggestedActions?: Array<{
-    type: string;
-    data: any;
-  }>;
+  success: boolean;
+  reply: string;
+  actions: any[];
 }
 
 interface DetectionRequest {
@@ -100,12 +105,13 @@ export const aiApi = createApi({
     }),
     
     // Product Search
-    searchProducts: builder.query<{ products: Product[] }, {
-      query?: string;
+    searchProducts: builder.query<{ success: boolean; products: Product[]; total: number }, {
+      q?: string;
       categories?: string[];
       collections?: string[];
       minPrice?: number;
       maxPrice?: number;
+      limit?: number;
     }>({
       query: (params) => ({
         url: '/products/search',
@@ -114,19 +120,19 @@ export const aiApi = createApi({
     }),
     
     // Get Product Details
-    getProductById: builder.query<Product, string>({
+    getProductById: builder.query<{ success: boolean; product: Product }, string>({
       query: (id) => `/products/${id}`,
     }),
     
     // Get Categories
-    getCategories: builder.query<{ categories: Category[] }, void>({
+    getCategories: builder.query<{ success: boolean; categories: Array<{ id: string; name: string; productCount: number }> }, void>({
       query: () => '/products/categories',
     }),
     
-    // Get Collections
-    getCollections: builder.query<{ collections: Collection[] }, void>({
-      query: () => '/products/collections',
-    }),
+    // Get Collections - Remove this as backend doesn't have collections endpoint
+    // getCollections: builder.query<{ collections: Collection[] }, void>({
+    //   query: () => '/products/collections',
+    // }),
   }),
 });
 
@@ -138,5 +144,5 @@ export const {
   useSearchProductsQuery,
   useGetProductByIdQuery,
   useGetCategoriesQuery,
-  useGetCollectionsQuery,
+  // useGetCollectionsQuery, // Removed as backend doesn't support this
 } = aiApi;

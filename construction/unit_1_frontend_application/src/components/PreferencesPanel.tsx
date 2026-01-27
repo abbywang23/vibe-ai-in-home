@@ -8,7 +8,7 @@ import {
   Stack,
 } from '@mui/material';
 import { UserPreferences } from '../types/domain';
-import { useGetCategoriesQuery, useGetCollectionsQuery } from '../services/aiApi';
+import { useGetCategoriesQuery } from '../services/aiApi';
 
 interface PreferencesPanelProps {
   onPreferencesChange: (prefs: UserPreferences) => void;
@@ -20,7 +20,7 @@ export default function PreferencesPanel({ onPreferencesChange }: PreferencesPan
   const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
 
   const { data: categoriesData } = useGetCategoriesQuery();
-  const { data: collectionsData } = useGetCollectionsQuery();
+  // const { data: collectionsData } = useGetCollectionsQuery(); // Removed as backend doesn't support collections
 
   const handleCategoryToggle = (categoryId: string) => {
     setSelectedCategories((prev) =>
@@ -41,10 +41,10 @@ export default function PreferencesPanel({ onPreferencesChange }: PreferencesPan
   const handleSubmit = () => {
     const preferences: UserPreferences = {
       budget: budget
-        ? { amount: parseFloat(budget), currency: 'USD' }
+        ? { amount: parseFloat(budget), currency: 'SGD' } // Changed to SGD to match backend
         : null,
       selectedCategories,
-      selectedCollections,
+      selectedCollections: [], // Empty since we don't support collections yet
       preferredProducts: [],
     };
     onPreferencesChange(preferences);
@@ -58,7 +58,7 @@ export default function PreferencesPanel({ onPreferencesChange }: PreferencesPan
 
       <TextField
         fullWidth
-        label="Budget (USD)"
+        label="Budget (SGD)"
         type="number"
         value={budget}
         onChange={(e) => setBudget(e.target.value)}
@@ -84,15 +84,9 @@ export default function PreferencesPanel({ onPreferencesChange }: PreferencesPan
         Collections
       </Typography>
       <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 3 }}>
-        {collectionsData?.collections.map((collection) => (
-          <Chip
-            key={collection.id}
-            label={collection.name}
-            onClick={() => handleCollectionToggle(collection.id)}
-            color={selectedCollections.includes(collection.id) ? 'primary' : 'default'}
-            sx={{ mb: 1 }}
-          />
-        ))}
+        <Typography variant="body2" color="text.secondary">
+          Collections feature coming soon...
+        </Typography>
       </Stack>
 
       <Button variant="contained" fullWidth onClick={handleSubmit}>

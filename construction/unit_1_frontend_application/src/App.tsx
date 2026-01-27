@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import { RootState, AppDispatch } from './store';
 import { configureRoom, updatePreferences, addChatMessage } from './store/slices/sessionSlice';
-import { placeFurniture, removeFurniture } from './store/slices/designSlice';
+import { setRoomConfig, placeFurniture, removeFurniture, setFurniturePlacements } from './store/slices/designSlice';
 import { addItem } from './store/slices/cartSlice';
 import RoomConfigPanel from './components/RoomConfigPanel';
 import PreferencesPanel from './components/PreferencesPanel';
@@ -33,6 +33,8 @@ function App() {
 
   const handleRoomConfig = (config: { roomType: RoomType; dimensions: RoomDimensions }) => {
     dispatch(configureRoom(config));
+    // Also update the design slice
+    dispatch(setRoomConfig(config));
   };
 
   const handlePreferences = async (prefs: UserPreferences) => {
@@ -44,15 +46,34 @@ function App() {
         const result = await getRecommendations({
           roomType: design.roomType,
           dimensions: design.roomDimensions,
-          budget: prefs.budget || undefined,
-          preferences: prefs,
+          budget: prefs.budget ? { amount: prefs.budget.amount, currency: prefs.budget.currency } : undefined,
+          preferences: {
+            selectedCategories: prefs.selectedCategories,
+            selectedCollections: prefs.selectedCollections,
+            preferredProducts: prefs.preferredProducts,
+          },
           language: session.userSettings.language,
         }).unwrap();
 
-        // Add recommendations to design
-        result.recommendations.forEach((placement) => {
-          dispatch(placeFurniture(placement));
-        });
+        // Convert backend recommendations to frontend FurniturePlacement format
+        const placements = result.recommendations.map((rec) => ({
+          placementId: `placement_${Date.now()}_${rec.productId}`,
+          productId: rec.productId,
+          productName: rec.productName,
+          productDimensions: {
+            width: 1.0, // Default dimensions - would need to fetch from product
+            depth: 1.0,
+            height: 1.0,
+            unit: 'meters',
+          },
+          position: rec.position,
+          rotation: rec.rotation,
+          isFromAI: true,
+          addedAt: new Date().toISOString(),
+        }));
+
+        // Replace all placements with new recommendations
+        dispatch(setFurniturePlacements(placements));
       } catch (error) {
         console.error('Failed to get recommendations:', error);
       }
@@ -72,17 +93,23 @@ function App() {
 
     try {
       const result = await sendChat({
+        sessionId: session.sessionId || 'default',
         message,
-        language: session.userSettings.language,
-        conversationHistory: session.chatHistory,
-        sessionContext: {
-          roomType: design.roomType || undefined,
-          budget: session.preferences.budget || undefined,
+        language: session.userSettings.language as 'en' | 'zh',
+        context: {
+          currentDesign: design,
         },
       }).unwrap();
 
       // Add AI response to chat history
-      dispatch(addChatMessage(result.message));
+      const aiMessage: ChatMessageType = {
+        messageId: `msg-${Date.now()}_ai`,
+        content: result.reply,
+        sender: MessageSender.AI,
+        timestamp: new Date().toISOString(),
+        language: session.userSettings.language,
+      };
+      dispatch(addChatMessage(aiMessage));
     } catch (error) {
       console.error('Failed to send message:', error);
     }

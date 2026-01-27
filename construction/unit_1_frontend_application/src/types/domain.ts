@@ -2,17 +2,17 @@
 
 // Enums
 export enum RoomType {
-  LIVING_ROOM = 'LIVING_ROOM',
-  BEDROOM = 'BEDROOM',
-  DINING_ROOM = 'DINING_ROOM',
-  HOME_OFFICE = 'HOME_OFFICE',
+  LIVING_ROOM = 'living_room',
+  BEDROOM = 'bedroom',
+  DINING_ROOM = 'dining_room',
+  HOME_OFFICE = 'home_office',
 }
 
 export enum DimensionUnit {
-  METERS = 'METERS',
-  FEET = 'FEET',
-  CENTIMETERS = 'CENTIMETERS',
-  INCHES = 'INCHES',
+  METERS = 'meters',
+  FEET = 'feet',
+  CENTIMETERS = 'centimeters',
+  INCHES = 'inches',
 }
 
 export enum SessionStatus {
@@ -41,10 +41,10 @@ export interface RoomDimensions {
 }
 
 export interface FurnitureDimensions {
-  length: number;
   width: number;
+  depth: number;
   height: number;
-  unit: DimensionUnit;
+  unit: string;
 }
 
 export interface Position3D {
@@ -201,13 +201,20 @@ export interface Product {
   id: string;
   name: string;
   description: string;
-  price: Money;
-  dimensions: FurnitureDimensions;
+  detailedDescription?: string;
+  price: number;
+  originalPrice?: number;
+  currency: string;
+  images: Array<{
+    url: string;
+    alt: string;
+  }>;
   category: string;
-  collection: string;
-  imageUrl: string;
-  thumbnailUrl: string;
-  isInStock: boolean;
+  tags: string[];
+  dimensions: FurnitureDimensions;
+  inStock: boolean;
+  delivery: string;
+  externalUrl: string;
 }
 
 export interface Category {
