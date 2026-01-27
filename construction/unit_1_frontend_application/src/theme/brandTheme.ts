@@ -1,25 +1,30 @@
 import { createTheme } from '@mui/material/styles';
 
-// Brand Colors from design system
+// Brand Colors from Castlery design system
 export const brandColors = {
-  // Primary colors
-  sienna: '#9E5C3F',
-  plum: '#5C2E40',
-  olive: '#5C5C3F',
+  // Primary palette
+  terracotta500: '#A84025',      // Primary brand color
+  primaryText: '#2C1B1E',        // Dark text color
+  leafGreen500: '#4D4228',       // Accent green
   
-  // Secondary colors
-  terracotta: '#D97449',
-  slate: '#7B8FA3',
+  // Secondary palette
+  burntOrange500: '#D25C36',     // Secondary orange
+  freshwaterBlue500: '#6A85C1',  // Secondary blue
   
-  // Accent
+  // Extended neutrals
   cream: '#F5E6D3',
-  
-  // Neutrals
   white: '#FFFFFF',
   lightGray: '#F5F5F5',
   mediumGray: '#E0E0E0',
   darkGray: '#757575',
   black: '#000000',
+  
+  // Legacy colors (for backward compatibility)
+  sienna: '#A84025',
+  plum: '#2C1B1E',
+  olive: '#4D4228',
+  terracotta: '#D25C36',
+  slate: '#6A85C1',
 };
 
 // Typography - Google Fonts: Playfair Display (Display) and Inter (Body)
@@ -58,14 +63,15 @@ export const spacing = {
 export const brandTheme = createTheme({
   palette: {
     primary: {
-      main: brandColors.terracotta,
-      dark: brandColors.sienna,
+      main: brandColors.terracotta500,
+      dark: brandColors.primaryText,
       light: brandColors.cream,
       contrastText: brandColors.white,
     },
     secondary: {
-      main: brandColors.plum,
-      light: brandColors.slate,
+      main: brandColors.burntOrange500,
+      light: brandColors.freshwaterBlue500,
+      dark: brandColors.leafGreen500,
       contrastText: brandColors.white,
     },
     background: {
@@ -73,14 +79,20 @@ export const brandTheme = createTheme({
       paper: brandColors.lightGray,
     },
     text: {
-      primary: brandColors.black,
+      primary: brandColors.primaryText,
       secondary: brandColors.darkGray,
     },
     error: {
       main: '#D32F2F',
     },
     success: {
-      main: brandColors.olive,
+      main: brandColors.leafGreen500,
+    },
+    info: {
+      main: brandColors.freshwaterBlue500,
+    },
+    warning: {
+      main: brandColors.burntOrange500,
     },
   },
   typography: {
@@ -155,31 +167,31 @@ export const brandTheme = createTheme({
           },
         },
         containedPrimary: {
-          backgroundColor: brandColors.terracotta,
+          backgroundColor: brandColors.terracotta500,
           color: brandColors.white,
           '&:hover': {
-            backgroundColor: brandColors.sienna,
+            backgroundColor: brandColors.primaryText,
           },
         },
         containedSecondary: {
-          backgroundColor: brandColors.plum,
+          backgroundColor: brandColors.burntOrange500,
           color: brandColors.white,
           '&:hover': {
-            backgroundColor: '#4A2433',
+            backgroundColor: brandColors.leafGreen500,
           },
         },
         outlined: {
-          borderColor: brandColors.terracotta,
-          color: brandColors.terracotta,
+          borderColor: brandColors.terracotta500,
+          color: brandColors.terracotta500,
           '&:hover': {
-            borderColor: brandColors.sienna,
-            backgroundColor: 'rgba(158, 92, 63, 0.04)',
+            borderColor: brandColors.primaryText,
+            backgroundColor: 'rgba(168, 64, 37, 0.04)',
           },
         },
         text: {
-          color: brandColors.terracotta,
+          color: brandColors.terracotta500,
           '&:hover': {
-            backgroundColor: 'rgba(158, 92, 63, 0.04)',
+            backgroundColor: 'rgba(168, 64, 37, 0.04)',
           },
         },
       },
@@ -196,7 +208,7 @@ export const brandTheme = createTheme({
               borderColor: brandColors.darkGray,
             },
             '&.Mui-focused fieldset': {
-              borderColor: brandColors.terracotta,
+              borderColor: brandColors.terracotta500,
             },
           },
         },
@@ -227,7 +239,7 @@ export const brandTheme = createTheme({
         },
         filled: {
           backgroundColor: brandColors.cream,
-          color: brandColors.sienna,
+          color: brandColors.terracotta500,
         },
       },
     },
