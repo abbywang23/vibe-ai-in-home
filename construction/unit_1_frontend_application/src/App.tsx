@@ -12,24 +12,24 @@ import {
 } from '@mui/material';
 import { RootState, AppDispatch } from './store';
 import { configureRoom, updatePreferences, addChatMessage } from './store/slices/sessionSlice';
-import { placeFurniture, removeFurniture, setRoomConfig } from './store/slices/designSlice';
+import { setRoomConfig, placeFurniture, removeFurniture, setFurniturePlacements } from './store/slices/designSlice';
 import { addItem, updateQuantity, removeItem as removeCartItem } from './store/slices/cartSlice';
 import { switchViewMode } from './store/slices/designSlice';
 import RoomConfigPanel from './components/RoomConfigPanel';
 import PreferencesPanel from './components/PreferencesPanel';
 import RecommendationsDisplay from './components/RecommendationsDisplay';
 import ChatPanel from './components/ChatPanel';
-import ShoppingCart from './components/ShoppingCart';
+import ShoppingCartComponent from './components/ShoppingCart';
 import FurnitureList from './components/FurnitureList';
 import VisualizationCanvas from './components/VisualizationCanvas';
-import { RoomType, RoomDimensions, UserPreferences, MessageSender, ChatMessage as ChatMessageType, PlanningSession, RoomDesign, ShoppingCart } from './types/domain';
+import { RoomType, RoomDimensions, UserPreferences, MessageSender, ChatMessage as ChatMessageType, PlanningSession, RoomDesign, ShoppingCart as ShoppingCartType } from './types/domain';
 import { useGetRecommendationsMutation, useSendChatMessageMutation } from './services/aiApi';
 
 function App() {
   const dispatch = useDispatch<AppDispatch>();
   const session = useSelector((state: RootState) => state.session) as PlanningSession;
   const design = useSelector((state: RootState) => state.design) as RoomDesign;
-  const cart = useSelector((state: RootState) => state.cart) as ShoppingCart;
+  const cart = useSelector((state: RootState) => state.cart) as ShoppingCartType;
   const [activeTab, setActiveTab] = useState(0);
   
   const [getRecommendations] = useGetRecommendationsMutation();
@@ -172,7 +172,7 @@ function App() {
               </Box>
             )}
             {activeTab === 3 && (
-              <ShoppingCart
+              <ShoppingCartComponent
                 items={cart.items}
                 onUpdateQuantity={(itemId, quantity) => dispatch(updateQuantity({ itemId, quantity }))}
                 onRemove={(itemId) => dispatch(removeCartItem(itemId))}

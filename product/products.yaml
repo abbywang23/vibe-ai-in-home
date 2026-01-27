@@ -8,11 +8,11 @@ categories:
     original_price: null
     description: ''
     category: Sofas
-    collection: ''
+    collection: sideboard
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Chaise
     - type: material
@@ -36,6 +36,15 @@ categories:
     - type: leg
       values:
       - engineered wood with oak veneer
+    - type: height
+      values:
+      - 52cm (floor to arm)
+    - type: width
+      values:
+      - 269cm
+    - type: depth
+      values:
+      - 70/130cm (without pillow)
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1692006015/crusader/variants/AS-000406-PG4001/Mori-Left-Facing-Chaise-Sectional-Sofa-Square-Set_4-1692006012.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1691396565/crusader/variants/AS-000406-PG4001/Mori-Left-Facing-Chaise-Sectional-Sofa-Alpine-Front-1691396563.jpg
@@ -53,11 +62,11 @@ categories:
     original_price: null
     description: ''
     category: Sofas
-    collection: ''
+    collection: sideboard
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Chaise
     - type: material
@@ -81,6 +90,15 @@ categories:
     - type: leg
       values:
       - engineered wood with oak veneer
+    - type: height
+      values:
+      - 52cm (floor to arm)
+    - type: width
+      values:
+      - 269cm
+    - type: depth
+      values:
+      - 70/130cm (without pillow)
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1692006015/crusader/variants/AS-000406-PG4001/Mori-Left-Facing-Chaise-Sectional-Sofa-Square-Set_4-1692006012.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1691396565/crusader/variants/AS-000406-PG4001/Mori-Left-Facing-Chaise-Sectional-Sofa-Alpine-Front-1691396563.jpg
@@ -98,11 +116,11 @@ categories:
     original_price: null
     description: ''
     category: Sofas
-    collection: ''
+    collection: sideboard
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Fabric
     - type: material
@@ -111,6 +129,15 @@ categories:
     - type: orientation
       values:
       - Left facing
+    - type: height
+      values:
+      - 17cm
+    - type: width
+      values:
+      - 231cm
+    - type: depth
+      values:
+      - 61/135cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1645672869/crusader/variants/50440748-AM4001/Madison-Chaise-Sectional-Sofa-Bisque-Square-Set_4.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1645672842/crusader/variants/50440748-AM4001/Madison-Left-Chaise-Sectional-Sofa-Bisque-Front.jpg
@@ -128,11 +155,11 @@ categories:
     original_price: null
     description: ''
     category: Sofas
-    collection: ''
+    collection: sideboard
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Fabric
     - type: material
@@ -141,6 +168,15 @@ categories:
     - type: orientation
       values:
       - Left facing
+    - type: height
+      values:
+      - 17cm
+    - type: width
+      values:
+      - 231cm
+    - type: depth
+      values:
+      - 61/135cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1645672869/crusader/variants/50440748-AM4001/Madison-Chaise-Sectional-Sofa-Bisque-Square-Set_4.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1645672842/crusader/variants/50440748-AM4001/Madison-Left-Chaise-Sectional-Sofa-Bisque-Front.jpg
@@ -158,11 +194,11 @@ categories:
     original_price: null
     description: ''
     category: Sofas
-    collection: ''
+    collection: sideboard
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Sofa
     - type: material
@@ -180,6 +216,15 @@ categories:
     - type: power recliner qty
       values:
       - Dual
+    - type: height
+      values:
+      - 4cm
+    - type: width
+      values:
+      - 172cm
+    - type: depth
+      values:
+      - 165cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1741673577/crusader/variants/AS-000658-LE4023/Jaron-Leather-3-Seater-Dual-Recliner-Slim-Arm-Sofa-With-Slim-Arm-Recliner-Armchair-Marche-Cocoa_-Square-Set_3_3-1741673574.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1737527905/crusader/variants/AS-000658-LE4023/Jaron-Leather-3-Seater-Dual-Recliner-Slim-Arm-Sofa-Marche-Cocoa_-Front-1737527903.jpg
@@ -199,12 +244,12 @@ categories:
     price: $1,499
     original_price: null
     description: ''
-    category: Tables
-    collection: ''
+    category: Chairs
+    collection: Dining Room Sets
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - 4-6 seater table
     - type: material
@@ -216,6 +261,18 @@ categories:
     - type: finish
       values:
       - Muted honey tone and wire brush distressed finish
+    - type: bench
+      values:
+      - No bench
+    - type: chair material
+      values:
+      - Wood
+    - type: height
+      values:
+      - 'Fabric Chair: 48cm; Wood Chair: 45cm; Bench: 45cm'
+    - type: width
+      values:
+      - 'Fabric Chair: 45cm; Wood Chair: 43cm; Bench: 38cm'
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1668138393/crusader/variants/TPB-DR0176/Seb-Extendable-Dining-Table-With-Model-Square-Set_1-1668138391.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1663816720/crusader/variants/PB-DR0176/Seb-Extendable-Dining-Table-With-2-Chairs-1663816717.jpg
@@ -233,11 +290,11 @@ categories:
     original_price: null
     description: ''
     category: Tables
-    collection: ''
+    collection: Dining Tables
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Bench
     - type: material
@@ -252,6 +309,9 @@ categories:
     - type: leg
       values:
       - solid acacia wood
+    - type: height
+      values:
+      - 70cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1692431195/crusader/variants/40550225/Casa-Rectangular-Dining-Table-Square-Set_2-1692431193.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1756455069/crusader/variants/40550342/Casa-Rectangular-Dining-Table-154cm-Angle_1-1756455067.jpg
@@ -268,12 +328,12 @@ categories:
     price: $2,279
     original_price: null
     description: ''
-    category: Tables
-    collection: ''
+    category: Chairs
+    collection: Dining Room Sets
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Walnut table
     - type: material
@@ -285,6 +345,15 @@ categories:
     - type: leg
       values:
       - Walnut
+    - type: height
+      values:
+      - 'Table: 73cm'
+    - type: width
+      values:
+      - 50cm
+    - type: depth
+      values:
+      - 44cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1765273942/crusader/variants/PB-002099-PG4002-WA/Kelsey-Marble-Dining-Table-With-Chairs-_Walnut-Stain-Square-Set_1-1765273940.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1764903262/crusader/variants/PB-002099-PG4002-WA/Kelsey-Marble-Dining-Table-160cm-With-4-Kelsey-Chairs-Performance-Genova-Oat-Walnut-Stain-Angle-1764903258.jpg
@@ -302,7 +371,7 @@ categories:
     original_price: null
     description: ''
     category: Tables
-    collection: ''
+    collection: Desks
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
@@ -321,6 +390,9 @@ categories:
     - type: wood
       values:
       - Chinese walnut
+    - type: height
+      values:
+      - 58-123cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1678353385/crusader/variants/T50441118/Emmerson-Adjustable-Standing-Desk-Walnut-3-Stage-Leg-Square-Set_4-1678353382.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1677489516/crusader/variants/T50441118/Emmerson-Adjustable-Standing-Desk-Angle-120cm_1-1677489514.jpg
@@ -338,7 +410,7 @@ categories:
     original_price: null
     description: ''
     category: Tables
-    collection: ''
+    collection: Desks
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
@@ -357,6 +429,9 @@ categories:
     - type: wood
       values:
       - Chinese walnut
+    - type: height
+      values:
+      - 58-123cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1678353385/crusader/variants/T50441118/Emmerson-Adjustable-Standing-Desk-Walnut-3-Stage-Leg-Square-Set_4-1678353382.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1677489516/crusader/variants/T50441118/Emmerson-Adjustable-Standing-Desk-Angle-120cm_1-1677489514.jpg
@@ -377,16 +452,25 @@ categories:
     original_price: null
     description: ''
     category: Chairs
-    collection: ''
+    collection: 'Add-on Bundles:'
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Armchair
     - type: material
       values:
       - Performance white quartz bouclé
+    - type: height
+      values:
+      - 61cm
+    - type: width
+      values:
+      - 65cm
+    - type: depth
+      values:
+      - 57cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1760175924/crusader/variants/50441021-IN4002/Avery-Swivel-Armchair-set-of-2_-White-Quartz-Square-Set_1-1760175924.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1760175397/crusader/variants/50441021-IN4002/Avery-Swivel-Armchair-Performance-Infinity-Boucle-White-Quartz-Angle-1760175397.jpg
@@ -404,16 +488,25 @@ categories:
     original_price: null
     description: ''
     category: Chairs
-    collection: ''
+    collection: 'Add-on Bundles:'
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Armchair
     - type: material
       values:
       - Performance white quartz bouclé
+    - type: height
+      values:
+      - 61cm
+    - type: width
+      values:
+      - 65cm
+    - type: depth
+      values:
+      - 57cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1760175924/crusader/variants/50441021-IN4002/Avery-Swivel-Armchair-set-of-2_-White-Quartz-Square-Set_1-1760175924.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1760175397/crusader/variants/50441021-IN4002/Avery-Swivel-Armchair-Performance-Infinity-Boucle-White-Quartz-Angle-1760175397.jpg
@@ -431,11 +524,11 @@ categories:
     original_price: null
     description: ''
     category: Chairs
-    collection: ''
+    collection: 'Add-on Bundles:'
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Fabric
     - type: material
@@ -444,6 +537,15 @@ categories:
     - type: finish
       values:
       - Walnut stain and plated metal
+    - type: height
+      values:
+      - 57-63.5cm (floor to arm)
+    - type: width
+      values:
+      - 56cm
+    - type: depth
+      values:
+      - 55cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1762855679/crusader/variants/PB-001793-PA4001/Desmond-Armchair-Performance-Anderson-Cream-Square-Set_1-1762855679.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1754982119/crusader/variants/50440776-PA4001/Desmond-Armchair-Performance-Anderson-Cream-Angle-1754982116.jpg
@@ -461,11 +563,11 @@ categories:
     original_price: null
     description: ''
     category: Chairs
-    collection: ''
+    collection: Dining Room Sets
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - 4-6 seater table
     - type: material
@@ -477,6 +579,18 @@ categories:
     - type: finish
       values:
       - Muted honey tone and wire brush distressed finish
+    - type: bench
+      values:
+      - No bench
+    - type: chair material
+      values:
+      - Wood
+    - type: height
+      values:
+      - 'Fabric Chair: 48cm; Wood Chair: 45cm; Bench: 45cm'
+    - type: width
+      values:
+      - 'Fabric Chair: 45cm; Wood Chair: 43cm; Bench: 38cm'
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1668138393/crusader/variants/TPB-DR0176/Seb-Extendable-Dining-Table-With-Model-Square-Set_1-1668138391.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1663816720/crusader/variants/PB-DR0176/Seb-Extendable-Dining-Table-With-2-Chairs-1663816717.jpg
@@ -494,11 +608,11 @@ categories:
     original_price: null
     description: ''
     category: Chairs
-    collection: ''
+    collection: Dining Room Sets
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Walnut table
     - type: material
@@ -510,6 +624,15 @@ categories:
     - type: leg
       values:
       - Walnut
+    - type: height
+      values:
+      - 'Table: 73cm'
+    - type: width
+      values:
+      - 50cm
+    - type: depth
+      values:
+      - 44cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1765273942/crusader/variants/PB-002099-PG4002-WA/Kelsey-Marble-Dining-Table-With-Chairs-_Walnut-Stain-Square-Set_1-1765273940.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1764903262/crusader/variants/PB-002099-PG4002-WA/Kelsey-Marble-Dining-Table-160cm-With-4-Kelsey-Chairs-Performance-Genova-Oat-Walnut-Stain-Angle-1764903258.jpg
@@ -530,11 +653,11 @@ categories:
     original_price: null
     description: ''
     category: Beds
-    collection: ''
+    collection: a mirror
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Bed
     - type: material
@@ -546,6 +669,9 @@ categories:
     - type: finish
       values:
       - Muted honey tone and wire brush distressed finish
+    - type: height
+      values:
+      - 96cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1755569657/crusader/variants/40550352-PT4001/Seb-Super-Single-Bed-Creamy-White-Square-Set_1-1755569654.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1766715410/crusader/variants/40550352-PT4001/Seb-Super-Single-Bed-Performance-Twill-Creamy-White-Front-1766715408.jpg
@@ -563,11 +689,11 @@ categories:
     original_price: null
     description: ''
     category: Beds
-    collection: ''
+    collection: a mirror
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Bed
     - type: material
@@ -579,6 +705,9 @@ categories:
     - type: finish
       values:
       - Muted honey tone and wire brush distressed finish
+    - type: height
+      values:
+      - 96cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1755569657/crusader/variants/40550352-PT4001/Seb-Super-Single-Bed-Creamy-White-Square-Set_1-1755569654.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1766715410/crusader/variants/40550352-PT4001/Seb-Super-Single-Bed-Performance-Twill-Creamy-White-Front-1766715408.jpg
@@ -596,11 +725,11 @@ categories:
     original_price: null
     description: ''
     category: Beds
-    collection: ''
+    collection: a mirror
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Bed
     - type: material
@@ -618,6 +747,9 @@ categories:
     - type: leg
       values:
       - solid rubber wood
+    - type: height
+      values:
+      - 17.5cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1651229361/crusader/variants/50440770-AM4001/Madison-Bed-Bisque-Square-Set_4.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1651229290/crusader/variants/50440770-AM4001/Madison-Queen-Bed-Bisque-Front.jpg
@@ -635,11 +767,11 @@ categories:
     original_price: null
     description: ''
     category: Beds
-    collection: ''
+    collection: a mirror
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Bed
     - type: material
@@ -657,6 +789,9 @@ categories:
     - type: leg
       values:
       - solid rubber wood
+    - type: height
+      values:
+      - 17.5cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1651229361/crusader/variants/50440770-AM4001/Madison-Bed-Bisque-Square-Set_4.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1651229290/crusader/variants/50440770-AM4001/Madison-Queen-Bed-Bisque-Front.jpg
@@ -674,7 +809,7 @@ categories:
     original_price: null
     description: ''
     category: Beds
-    collection: ''
+    collection: a mirror
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
@@ -684,6 +819,9 @@ categories:
     - type: leg
       values:
       - 'solid wood; Handle: solid beech'
+    - type: height
+      values:
+      - 49cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1707211660/crusader/variants/42230003/Joseph-Bedside-Table-Square-Det_2-1707211655.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1707211539/crusader/variants/42230003/Joseph-Bedside-Table-Front-1707211539.jpg
@@ -704,11 +842,11 @@ categories:
     original_price: null
     description: ''
     category: Storage
-    collection: ''
+    collection: TV Consoles
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Tv console
     - type: material
@@ -727,6 +865,9 @@ categories:
     - type: wood
       values:
       - 'PU lacquer in grey oak; Metal: brushed brass'
+    - type: height
+      values:
+      - 6cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1756260724/crusader/variants/50520029/Sloane-TV-Console-Square-Set_1-1756260722.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1756188904/crusader/variants/50520029/Sloane-TV-Console-150cm_-Front-1756188902.jpg
@@ -744,7 +885,7 @@ categories:
     original_price: null
     description: ''
     category: Storage
-    collection: ''
+    collection: TV Consoles
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
@@ -757,6 +898,9 @@ categories:
     - type: finish
       values:
       - Water based
+    - type: height
+      values:
+      - 7.9cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1760176559/crusader/variants/40550369/Posey-TV-Console-150cm-Square-Set_1-1760176559.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1756279217/crusader/variants/40550368/Posey-TV-Console-150cm-Front-1756279215.jpg
@@ -774,11 +918,11 @@ categories:
     original_price: null
     description: ''
     category: Storage
-    collection: ''
+    collection: TV Consoles
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Tv console
     - type: material
@@ -799,6 +943,9 @@ categories:
     - type: leg
       values:
       - Brass
+    - type: height
+      values:
+      - 17cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1711942386/crusader/variants/40550227/Harper-Curved-TV-Console-Square-Set-1711942383.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1756453887/crusader/variants/40550347/Harper-TV-Console-150cm-Chestnut-Front_1-1756453885.jpg
@@ -816,11 +963,11 @@ categories:
     original_price: null
     description: ''
     category: Storage
-    collection: ''
+    collection: TV Consoles
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Tv console
     - type: material
@@ -841,6 +988,9 @@ categories:
     - type: leg
       values:
       - Brass
+    - type: height
+      values:
+      - 17cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1711942386/crusader/variants/40550227/Harper-Curved-TV-Console-Square-Set-1711942383.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1756453887/crusader/variants/40550347/Harper-TV-Console-150cm-Chestnut-Front_1-1756453885.jpg
@@ -858,11 +1008,11 @@ categories:
     original_price: null
     description: ''
     category: Storage
-    collection: ''
+    collection: Sideboards & Buffet Cabinets
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Papercord
     - type: material
@@ -874,6 +1024,9 @@ categories:
     - type: finish
       values:
       - Lacquer
+    - type: height
+      values:
+      - 13cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1758697942/crusader/variants/40280056/Ashen-Papercord-Sideboard-180cm-Square-Set_2-1758697942.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1758524240/crusader/variants/40280056/Ashen-Wood-Sideboard_-Front-1758524240.jpg
@@ -893,12 +1046,12 @@ categories:
     price: $1,499
     original_price: null
     description: ''
-    category: Furniture Sets
-    collection: ''
+    category: Chairs
+    collection: Dining Room Sets
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - 4-6 seater table
     - type: material
@@ -910,6 +1063,18 @@ categories:
     - type: finish
       values:
       - Muted honey tone and wire brush distressed finish
+    - type: bench
+      values:
+      - No bench
+    - type: chair material
+      values:
+      - Wood
+    - type: height
+      values:
+      - 'Fabric Chair: 48cm; Wood Chair: 45cm; Bench: 45cm'
+    - type: width
+      values:
+      - 'Fabric Chair: 45cm; Wood Chair: 43cm; Bench: 38cm'
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1668138393/crusader/variants/TPB-DR0176/Seb-Extendable-Dining-Table-With-Model-Square-Set_1-1668138391.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1663816720/crusader/variants/PB-DR0176/Seb-Extendable-Dining-Table-With-2-Chairs-1663816717.jpg
@@ -926,12 +1091,12 @@ categories:
     price: $2,279
     original_price: null
     description: ''
-    category: Furniture Sets
-    collection: ''
+    category: Chairs
+    collection: Dining Room Sets
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Walnut table
     - type: material
@@ -943,6 +1108,15 @@ categories:
     - type: leg
       values:
       - Walnut
+    - type: height
+      values:
+      - 'Table: 73cm'
+    - type: width
+      values:
+      - 50cm
+    - type: depth
+      values:
+      - 44cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1765273942/crusader/variants/PB-002099-PG4002-WA/Kelsey-Marble-Dining-Table-With-Chairs-_Walnut-Stain-Square-Set_1-1765273940.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1764903262/crusader/variants/PB-002099-PG4002-WA/Kelsey-Marble-Dining-Table-160cm-With-4-Kelsey-Chairs-Performance-Genova-Oat-Walnut-Stain-Angle-1764903258.jpg
@@ -959,12 +1133,12 @@ categories:
     price: $2,549
     original_price: null
     description: ''
-    category: Furniture Sets
-    collection: ''
+    category: Outdoor
+    collection: Outdoor Furniture Sets
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - 3-piece set
     - type: material
@@ -976,6 +1150,15 @@ categories:
     - type: finish
       values:
       - Outdoor grade lacquer
+    - type: height
+      values:
+      - 'Sofa and Chair: 22.9cm; Coffee Table: 29.2cm; Side Table: 48cm'
+    - type: width
+      values:
+      - 'Sofa: 157.5cm; Chair: 68.6cm'
+    - type: depth
+      values:
+      - 'Sofa: 55.9cm; Chair: 52.1cm'
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1662547801/crusader/variants/PB-LR0158/Maui-chair-Charcoal-Set_13-1662547799.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1662547669/crusader/variants/PB-LR0158/Maui-2-Sofa-2-Lounge-Chair-Charcoal-Coffee-Table-1662547667.jpg
@@ -992,12 +1175,12 @@ categories:
     price: $2,569
     original_price: null
     description: ''
-    category: Furniture Sets
-    collection: ''
+    category: Outdoor
+    collection: Outdoor Chairs & Bar Stools
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Table
     - type: material
@@ -1012,6 +1195,15 @@ categories:
     - type: length
       values:
       - 180cm
+    - type: height
+      values:
+      - 64.5cm
+    - type: width
+      values:
+      - 45cm
+    - type: depth
+      values:
+      - 49cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1715392914/crusader/variants/PB-001416-EM4001/Sorrento-Dining-Table-With-6-Dining-Chairs-Square-Set_2-1715392911.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1709628584/crusader/variants/PB-001416-EM4001/Sorrento-Dining-Table-180cm-With-6-Dining-Chairs-1709628582.jpg
@@ -1028,12 +1220,12 @@ categories:
     price: $2,419
     original_price: null
     description: ''
-    category: Furniture Sets
-    collection: ''
+    category: Sofas
+    collection: sideboard
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Sofa
     - type: material
@@ -1042,6 +1234,15 @@ categories:
     - type: frame cover
       values:
       - Removable
+    - type: height
+      values:
+      - 62cm (floor to arm)
+    - type: width
+      values:
+      - 'Sofa: 186cm; Ottoman: 114cm'
+    - type: depth
+      values:
+      - 'Sofa: 62cm; Ottoman: 93cm'
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1662460175/crusader/variants/PB-LR0272/Dawson-3-Seater-Sofa-Beach-Linen-Lifestyle-Crop-1662460172.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1662460174/crusader/variants/PB-LR0272/Dawson-3-Seater-Sofa-With-OttomanBeach-Linen-1662460172.jpg
@@ -1062,11 +1263,11 @@ categories:
     original_price: null
     description: ''
     category: Outdoor
-    collection: ''
+    collection: Outdoor Sofas
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - 2-seater
     - type: material
@@ -1075,6 +1276,15 @@ categories:
     - type: finish
       values:
       - Treated with Golden Care® finish
+    - type: height
+      values:
+      - 59cm
+    - type: width
+      values:
+      - 180cm
+    - type: depth
+      values:
+      - 55-58cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1752633012/crusader/variants/AS-000915-SA4001/Isla-Outdoor-3-Seater-Sofa-Sable-Oat-Square___-Set_1-1752633010.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1752631003/crusader/variants/AS-000915-SA4001/Isla-Outdoor-3-Seater-Sofa-Sable-Oat-Front____-1752631001.jpg
@@ -1092,11 +1302,11 @@ categories:
     original_price: null
     description: ''
     category: Outdoor
-    collection: ''
+    collection: Outdoor Furniture Sets
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - 3-piece set
     - type: material
@@ -1108,6 +1318,15 @@ categories:
     - type: finish
       values:
       - Outdoor grade lacquer
+    - type: height
+      values:
+      - 'Sofa and Chair: 22.9cm; Coffee Table: 29.2cm; Side Table: 48cm'
+    - type: width
+      values:
+      - 'Sofa: 157.5cm; Chair: 68.6cm'
+    - type: depth
+      values:
+      - 'Sofa: 55.9cm; Chair: 52.1cm'
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1662547801/crusader/variants/PB-LR0158/Maui-chair-Charcoal-Set_13-1662547799.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1662547669/crusader/variants/PB-LR0158/Maui-2-Sofa-2-Lounge-Chair-Charcoal-Coffee-Table-1662547667.jpg
@@ -1125,11 +1344,11 @@ categories:
     original_price: null
     description: ''
     category: Outdoor
-    collection: ''
+    collection: Outdoor Chairs & Bar Stools
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Table
     - type: material
@@ -1144,6 +1363,15 @@ categories:
     - type: length
       values:
       - 180cm
+    - type: height
+      values:
+      - 64.5cm
+    - type: width
+      values:
+      - 45cm
+    - type: depth
+      values:
+      - 49cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1715392914/crusader/variants/PB-001416-EM4001/Sorrento-Dining-Table-With-6-Dining-Chairs-Square-Set_2-1715392911.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1709628584/crusader/variants/PB-001416-EM4001/Sorrento-Dining-Table-180cm-With-6-Dining-Chairs-1709628582.jpg
@@ -1161,7 +1389,7 @@ categories:
     original_price: null
     description: ''
     category: Outdoor
-    collection: ''
+    collection: Outdoor Chairs & Bar Stools
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
@@ -1174,6 +1402,15 @@ categories:
     - type: finish
       values:
       - Finely sanded, no coating *refer to care
+    - type: height
+      values:
+      - 45cm
+    - type: width
+      values:
+      - 130cm
+    - type: depth
+      values:
+      - 38cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1651033202/crusader/variants/40670008/Rio-Dining-Bench-Square-Set_1.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1678333754/crusader/variants/40670012/Rio-Outdoor-Teak-Dining-Bench-130cm-Angle-1678333754.jpg
@@ -1191,7 +1428,7 @@ categories:
     original_price: null
     description: ''
     category: Outdoor
-    collection: ''
+    collection: Outdoor Chairs & Bar Stools
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
@@ -1204,6 +1441,15 @@ categories:
     - type: finish
       values:
       - Finely sanded, no coating *refer to care
+    - type: height
+      values:
+      - 45cm
+    - type: width
+      values:
+      - 130cm
+    - type: depth
+      values:
+      - 38cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1651033202/crusader/variants/40670008/Rio-Dining-Bench-Square-Set_1.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1678333754/crusader/variants/40670012/Rio-Outdoor-Teak-Dining-Bench-130cm-Angle-1678333754.jpg
@@ -1224,7 +1470,7 @@ categories:
     original_price: null
     description: ''
     category: Accessories
-    collection: ''
+    collection: Rugs
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
@@ -1237,6 +1483,9 @@ categories:
     - type: size
       values:
       - 153 x 244cm
+    - type: height
+      values:
+      - 1.2-1.3cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1717669002/crusader/variants/44230028/Cora-Area-Rug-Caramel-Square-Set_1-1717669002.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1713855881/crusader/variants/44230028/Cora-Area-Rug-5__x_8_-Caramel-1713855879.jpg
@@ -1254,7 +1503,7 @@ categories:
     original_price: null
     description: ''
     category: Accessories
-    collection: ''
+    collection: Rugs
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
@@ -1267,6 +1516,9 @@ categories:
     - type: size
       values:
       - 153 x 244cm
+    - type: height
+      values:
+      - 1.2-1.3cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1717669002/crusader/variants/44230028/Cora-Area-Rug-Caramel-Square-Set_1-1717669002.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1713855881/crusader/variants/44230028/Cora-Area-Rug-5__x_8_-Caramel-1713855879.jpg
@@ -1284,7 +1536,7 @@ categories:
     original_price: null
     description: ''
     category: Accessories
-    collection: ''
+    collection: Rugs
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
@@ -1297,6 +1549,9 @@ categories:
     - type: size
       values:
       - 153 x 244cm
+    - type: height
+      values:
+      - 0.5cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1713853085/crusader/variants/44230007/Talia-Area-Rug-5_-x-8_-Sand-1713853082.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1716974271/crusader/variants/44230009/Winslow-Dining-Chair-With-Armchair-Square-Set_1-1716974271.jpg
@@ -1314,7 +1569,7 @@ categories:
     original_price: null
     description: ''
     category: Accessories
-    collection: ''
+    collection: Rugs
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
@@ -1327,6 +1582,9 @@ categories:
     - type: size
       values:
       - 153 x 244cm
+    - type: height
+      values:
+      - 0.5cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1713853085/crusader/variants/44230007/Talia-Area-Rug-5_-x-8_-Sand-1713853082.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1716974271/crusader/variants/44230009/Winslow-Dining-Chair-With-Armchair-Square-Set_1-1716974271.jpg
@@ -1344,11 +1602,11 @@ categories:
     original_price: null
     description: ''
     category: Accessories
-    collection: ''
+    collection: Lighting & Lamps
     tag: ''
     delivery: Leaves warehouse by Feb 3
     options:
-    - type: Model
+    - type: model
       values:
       - Floor lamp
     - type: material
@@ -1360,6 +1618,9 @@ categories:
     - type: finish
       values:
       - Brushed brass
+    - type: height
+      values:
+      - Max Bulb Dia. 4cm; Height 12cm
     images:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1698396137/crusader/variants/50230011/Cedric-Floor-Lamp-Square-Set_1__1_-1698396135.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1697702669/crusader/variants/50230011/Cedric-Floor-Lamp_1-1697702668.jpg

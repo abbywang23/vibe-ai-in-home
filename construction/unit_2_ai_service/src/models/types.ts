@@ -144,7 +144,41 @@ export interface ProductDetailResponse {
   product: Product;
 }
 
-// Product Data from YAML
+// Product Data from YAML (New Format)
+export interface ProductOption {
+  type: string;
+  values: string[];
+}
+
+export interface ProductImage {
+  url: string;
+}
+
+export interface YamlProduct {
+  name: string;
+  url: string;
+  price: string;
+  original_price?: string;
+  description: string;
+  category: string;
+  collection: string;
+  tag: string;
+  delivery: string;
+  options: ProductOption[];
+  images: ProductImage[];
+}
+
+export interface YamlCategory {
+  name: string;
+  url: string;
+  products: YamlProduct[];
+}
+
+export interface YamlProductsConfig {
+  categories: YamlCategory[];
+}
+
+// Legacy format for backward compatibility
 export interface ProductData {
   index: number;
   name: string;
