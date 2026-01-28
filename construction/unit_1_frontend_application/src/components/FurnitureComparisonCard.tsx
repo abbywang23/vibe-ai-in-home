@@ -1,5 +1,6 @@
 import { Sparkles, ArrowRight, RefreshCw, X, Check } from 'lucide-react';
 import { FurnitureItem } from './DesignStudio';
+import ImageWithRetry from './ui/ImageWithRetry';
 
 interface FurnitureComparisonCardProps {
   item: FurnitureItem;
@@ -71,10 +72,12 @@ export function FurnitureComparisonCard({
               {/* Existing Item */}
               <div className="text-center">
                 <div className="aspect-square bg-muted rounded-lg overflow-hidden mb-2">
-                  <img 
+                  <ImageWithRetry 
                     src={item.existingItem.imageUrl} 
                     alt={item.existingItem.name}
                     className="w-full h-full object-cover"
+                    fallbackType="furniture"
+                    onRetry={(retryCount) => console.log(`Retrying existing item image: ${retryCount}`)}
                   />
                 </div>
                 <p className="text-muted-foreground mb-1" style={{ fontSize: 'var(--text-small)' }}>
@@ -96,10 +99,12 @@ export function FurnitureComparisonCard({
               {/* New Item */}
               <div className="text-center">
                 <div className="aspect-square bg-muted rounded-lg overflow-hidden mb-2">
-                  <img 
+                  <ImageWithRetry 
                     src={item.imageUrl} 
                     alt={item.name}
                     className="w-full h-full object-cover"
+                    fallbackType="furniture"
+                    onRetry={(retryCount) => console.log(`Retrying new item image: ${retryCount}`)}
                   />
                 </div>
                 <p className="text-primary mb-1" style={{ fontSize: 'var(--text-small)' }}>
@@ -141,10 +146,12 @@ export function FurnitureComparisonCard({
           <div className="space-y-3">
             <div className="text-center">
               <div className="aspect-square bg-muted rounded-lg overflow-hidden mb-3">
-                <img 
+                <ImageWithRetry 
                   src={item.imageUrl} 
                   alt={item.name}
                   className="w-full h-full object-cover"
+                  fallbackType="furniture"
+                  onRetry={(retryCount) => console.log(`Retrying single item image: ${retryCount}`)}
                 />
               </div>
               <h5 className="mb-1">{item.name}</h5>

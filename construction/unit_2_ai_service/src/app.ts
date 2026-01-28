@@ -1,5 +1,6 @@
 import express, { Express } from 'express';
 import cors from 'cors';
+import path from 'path';
 import { setupRoutes } from './routes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
@@ -48,6 +49,10 @@ export function createApp(): Express {
   };
 
   app.use(cors(corsOptions));
+
+  // Serve uploaded files statically
+  const uploadsDir = path.join(process.cwd(), 'uploads');
+  app.use('/uploads', express.static(uploadsDir));
 
   // Request logging with CORS info
   app.use((req, res, next) => {

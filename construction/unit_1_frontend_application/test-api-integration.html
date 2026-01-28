@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Integration Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>API Integration Test</h1>
+    
+    <div class="test-section">
+        <h3>1. Health Check</h3>
+        <button onclick="testHealthCheck()">Test Health Check</button>
+        <div id="health-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. Product Search</h3>
+        <button onclick="testProductSearch()">Test Product Search</button>
+        <div id="product-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. Smart Recommendations</h3>
+        <button onclick="testSmartRecommendations()">Test Smart Recommendations</button>
+        <div id="recommendations-result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api/ai';
+
+        async function testHealthCheck() {
+            const resultDiv = document.getElementById('health-result');
+            try {
+                const response = await fetch('http://localhost:3001/health');
+                const data = await response.json();
+                resultDiv.innerHTML = `<div class="success"><strong>✓ Success:</strong><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error"><strong>✗ Error:</strong> ${error.message}</div>`;
+            }
+        }
+
+        async function testProductSearch() {
+            const resultDiv = document.getElementById('product-result');
+            try {
+                const response = await fetch(`${API_BASE}/products/search?limit=3`);
+                const data = await response.json();
+                resultDiv.innerHTML = `<div class="success"><strong>✓ Success:</strong><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error"><strong>✗ Error:</strong> ${error.message}</div>`;
+            }
+        }
+
+        async function testSmartRecommendations() {
+            const resultDiv = document.getElementById('recommendations-result');
+            try {
+                const requestData = {
+                    roomType: 'LIVING_ROOM',
+                    roomDimensions: {
+                        length: 15,
+                        width: 12,
+                        height: 8,
+                        unit: 'FEET'
+                    },
+                    preferences: {
+                        selectedCategories: ['Sofa', 'Coffee Table'],
+                        budget: {
+                            amount: 3000,
+                            currency: 'USD'
+                        }
+                    },
+                    language: 'en'
+                };
+
+                const response = await fetch(`${API_BASE}/products/smart-recommend`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const data = await response.json();
+                resultDiv.innerHTML = `<div class="success"><strong>✓ Success:</strong><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error"><strong>✗ Error:</strong> ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
