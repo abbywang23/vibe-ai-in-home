@@ -1,0 +1,13 @@
+**/node_modules/
+node_modules/
+
+## macOS / OS junk
+.DS_Store
+**/.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+
+## Build output
+dist/
+**/dist/

@@ -15,8 +15,8 @@
   --text-button: 14px;
   
   /* Font families */
-  --font-aime: 'Aime', sans-serif;
-  --font-sanomat: 'Sanomat Sans', sans-serif;
+  --font-aime: 'Aime', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sanomat: 'Sanomat Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   
   /* Font weights */
   --font-weight-regular: 400;
@@ -142,7 +142,7 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-aime);
+    font-family: var(--font-sanomat);
   }
 }
 
@@ -188,14 +188,14 @@
     }
 
     p {
-      font-family: var(--font-aime);
+      font-family: var(--font-sanomat);
       font-size: var(--text-base);
       font-weight: var(--font-weight-regular);
       line-height: 1.5;
     }
 
     label {
-      font-family: var(--font-aime);
+      font-family: var(--font-sanomat);
       font-size: var(--text-label);
       font-weight: var(--font-weight-regular);
       line-height: 1.5;
@@ -211,21 +211,21 @@
     }
 
     input {
-      font-family: var(--font-aime);
+      font-family: var(--font-sanomat);
       font-size: var(--text-base);
       font-weight: var(--font-weight-regular);
       line-height: 1.5;
     }
 
     .caption {
-      font-family: var(--font-aime);
+      font-family: var(--font-sanomat);
       font-size: var(--text-caption);
       font-weight: var(--font-weight-regular);
       line-height: 1.5;
     }
 
     .small {
-      font-family: var(--font-aime);
+      font-family: var(--font-sanomat);
       font-size: var(--text-small);
       font-weight: var(--font-weight-regular);
       line-height: 1.5;
@@ -233,6 +233,58 @@
   }
 }
 
+@layer utilities {
+  /* Typography helpers for ui/ components */
+  .font-display {
+    font-family: var(--font-aime);
+  }
+
+  .font-standard {
+    font-family: var(--font-sanomat);
+  }
+
+  .type-label {
+    font-family: var(--font-sanomat);
+    font-size: var(--text-label);
+    line-height: 1.5;
+  }
+
+  .type-control {
+    font-family: var(--font-sanomat);
+    font-size: var(--text-label);
+    line-height: 1.5;
+  }
+
+  .type-body {
+    font-family: var(--font-sanomat);
+    font-size: var(--text-base);
+    line-height: 1.5;
+  }
+
+  .type-button {
+    font-family: var(--font-sanomat);
+    font-size: var(--text-button);
+    line-height: 1.5;
+    text-transform: uppercase;
+    letter-spacing: 2.8px;
+  }
+}
+
 html {
   font-size: var(--font-size);
+}
+
+/* Hard overrides to ensure brand fonts win against any late-loaded styles. */
+html,
+body {
+  font-family: var(--font-sanomat) !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+.font-display {
+  font-family: var(--font-aime) !important;
 }
