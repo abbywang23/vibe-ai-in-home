@@ -98,10 +98,12 @@ export class ProductServiceClient {
             ? this.parsePrice(yamlProduct.original_price)
             : undefined,
           currency: 'SGD',
-          images: yamlProduct.images.map((img, index) => ({
-            url: img.url,
-            alt: `${yamlProduct.name} - Image ${index + 1}`,
-          })),
+          images: (yamlProduct.images && Array.isArray(yamlProduct.images) && yamlProduct.images.length > 0)
+            ? yamlProduct.images.map((img, index) => ({
+                url: img.url,
+                alt: `${yamlProduct.name} - Image ${index + 1}`,
+              }))
+            : [], // Empty array if no images
           category: this.normalizeCategoryName(yamlProduct.category),
           tags: yamlProduct.collection ? [yamlProduct.collection] : [],
           dimensions: this.extractDimensionsFromOptions(yamlProduct.options, yamlProduct.name),
