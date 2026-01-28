@@ -5,6 +5,7 @@ import { Request } from 'express';
 import { getBaseUrl } from '../utils/urlHelper';
 import * as fs from 'fs';
 import * as path from 'path';
+import { getRoomAnalysisPrompts } from '../prompts/roomAnalysisPrompt';
 
 type JsonObject = Record<string, unknown>;
 type JsonPath = Array<string | number>;
@@ -36,6 +37,10 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+// 支持的家具类型（与 products.yaml 中的 room_type_categories 保持一致）
+export const SUPPORTED_FURNITURE_TYPES = ['sofa', 'table', 'chair', 'storage', 'bed', 'desk'] as const;
+export type SupportedFurnitureType = typeof SUPPORTED_FURNITURE_TYPES[number];
+
 // Type definitions for API responses
 interface QwenAnalysisResponse {
   choices: Array<{
@@ -65,7 +70,7 @@ export interface ImageUploadResponse {
 
 export interface DetectedFurnitureItem {
   itemId: string;
-  furnitureType: string;
+  furnitureType: SupportedFurnitureType;
   boundingBox: {
     x: number;
     y: number;
@@ -75,10 +80,41 @@ export interface DetectedFurnitureItem {
   confidence: number;
 }
 
+export interface RoomTypeAnalysis {
+  value: 'living_room' | 'bedroom' | 'dining_room' | 'home_office';
+  confidence: number; // 0-100
+}
+
+export interface RoomDimensionsAnalysis {
+  length: number;
+  width: number;
+  height: number;
+  unit: 'meters' | 'feet';
+  confidence: number; // 0-100
+}
+
+export interface RoomStyleAnalysis {
+  value: 'Modern' | 'Nordic' | 'Classic' | 'Minimalist' | 'Industrial' | 'Contemporary' | 'Traditional' | 'Bohemian';
+  confidence: number; // 0-100
+}
+
+export interface FurnitureCountAnalysis {
+  value: number;
+  confidence: number; // 0-100
+}
+
 export interface FurnitureDetectionResponse {
   success: boolean;
   detectedItems: DetectedFurnitureItem[];
   isEmpty: boolean;
+  
+  // 新增：智能分析结果
+  roomType?: RoomTypeAnalysis;
+  roomDimensions?: RoomDimensionsAnalysis;
+  roomStyle?: RoomStyleAnalysis;
+  furnitureCount?: FurnitureCountAnalysis;
+  
+  // 保留原有字段（向后兼容）
   estimatedRoomDimensions?: {
     length: number;
     width: number;
@@ -312,41 +348,22 @@ export class ImageProcessingService {
   }
 
   /**
-   * Detect furniture using AI (Qwen-VL)
+   * Detect furniture using AI (Qwen-VL) - Enhanced with room analysis
    */
   private async detectFurnitureWithAI(
     imageUrl: string,
     roomDimensions: any,
     aiClient: any
   ): Promise<FurnitureDetectionResponse> {
-    const systemPrompt = `你是一个专业的室内设计师和家具识别专家。请分析这张房间图片，识别其中的家具并判断房间是否为空。
-
-请按照以下JSON格式返回结果：
-{
-  "isEmpty": boolean,
-  "detectedItems": [
-    {
-      "itemId": "unique_id",
-      "furnitureType": "家具类型（如：沙发、桌子、椅子等）",
-      "boundingBox": {
-        "x": 边界框左上角x坐标（0-100百分比）,
-        "y": 边界框左上角y坐标（0-100百分比）,
-        "width": 边界框宽度（0-100百分比）,
-        "height": 边界框高度（0-100百分比）
-      },
-      "confidence": 置信度（0-1之间的小数）
-    }
-  ],
-  "estimatedRoomDimensions": {
-    "length": 估计的房间长度,
-    "width": 估计的房间宽度,
-    "height": 估计的房间高度,
-    "unit": "meters"
-  }
-}
-
-如果房间是空的，isEmpty设为true，detectedItems为空数组。
-如果房间有家具，isEmpty设为false，列出所有检测到的家具。`;
+    // 使用增强的 prompt
+    const prompts = getRoomAnalysisPrompts(
+      roomDimensions ? {
+        length: roomDimensions.length,
+        width: roomDimensions.width,
+        height: roomDimensions.height,
+        unit: roomDimensions.unit,
+      } : undefined
+    );
 
     // Upload to Cloudinary if it's a local URL (localhost, 127.0.0.1, or local network IP)
     // Qwen API can't access local network URLs, so we need to upload to Cloudinary
@@ -394,7 +411,7 @@ export class ImageProcessingService {
     }
 
     const messages: ChatMessage[] = [
-      { role: 'system', content: systemPrompt },
+      { role: 'system', content: prompts.system },
       { 
         role: 'user', 
         content: [
@@ -404,7 +421,7 @@ export class ImageProcessingService {
           },
           {
             type: 'text',
-            text: `请分析这张房间图片，识别其中的家具。房间尺寸参考：${roomDimensions.length}x${roomDimensions.width}x${roomDimensions.height} ${roomDimensions.unit}`
+            text: prompts.user
           }
         ]
       }
@@ -417,7 +434,7 @@ export class ImageProcessingService {
       model: 'qwen3-vl-plus', // 使用Qwen-VL模型
       messages,
       temperature: 0.3,
-      max_tokens: 1000,
+      max_tokens: 2000, // 增加token数量以支持更详细的响应
     });
     
     const elapsedTime = Date.now() - startTime;
@@ -430,15 +447,88 @@ export class ImageProcessingService {
       const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const result = JSON.parse(jsonMatch[0]);
-        return {
+        
+        // 验证和过滤家具类型，只保留支持的6种类型
+        const validDetectedItems: DetectedFurnitureItem[] = (result.detectedItems || [])
+          .filter((item: any) => {
+            const isValid = SUPPORTED_FURNITURE_TYPES.includes(item.furnitureType);
+            if (!isValid) {
+              console.warn(`⚠️ 过滤掉不支持的家具类型: ${item.furnitureType} (itemId: ${item.itemId})`);
+            }
+            return isValid;
+          })
+          .map((item: any) => ({
+            ...item,
+            furnitureType: item.furnitureType as SupportedFurnitureType,
+          }));
+        
+        console.log(`✅ 家具检测结果: 原始 ${result.detectedItems?.length || 0} 件，过滤后 ${validDetectedItems.length} 件`);
+        
+        // 构建增强的响应
+        const response: FurnitureDetectionResponse = {
           success: true,
-          detectedItems: result.detectedItems || [],
+          detectedItems: validDetectedItems,
           isEmpty: result.isEmpty || false,
-          estimatedRoomDimensions: result.estimatedRoomDimensions
         };
+        
+        // 添加智能分析结果
+        if (result.roomType) {
+          response.roomType = {
+            value: result.roomType.value,
+            confidence: result.roomType.confidence || 0,
+          };
+        }
+        
+        if (result.roomDimensions) {
+          response.roomDimensions = {
+            length: result.roomDimensions.length,
+            width: result.roomDimensions.width,
+            height: result.roomDimensions.height,
+            unit: result.roomDimensions.unit || 'meters',
+            confidence: result.roomDimensions.confidence || 0,
+          };
+          
+          // 同时保留原有字段（向后兼容）
+          response.estimatedRoomDimensions = {
+            length: result.roomDimensions.length,
+            width: result.roomDimensions.width,
+            height: result.roomDimensions.height,
+            unit: result.roomDimensions.unit || 'meters',
+          };
+        }
+        
+        if (result.roomStyle) {
+          response.roomStyle = {
+            value: result.roomStyle.value,
+            confidence: result.roomStyle.confidence || 0,
+          };
+        }
+        
+        if (result.furnitureCount) {
+          // 使用过滤后的家具数量
+          response.furnitureCount = {
+            value: result.furnitureCount.value || validDetectedItems.length || 0,
+            confidence: result.furnitureCount.confidence || 0,
+          };
+        } else {
+          // 如果没有提供 furnitureCount，使用过滤后的数量
+          response.furnitureCount = {
+            value: validDetectedItems.length,
+            confidence: 95, // 默认置信度
+          };
+        }
+        
+        console.log('✅ Enhanced room analysis completed:', {
+          roomType: response.roomType?.value,
+          roomStyle: response.roomStyle?.value,
+          furnitureCount: response.furnitureCount?.value,
+        });
+        
+        return response;
       }
     } catch (parseError) {
       console.error('Failed to parse AI detection response:', parseError);
+      console.error('Raw AI response:', aiResponse);
     }
 
     // Fallback to mock if parsing fails

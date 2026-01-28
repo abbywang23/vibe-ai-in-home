@@ -56,9 +56,40 @@ interface DetectionRequest {
   roomDimensions: RoomDimensions;
 }
 
+interface RoomTypeAnalysis {
+  value: 'living_room' | 'bedroom' | 'dining_room' | 'home_office';
+  confidence: number; // 0-100
+}
+
+interface RoomDimensionsAnalysis {
+  length: number;
+  width: number;
+  height: number;
+  unit: 'meters' | 'feet';
+  confidence: number; // 0-100
+}
+
+interface RoomStyleAnalysis {
+  value: 'Modern' | 'Nordic' | 'Classic' | 'Minimalist' | 'Industrial' | 'Contemporary' | 'Traditional' | 'Bohemian';
+  confidence: number; // 0-100
+}
+
+interface FurnitureCountAnalysis {
+  value: number;
+  confidence: number; // 0-100
+}
+
 interface DetectionResponse {
   detectedItems: DetectedFurnitureItem[];
   isEmpty: boolean;
+  
+  // 新增：智能分析结果
+  roomType?: RoomTypeAnalysis;
+  roomDimensions?: RoomDimensionsAnalysis;
+  roomStyle?: RoomStyleAnalysis;
+  furnitureCount?: FurnitureCountAnalysis;
+  
+  // 保留原有字段（向后兼容）
   estimatedRoomDimensions?: RoomDimensions;
 }
 

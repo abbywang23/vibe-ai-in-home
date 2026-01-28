@@ -127,15 +127,32 @@ export default function RoomSetupStep({ step, isExpanded, onToggle, onComplete }
         roomDimensions: dimensions,
       }).unwrap();
 
-      // Process detection results
+      // Process detection results - 使用AI分析结果
+      const aiRoomType = detectionResult.roomType?.value;
+      const aiDimensions = detectionResult.roomDimensions;
+      const aiStyle = detectionResult.roomStyle?.value;
+      
+      // 优先使用AI分析结果，如果没有则使用用户选择的值
+      const finalRoomType = aiRoomType || roomType;
+      const finalDimensions = aiDimensions 
+        ? `${aiDimensions.length} × ${aiDimensions.width} ${aiDimensions.unit === 'meters' ? 'm' : 'ft'}`
+        : `${dimensions.length}' × ${dimensions.width}'`;
+      const finalStyle = aiStyle || 'Analyzing...';
+      
       const data = {
-        roomType: roomType,
-        dimensions: `${dimensions.length}' × ${dimensions.width}'`,
+        roomType: finalRoomType,
+        dimensions: finalDimensions,
         furniture: detectionResult.detectedItems.map(item => item.furnitureType),
-        style: 'Detected from image',
-        confidence: 95,
+        style: finalStyle,
+        confidence: detectionResult.roomType?.confidence || 95, // 使用AI置信度
         isEmpty: detectionResult.isEmpty,
         detectedItems: detectionResult.detectedItems,
+        
+        // 新增：各项的置信度
+        roomTypeConfidence: detectionResult.roomType?.confidence || 0,
+        dimensionsConfidence: detectionResult.roomDimensions?.confidence || 0,
+        styleConfidence: detectionResult.roomStyle?.confidence || 0,
+        furnitureCountConfidence: detectionResult.furnitureCount?.confidence || 0,
       };
 
       setRoomData(data);
@@ -407,10 +424,30 @@ export default function RoomSetupStep({ step, isExpanded, onToggle, onComplete }
                 </Typography>
               </Box>
               <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
-                <AIDetection icon={<HomeIcon />} label="Type" value={roomData.roomType} confidence={roomData.confidence} />
-                <AIDetection icon={<StraightenIcon />} label="Size" value={roomData.dimensions} confidence={92} />
-                <AIDetection icon={<ChairIcon />} label="Items" value={`${roomData.furniture.length} detected`} confidence={88} />
-                <AIDetection icon={<PaletteIcon />} label="Style" value={roomData.style} confidence={90} />
+                <AIDetection 
+                  icon={<HomeIcon />} 
+                  label="Type" 
+                  value={roomData.roomType} 
+                  confidence={roomData.roomTypeConfidence || roomData.confidence} 
+                />
+                <AIDetection 
+                  icon={<StraightenIcon />} 
+                  label="Size" 
+                  value={roomData.dimensions} 
+                  confidence={roomData.dimensionsConfidence || 92} 
+                />
+                <AIDetection 
+                  icon={<ChairIcon />} 
+                  label="Items" 
+                  value={`${roomData.furniture.length} detected`} 
+                  confidence={roomData.furnitureCountConfidence || 88} 
+                />
+                <AIDetection 
+                  icon={<PaletteIcon />} 
+                  label="Style" 
+                  value={roomData.style} 
+                  confidence={roomData.styleConfidence || 90} 
+                />
               </Box>
             </Box>
 

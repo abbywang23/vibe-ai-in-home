@@ -85,9 +85,12 @@ export interface ViewState {
   zoomLevel: number;
 }
 
+// 支持的家具类型（与后端 products.yaml 保持一致）
+export type SupportedFurnitureType = 'sofa' | 'table' | 'chair' | 'storage' | 'bed' | 'desk';
+
 export interface DetectedFurnitureItem {
   itemId: string;
-  furnitureType: string;
+  furnitureType: SupportedFurnitureType;
   boundingBox: BoundingBox;
   confidence: number;
 }
