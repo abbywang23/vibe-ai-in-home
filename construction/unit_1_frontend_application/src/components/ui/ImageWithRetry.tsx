@@ -1,7 +1,7 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 import { RefreshCw, ImageIcon, AlertCircle } from 'lucide-react';
-import { useImageRetry } from '../hooks/useImageRetry';
-import { imageRetryConfig } from '../config/imageRetryConfig';
+import { useImageRetry } from '../../hooks/useImageRetry';
+import { imageRetryConfig } from '../../config/imageRetryConfig';
 
 interface ImageWithRetryProps {
   src: string;
@@ -62,7 +62,7 @@ export function ImageWithRetry({
     enableLogging,
   }) as any;
 
-  const handleLoad = useCallback(() => {
+  const handleLoad = useCallback((event: React.SyntheticEvent<HTMLImageElement, Event>) => {
     _handleLoad();
   }, [_handleLoad]);
 
@@ -70,32 +70,17 @@ export function ImageWithRetry({
     _handleError(event.nativeEvent);
   }, [_handleError]);
 
-  // Loading state
-  if (isLoading && !hasError) {
-    return (
-      <div 
-        className={`flex items-center justify-center bg-muted ${className}`}
-        style={style}
-      >
-        {isRetrying ? (
-          <div className="flex flex-col items-center gap-2 text-muted-foreground">
-            <RefreshCw className="w-6 h-6 animate-spin" />
-            <span className="text-xs">Retrying... ({retryCount}/{maxRetries || imageRetryConfig.maxRetries})</span>
-          </div>
-        ) : (
-          placeholder || (
-            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-              <ImageIcon className="w-6 h-6" />
-              <span className="text-xs">Loading...</span>
-            </div>
-          )
-        )}
-      </div>
-    );
-  }
+  // Check if image is already loaded (for cached images) when src changes
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalHeight !== 0 && isLoading) {
+      // Image is already loaded (from cache), trigger load handler
+      _handleLoad();
+    }
+  }, [currentSrc, isLoading, _handleLoad]);
 
-  // Error state
-  if (hasError) {
+  // Error state - show error placeholder
+  if (hasError && !isRetrying) {
     return (
       <div 
         className={`flex items-center justify-center bg-muted ${className}`}
@@ -120,17 +105,53 @@ export function ImageWithRetry({
     );
   }
 
-  // Success state - show image
+  // Retrying state - show retry indicator
+  if (isRetrying) {
+    return (
+      <div 
+        className={`flex items-center justify-center bg-muted ${className}`}
+        style={style}
+      >
+        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+          <RefreshCw className="w-6 h-6 animate-spin" />
+          <span className="text-xs">Retrying... ({retryCount}/{maxRetries || imageRetryConfig.maxRetries})</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show image - always render the img element, even if loading
+  // This allows cached images to display immediately
+  // The loading placeholder will be shown via CSS or overlay if needed
   return (
-    <img
-      ref={imgRef}
-      src={currentSrc}
-      alt={alt}
-      className={className}
-      style={style}
-      onLoad={handleLoad}
-      onError={handleError}
-    />
+    <div className="relative" style={{ width: style?.width, height: style?.height }}>
+      {isLoading && !hasError && (
+        <div 
+          className={`absolute inset-0 flex items-center justify-center bg-muted z-10`}
+        >
+          {placeholder || (
+            <div className="flex flex-col items-center gap-2 text-muted-foreground">
+              <ImageIcon className="w-6 h-6" />
+              <span className="text-xs">Loading...</span>
+            </div>
+          )}
+        </div>
+      )}
+      <img
+        ref={imgRef}
+        src={currentSrc}
+        alt={alt}
+        className={className}
+        style={{
+          ...style,
+          opacity: isLoading && !hasError ? 0 : 1,
+          transition: 'opacity 0.2s',
+          display: 'block',
+        }}
+        onLoad={handleLoad}
+        onError={handleError}
+      />
+    </div>
   );
 }
 

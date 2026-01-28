@@ -763,6 +763,7 @@ export class ImageProcessingService {
 
   /**
    * Upload image to Cloudinary and return URL
+   * Reference: test-wan25-curl.sh upload_to_cloudinary function
    */
   private async uploadToCloudinary(imageUrl: string, imageName: string): Promise<string> {
     const cloudinaryConfig = {
@@ -772,8 +773,9 @@ export class ImageProcessingService {
     };
 
     try {
-      // Get image buffer
+      // Get image buffer and determine file extension
       let imageBuffer: Buffer;
+      let fileExtension = '.jpg'; // Default extension
       
       if (imageUrl.startsWith('http://localhost') || imageUrl.startsWith('http://127.0.0.1')) {
         // For local URLs, read the file directly
@@ -782,8 +784,13 @@ export class ImageProcessingService {
         
         if (fs.existsSync(fullPath)) {
           imageBuffer = fs.readFileSync(fullPath);
+          // Get extension from file path
+          const ext = path.extname(fullPath).toLowerCase();
+          if (ext) {
+            fileExtension = ext;
+          }
         } else {
-          throw new Error('Local image file not found');
+          throw new Error(`Local image file not found: ${fullPath}`);
         }
       } else {
         // For remote URLs, fetch the image
@@ -792,21 +799,39 @@ export class ImageProcessingService {
           throw new Error(`Failed to fetch image: ${imageResponse.status}`);
         }
         imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+        
+        // Try to get extension from URL
+        try {
+          const urlObj = new URL(imageUrl);
+          const pathname = urlObj.pathname;
+          const ext = path.extname(pathname).toLowerCase();
+          if (ext && ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext)) {
+            fileExtension = ext;
+          }
+        } catch (e) {
+          // Use default extension if URL parsing fails
+        }
       }
 
-      // Generate timestamp and public_id for signature
+      // Generate timestamp and public_id for signature (matching script format)
       const timestamp = Math.floor(Date.now() / 1000);
-      const publicId = `multi_render_${imageName}_${timestamp}`;
+      const publicId = `test_wan25_${imageName}_${timestamp}`;
       
       // Generate signature: sha1(public_id=xxx&timestamp=xxx + api_secret)
+      // Cloudinary signature format: sha1(parameter_string + api_secret)
       const crypto = require('crypto');
       const signatureString = `public_id=${publicId}&timestamp=${timestamp}${cloudinaryConfig.apiSecret}`;
       const signature = crypto.createHash('sha1').update(signatureString).digest('hex');
 
-      // Create form data for upload
+      // Create form data for upload (matching script format)
       const FormData = require('form-data');
       const formData = new FormData();
-      formData.append('file', imageBuffer);
+      
+      // Append file with proper filename
+      formData.append('file', imageBuffer, {
+        filename: `image${fileExtension}`,
+        contentType: fileExtension === '.png' ? 'image/png' : 'image/jpeg'
+      });
       formData.append('api_key', cloudinaryConfig.apiKey);
       formData.append('timestamp', timestamp.toString());
       formData.append('signature', signature);
@@ -819,36 +844,48 @@ export class ImageProcessingService {
       });
 
       if (!uploadResponse.ok) {
-        throw new Error(`Cloudinary upload failed: ${uploadResponse.status}`);
+        const errorText = await uploadResponse.text();
+        throw new Error(`Cloudinary upload failed: ${uploadResponse.status} - ${errorText}`);
       }
 
-      const uploadResult = await uploadResponse.json();
+      const uploadResult = await uploadResponse.json() as any;
       
-      if (uploadResult.secure_url) {
-        console.log(`Successfully uploaded to Cloudinary: ${uploadResult.secure_url}`);
-        return uploadResult.secure_url;
-      } else if (uploadResult.url) {
-        console.log(`Successfully uploaded to Cloudinary: ${uploadResult.url}`);
-        return uploadResult.url;
+      // Extract URL (matching script logic: prefer secure_url, fallback to url)
+      const secureUrl = uploadResult.secure_url;
+      const url = uploadResult.url;
+      
+      if (secureUrl) {
+        console.log(`✅ Successfully uploaded to Cloudinary: ${secureUrl}`);
+        return secureUrl;
+      } else if (url) {
+        console.log(`✅ Successfully uploaded to Cloudinary: ${url}`);
+        return url;
       } else {
+        console.error('Upload response:', JSON.stringify(uploadResult, null, 2));
         throw new Error('No URL returned from Cloudinary');
       }
 
-    } catch (error) {
-      console.error('Cloudinary upload error:', error);
+    } catch (error: any) {
+      console.error('❌ Cloudinary upload error:', error);
       throw new Error(`Failed to upload to Cloudinary: ${error.message}`);
     }
   }
 
   /**
    * Poll task status until completion
+   * Reference: test-wan25-curl.sh polling implementation
    */
   private async pollTaskStatus(taskId: string, maxAttempts: number = 120, interval: number = 3000): Promise<string> {
     console.log(`Starting to poll task ${taskId} (max ${maxAttempts} attempts, ${interval}ms interval)`);
     
+    let lastStatus = '';
+    
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        await new Promise(resolve => setTimeout(resolve, interval));
+        // Wait before checking (except first attempt)
+        if (attempt > 1) {
+          await new Promise(resolve => setTimeout(resolve, interval));
+        }
         
         const taskResponse = await fetch(`https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`, {
           method: 'GET',
@@ -858,19 +895,35 @@ export class ImageProcessingService {
         });
 
         if (!taskResponse.ok) {
-          console.warn(`[${attempt}] Task status query failed: ${taskResponse.status}`);
+          // Only log warning every 10 attempts to avoid spam
+          if (attempt % 10 === 1) {
+            console.warn(`[${attempt}] Task status query failed: ${taskResponse.status}`);
+          }
           continue;
         }
 
-        const taskResult = await taskResponse.json();
-        const taskStatus = taskResult.output?.task_status || taskResult.task_status;
+        const taskResult = await taskResponse.json() as any;
+        const taskStatus = taskResult.output?.task_status || taskResult.task_status || 'UNKNOWN';
         
-        if (attempt % 10 === 0) {
-          console.log(`[${attempt}] Task status: ${taskStatus}`);
+        // Only print if status changed (similar to script behavior)
+        if (taskStatus !== lastStatus) {
+          const timestamp = new Date().toLocaleTimeString('zh-CN');
+          console.log(`[${timestamp}] [${attempt}] 任务状态: ${taskStatus}`);
+          lastStatus = taskStatus;
+        } else if (attempt % 10 === 0) {
+          // Show progress every 10 attempts
+          const timestamp = new Date().toLocaleTimeString('zh-CN');
+          console.log(`[${timestamp}] 已轮询 ${attempt} 次，继续等待...`);
         }
 
         if (taskStatus === 'SUCCEEDED') {
-          // Extract image URL from various possible paths
+          console.log('');
+          console.log('═══════════════════════════════════════════════════════════');
+          console.log('✅ 任务完成！');
+          console.log('═══════════════════════════════════════════════════════════');
+          console.log('');
+          
+          // Extract image URL from various possible paths (matching script logic)
           const imageUrl = taskResult.output?.results?.[0]?.url ||
                           taskResult.output?.result?.[0]?.url ||
                           taskResult.output?.results?.[0]?.image ||
@@ -878,112 +931,159 @@ export class ImageProcessingService {
                           taskResult.output?.image_url ||
                           taskResult.output?.choices?.[0]?.message?.content?.[0]?.image;
 
-          if (imageUrl) {
-            console.log(`✅ Task completed successfully! Image URL: ${imageUrl}`);
+          if (imageUrl && imageUrl !== 'null') {
+            console.log(`✅ 成功生成图片！`);
+            console.log(`图片 URL: ${imageUrl}`);
             return imageUrl;
           } else {
+            console.warn('⚠️ 响应中未找到图片 URL');
+            console.log('完整响应:', JSON.stringify(taskResult, null, 2));
             throw new Error('Task succeeded but no image URL found in response');
           }
         } else if (taskStatus === 'FAILED') {
-          console.error('Task failed:', taskResult);
+          console.log('');
+          console.log('═══════════════════════════════════════════════════════════');
+          console.log('❌ 任务失败');
+          console.log('═══════════════════════════════════════════════════════════');
+          console.log('');
+          console.log('错误信息:');
+          console.log(JSON.stringify(taskResult, null, 2));
           throw new Error(`Task failed: ${JSON.stringify(taskResult)}`);
         }
         // Continue polling for PENDING/RUNNING status
         
-      } catch (error) {
+      } catch (error: any) {
+        // Only log errors every 10 attempts to avoid spam
         if (attempt % 10 === 1) {
           console.warn(`[${attempt}] Polling error:`, error.message);
         }
+        // Continue polling even on error
       }
     }
 
+    // Timeout reached
+    console.log('');
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log(`⚠️ 轮询超时（已轮询 ${maxAttempts} 次，约 ${Math.floor(maxAttempts * interval / 1000 / 60)} 分钟）`);
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('');
+    console.log('任务可能仍在处理中，请稍后使用以下命令查询:');
+    console.log('');
+    console.log(`curl -H "Authorization: Bearer $DASHSCOPE_API_KEY" \\`);
+    console.log(`     https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`);
+    console.log('');
+    console.log(`任务 ID: ${taskId}`);
+    
     throw new Error(`Task polling timeout after ${maxAttempts} attempts`);
   }
 
   /**
-   * Generate multi-furniture render using wan2.5-i2i-preview with Cloudinary upload
+   * Generate multi-furniture render using Decor8AI API
+   * Reference: test-decor8ai.py implementation
    */
   async generateMultiFurnitureRender(
     imageUrl: string,
     selectedFurniture: Array<{ id: string; name: string; imageUrl?: string }>,
     roomType: string
   ): Promise<FurniturePlacementResponse> {
-    console.log('Starting multi-furniture render with Cloudinary + wan2.5-i2i-preview...');
+    console.log('Starting multi-furniture render with Decor8AI API...');
     
+    // Check for Decor8AI API key
+    const decor8ApiKey = process.env.DECOR8_API_KEY;
+    if (!decor8ApiKey) {
+      throw new Error('DECOR8_API_KEY environment variable is not set');
+    }
+
     try {
       // Step 1: Upload room image to Cloudinary
       console.log('Step 1: Uploading room image to Cloudinary...');
       const roomImageCloudinaryUrl = await this.uploadToCloudinary(imageUrl, 'room');
+      console.log(`✅ Room image uploaded: ${roomImageCloudinaryUrl}`);
       
-      // Step 2: Prepare images array (room + product images)
-      const images: string[] = [roomImageCloudinaryUrl];
+      // Step 2: Prepare decor_items from selected furniture
+      console.log('Step 2: Preparing decor items from selected furniture...');
+      const decorItems: Array<{ url: string; name: string }> = [];
       
-      // Add product image URLs (limit to 3 more to stay within API limits)
-      let productImageCount = 0;
       for (const furniture of selectedFurniture) {
-        if (furniture.imageUrl && productImageCount < 3) {
-          images.push(furniture.imageUrl);
-          productImageCount++;
-          console.log(`Added product image: ${furniture.name}`);
+        if (furniture.imageUrl) {
+          // Use product image URL directly (can be HTTPS URL or Cloudinary URL)
+          decorItems.push({
+            url: furniture.imageUrl,
+            name: furniture.name
+          });
+          console.log(`✅ Added decor item: ${furniture.name} -> ${furniture.imageUrl}`);
+        } else {
+          console.warn(`⚠️ Skipping ${furniture.name} - no image URL provided`);
         }
       }
 
-      console.log(`Using ${images.length} images for generation`);
+      if (decorItems.length === 0) {
+        throw new Error('No valid furniture items with image URLs provided');
+      }
 
-      // Step 3: Construct prompt for multi-furniture placement
-      const furnitureList = selectedFurniture.map(item => item.name).join('、');
-      const prompt = `请基于房间图片和家具产品图片，生成一张现代简约风格的${roomType}渲染图。将以下Castlery家具产品自然地融入到房间中：${furnitureList}。
+      console.log(`Using ${decorItems.length} decor items for generation`);
 
-要求：
-1. 合理安排所有家具的位置，确保空间布局协调
-2. 家具之间保持适当的距离和比例关系  
-3. 整体风格统一，色彩搭配和谐
-4. 保持房间的自然光线和阴影效果
-5. 创造一个实用且美观的生活空间
+      // Step 3: Map roomType to Decor8AI room_type format
+      const roomTypeMap: Record<string, string> = {
+        'living room': 'livingroom',
+        'livingroom': 'livingroom',
+        'bedroom': 'bedroom',
+        'kitchen': 'kitchen',
+        'dining room': 'diningroom',
+        'diningroom': 'diningroom',
+        'bathroom': 'bathroom',
+        'office': 'office',
+        'home office': 'office',
+        'family room': 'familyroom',
+        'familyroom': 'familyroom',
+      };
+      const decor8RoomType = roomTypeMap[roomType.toLowerCase()] || 'livingroom';
+      console.log(`Mapped room type: "${roomType}" -> "${decor8RoomType}"`);
 
-请生成一张专业的室内设计渲染图，展示所有选中的家具完美融入到这个房间中的效果。`;
-
-      // Step 4: Submit async task to wan2.5-i2i-preview
-      console.log('Step 2: Submitting async task to wan2.5-i2i-preview...');
+      // Step 4: Call Decor8AI API
+      console.log('Step 3: Calling Decor8AI generate_designs_for_room API...');
       
-      const taskResponse = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/image2image/image-synthesis', {
+      const requestPayload = {
+        input_image_url: roomImageCloudinaryUrl,
+        room_type: decor8RoomType,
+        design_style: 'minimalist', // Default to minimalist, can be made configurable
+        num_images: 1,
+        scale_factor: 2, // Max 1536 pixels, no additional charge
+        decor_items: JSON.stringify(decorItems)
+      };
+
+      console.log('Request payload:', JSON.stringify({
+        ...requestPayload,
+        decor_items: decorItems // Show readable format
+      }, null, 2));
+      
+      const apiResponse = await fetch('https://api.decor8.ai/generate_designs_for_room', {
         method: 'POST',
         headers: {
-          'X-DashScope-Async': 'enable',
-          'Authorization': `Bearer ${process.env.DASHSCOPE_API_KEY}`,
+          'Authorization': `Bearer ${decor8ApiKey}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          model: 'wan2.5-i2i-preview',
-          input: {
-            prompt: prompt,
-            images: images
-          },
-          parameters: {
-            n: 1
-          }
-        })
+        body: JSON.stringify(requestPayload)
       });
 
-      if (!taskResponse.ok) {
-        const errorText = await taskResponse.text();
-        throw new Error(`wan2.5-i2i-preview API error: ${taskResponse.status} - ${errorText}`);
+      if (!apiResponse.ok) {
+        const errorText = await apiResponse.text();
+        throw new Error(`Decor8AI API error: ${apiResponse.status} - ${errorText}`);
       }
 
-      const taskResult = await taskResponse.json();
-      const taskId = taskResult.task_id || taskResult.output?.task_id;
+      const apiResult = await apiResponse.json() as any;
+      console.log('Decor8AI API response:', JSON.stringify(apiResult, null, 2));
       
-      if (!taskId) {
-        throw new Error('No task ID returned from API');
+      // Extract image URL from response
+      if (!apiResult.info || !apiResult.info.images || apiResult.info.images.length === 0) {
+        console.error('Full response:', JSON.stringify(apiResult, null, 2));
+        throw new Error('No image returned from Decor8AI API');
       }
 
-      console.log(`✅ Task submitted successfully! Task ID: ${taskId}`);
+      const generatedImageUrl = apiResult.info.images[0].url;
+      console.log(`✅ Image generated successfully! URL: ${generatedImageUrl}`);
 
-      // Step 5: Poll for task completion
-      console.log('Step 3: Polling for task completion...');
-      const generatedImageUrl = await this.pollTaskStatus(taskId);
-
-      // Step 6: Download and save the generated image locally
+      // Step 5: Download and save the generated image locally
       console.log('Step 4: Downloading and saving generated image...');
       const imageResponse = await fetch(generatedImageUrl);
       if (!imageResponse.ok) {
@@ -1002,6 +1102,8 @@ export class ImageProcessingService {
 
       console.log(`✅ Multi-furniture render completed successfully: ${filename}`);
 
+      const furnitureList = selectedFurniture.map(item => item.name).join('、');
+      
       return {
         success: true,
         processedImageUrl,

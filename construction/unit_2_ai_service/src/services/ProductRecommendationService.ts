@@ -153,7 +153,7 @@ export class ProductRecommendationService {
     ];
 
     const response = await aiClient.chatCompletion({
-      model: undefined,
+      model: 'qwen-turbo',
       messages,
       temperature: 0.3, // Lower temperature for more consistent recommendations
       max_tokens: 2000,
