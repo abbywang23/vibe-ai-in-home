@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import * as React from 'react';
+import { useDispatch } from 'react-redux';
 import { 
   Upload, 
   Sparkles, 
@@ -18,13 +20,18 @@ import {
   ChevronUp,
   Lock,
   Check,
-  Loader2,
-  ArrowLeft,
-  ArrowRight,
-  X
+  Loader2
 } from 'lucide-react';
+import { AppDispatch } from '../store';
+import { configureRoom, updatePreferences } from '../store/slices/sessionSlice';
+import { setRoomConfig, setRoomImage } from '../store/slices/designSlice';
+import { addItem, clearCart } from '../store/slices/cartSlice';
+import { addNotification } from '../store/slices/uiSlice';
 import { FurnitureComparisonCard } from './FurnitureComparisonCard';
-import { aiApi } from '../services/aiApi';
+import ImageWithRetry from './ui/ImageWithRetry';
+import { getApiUrl } from '../utils/apiConfig';
+import { useUploadImageMutation, useDetectFurnitureMutation, useGetSmartProductRecommendationsMutation, usePlaceFurnitureMutation, useReplaceFurnitureMutation } from '../services/aiApi';
+import { RoomType, RoomDimensions, RoomImage, DimensionUnit } from '../types/domain';
 
 type StepId = 'upload' | 'vision' | 'selection' | 'confirmation';
 type StepStatus = 'pending' | 'active' | 'completed' | 'locked';
@@ -80,10 +87,15 @@ interface Step {
 }
 
 export function DesignStudio() {
-  // 🔍 DEBUG: 确认这是 unit_1_frontend_application 的版本
-  console.log('🎯 DesignStudio loaded from unit_1_frontend_application with API integration');
-  console.log('📍 API Base URL:', import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001');
-  
+  const dispatch = useDispatch<AppDispatch>();
+
+  // API hooks
+  const [uploadImage, { isLoading: isUploading }] = useUploadImageMutation();
+  const [detectFurniture, { isLoading: isDetecting }] = useDetectFurnitureMutation();
+  const [getSmartRecommendations, { isLoading: isLoadingRecommendations }] = useGetSmartProductRecommendationsMutation();
+  const [placeFurniture] = usePlaceFurnitureMutation();
+  const [replaceFurniture] = useReplaceFurnitureMutation();
+
   const [steps, setSteps] = useState<Step[]>([
     { id: 'upload', number: 1, title: 'Room Setup', subtitle: 'Upload & analyze your space', icon: <Upload className="w-5 h-5" />, status: 'active' },
     { id: 'vision', number: 2, title: 'Design Vision', subtitle: 'Define style & preferences', icon: <Palette className="w-5 h-5" />, status: 'pending' },
@@ -104,11 +116,14 @@ export function DesignStudio() {
     budget: { min: 2000, max: 5000 }
   });
   const [selectedFurniture, setSelectedFurniture] = useState<FurnitureItem[]>([]);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isLoadingFurniture, setIsLoadingFurniture] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
   const [showFinalResult, setShowFinalResult] = useState(false);
+
+  // Computed loading states
+  const isUploadingOrDetecting = isUploading || isDetecting;
+  const isFurnitureLoading = isLoadingRecommendations || isLoadingFurniture;
 
   // Update step status helper
   const updateStepStatus = (stepId: StepId, status: StepStatus) => {
@@ -130,53 +145,87 @@ export function DesignStudio() {
     }
   };
 
-  // Handle image upload
+  // Handle going back to a previous step
+  const goBackToStep = (stepId: StepId) => {
+    // Reset all steps after the target step to pending
+    const targetIndex = steps.findIndex(s => s.id === stepId);
+    setSteps(prev => prev.map((step, index) => ({
+      ...step,
+      status: index < targetIndex ? 'completed' : index === targetIndex ? 'active' : 'pending'
+    })));
+    setExpandedStep(stepId);
+  };
+
+  // Handle image upload with real API
   const handleImageUpload = async (file: File) => {
-    setIsAnalyzing(true);
-    
     try {
-      // 1. 上传图片
-      console.log('Uploading image...');
-      const uploadResponse = await aiApi.uploadImage(file);
-      console.log('Upload response:', uploadResponse);
+      // Upload image
+      const formData = new FormData();
+      formData.append('image', file);
       
-      // 2. 检测家具
-      console.log('Detecting furniture...');
-      const detectResponse = await aiApi.detectFurniture({
-        imageUrl: uploadResponse.imageUrl,
-        roomType: roomSetup.roomType
-      });
-      console.log('Detect response:', detectResponse);
+      const uploadResult = await uploadImage(formData).unwrap();
       
-      // 3. 更新状态
-      const data: RoomData = {
-        imageUrl: uploadResponse.imageUrl,
-        roomType: detectResponse.roomType,
-        dimensions: detectResponse.dimensions,
-        furniture: detectResponse.furniture,
-        style: detectResponse.style,
-        confidence: detectResponse.confidence
+      // Get room dimensions based on room setup
+      const getRoomDimensions = (size: RoomSize): RoomDimensions => {
+        const dimensions = {
+          small: { length: 10, width: 10, height: 8, unit: DimensionUnit.FEET },
+          medium: { length: 15, width: 12, height: 8, unit: DimensionUnit.FEET },
+          large: { length: 20, width: 18, height: 9, unit: DimensionUnit.FEET },
+          xlarge: { length: 25, width: 20, height: 10, unit: DimensionUnit.FEET }
+        };
+        return dimensions[size];
       };
+
+      const dimensions = getRoomDimensions(roomSetup.size);
       
-      setRoomData(data);
-      setPreferences(prev => ({ ...prev, style: data.style }));
-      
-    } catch (error) {
-      console.error('Error uploading/analyzing image:', error);
-      // 降级到模拟数据
+      // Detect furniture in the uploaded image
+      const detectionResult = await detectFurniture({
+        imageUrl: uploadResult.imageUrl,
+        roomDimensions: dimensions,
+      }).unwrap();
+
+      // Process detection results
       const data: RoomData = {
-        imageUrl: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&q=80',
-        roomType: 'Living Room',
-        dimensions: "12' × 15'",
-        furniture: ['Sofa', 'Coffee Table', 'Armchair'],
-        style: 'Modern Minimalist',
+        imageUrl: uploadResult.imageUrl,
+        roomType: roomSetup.roomType,
+        dimensions: `${dimensions.length}' × ${dimensions.width}'`,
+        furniture: detectionResult.detectedItems.map(item => item.furnitureType),
+        style: detectionResult.isEmpty ? 'Modern Minimalist' : 'Detected from existing furniture',
         confidence: 95
       };
+
       setRoomData(data);
       setPreferences(prev => ({ ...prev, style: data.style }));
-      alert('Failed to analyze image. Using demo data.');
-    } finally {
-      setIsAnalyzing(false);
+      
+      // Update Redux state
+      const roomTypeEnum = roomSetup.roomType as RoomType;
+      dispatch(configureRoom({ roomType: roomTypeEnum, dimensions }));
+      dispatch(setRoomConfig({ roomType: roomTypeEnum, dimensions }));
+
+      const roomImage: RoomImage = {
+        imageId: `image_${Date.now()}`,
+        originalUrl: uploadResult.imageUrl,
+        processedUrl: null,
+        detectedFurniture: detectionResult.detectedItems,
+        isEmpty: detectionResult.isEmpty,
+        appliedReplacements: [],
+        appliedPlacements: [],
+        uploadedAt: new Date().toISOString(),
+      };
+      dispatch(setRoomImage(roomImage));
+
+      dispatch(addNotification({
+        type: 'success',
+        message: `Room analyzed successfully! ${detectionResult.detectedItems.length} furniture items detected.`,
+      }));
+
+    } catch (error: any) {
+      console.error('Image upload/detection failed:', error);
+      const errorMessage = error.data?.message || 'Failed to process image. Please try again.';
+      dispatch(addNotification({
+        type: 'error',
+        message: errorMessage,
+      }));
     }
   };
 
@@ -185,33 +234,95 @@ export function DesignStudio() {
     completeStep('upload');
   };
 
-  // Handle vision step completion
+  // Handle vision step completion with real API
   const handleVisionComplete = async () => {
+    // Convert DesignPreferences to UserPreferences format
+    const userPrefs = {
+      style: preferences.style,
+      budget: {
+        amount: preferences.budget.max,
+        currency: 'USD' as const
+      },
+      colorScheme: preferences.style,
+      roomSize: 'medium' as const
+    };
+    dispatch(updatePreferences(userPrefs));
     completeStep('vision');
+    
+    // Load furniture with real API
     setIsLoadingFurniture(true);
     
+    // Clear existing cart items before adding new recommendations
+    dispatch(clearCart());
+    
     try {
-      // 调用智能推荐 API
-      console.log('Getting smart recommendations...');
-      const response = await aiApi.getSmartRecommendations({
-        roomType: roomData?.roomType || roomSetup.roomType,
-        style: preferences.style,
-        budget: preferences.budget,
-        intent: preferences.intent,
-        existingFurniture: roomData?.furniture || []
-      });
-      console.log('Recommendations response:', response);
-      
-      // 更新家具列表
-      const furnitureWithSelection = response.recommendations.map(item => ({
-        ...item,
+      const roomTypeEnum = roomData?.roomType as RoomType;
+      const dimensions = {
+        length: roomSetup.size === 'small' ? 10 : roomSetup.size === 'medium' ? 15 : roomSetup.size === 'large' ? 20 : 25,
+        width: roomSetup.size === 'small' ? 10 : roomSetup.size === 'medium' ? 12 : roomSetup.size === 'large' ? 18 : 20,
+        height: roomSetup.size === 'small' ? 8 : roomSetup.size === 'medium' ? 8 : roomSetup.size === 'large' ? 9 : 10,
+        unit: DimensionUnit.FEET
+      };
+
+      const recommendationResult = await getSmartRecommendations({
+        roomType: roomTypeEnum,
+        roomDimensions: dimensions,
+        preferences: {
+          selectedCategories: ['Sofa', 'Coffee Table', 'Armchair'], // Based on detected furniture
+          selectedCollections: [],
+          budget: {
+            amount: preferences.budget.max,
+            currency: 'USD'
+          }
+        },
+        language: 'en'
+      }).unwrap();
+
+      // Convert API response to FurnitureItem format
+      const furniture: FurnitureItem[] = recommendationResult.products.map((product, index) => ({
+        id: product.id,
+        name: product.name,
+        category: product.category,
+        price: product.price,
+        imageUrl: product.images?.[0]?.url || '/placeholder-furniture.jpg',
+        reason: `AI selected this ${product.category.toLowerCase()} for its perfect fit with your ${preferences.style} style and room dimensions`,
+        dimensions: product.dimensions ? 
+          `${product.dimensions.width}"W × ${product.dimensions.depth}"D × ${product.dimensions.height}"H` : 
+          'Dimensions available',
+        existingItem: index < 3 ? {
+          name: `Existing ${product.category}`,
+          imageUrl: '/placeholder-old-furniture.jpg',
+          estimatedValue: Math.floor(product.price * 0.4)
+        } : undefined,
         isSelected: true
       }));
-      setSelectedFurniture(furnitureWithSelection);
+
+      setSelectedFurniture(furniture);
       
-    } catch (error) {
-      console.error('Error getting recommendations:', error);
-      // 降级到模拟数据
+      // Add recommended items to cart for FurnitureSelectionStep to display
+      furniture.forEach(item => {
+        const cartItem = {
+          itemId: `item_${Date.now()}_${item.id}`,
+          productId: item.id,
+          productName: item.name,
+          quantity: 1,
+          unitPrice: { amount: item.price, currency: 'SGD' },
+          thumbnailUrl: item.imageUrl,
+          isInStock: true,
+          addedAt: new Date().toISOString(),
+        };
+        dispatch(addItem(cartItem));
+      });
+      
+      dispatch(addNotification({
+        type: 'success',
+        message: `Found ${furniture.length} perfect furniture matches for your space!`,
+      }));
+
+    } catch (error: any) {
+      console.error('Failed to load furniture recommendations:', error);
+      
+      // Fallback to mock data if API fails
       const furniture: FurnitureItem[] = [
         {
           id: '1',
@@ -242,25 +353,30 @@ export function DesignStudio() {
             estimatedValue: 300
           },
           isSelected: true
-        },
-        {
-          id: '3',
-          name: 'Bergen Armchair',
-          category: 'Armchair',
-          price: 649,
-          imageUrl: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=400&q=80',
-          reason: 'Better ergonomics with improved back support, complements new sofa design',
-          dimensions: '32" W × 34" D × 35" H',
-          existingItem: {
-            name: 'Vintage Armchair',
-            imageUrl: 'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=400&q=80',
-            estimatedValue: 450
-          },
-          isSelected: true
         }
       ];
+      
       setSelectedFurniture(furniture);
-      alert('Failed to get recommendations. Using demo data.');
+      
+      // Add fallback items to cart as well
+      furniture.forEach(item => {
+        const cartItem = {
+          itemId: `item_${Date.now()}_${item.id}`,
+          productId: item.id,
+          productName: item.name,
+          quantity: 1,
+          unitPrice: { amount: item.price, currency: 'USD' },
+          thumbnailUrl: item.imageUrl,
+          isInStock: true,
+          addedAt: new Date().toISOString(),
+        };
+        dispatch(addItem(cartItem));
+      });
+      
+      dispatch(addNotification({
+        type: 'warning',
+        message: 'Using sample furniture data. API connection needed for personalized recommendations.',
+      }));
     } finally {
       setIsLoadingFurniture(false);
     }
@@ -273,6 +389,21 @@ export function DesignStudio() {
     ));
   };
 
+  // Handle swap furniture item
+  const handleSwapFurniture = (id: string) => {
+    // Simulate swapping with a new item
+    console.log('Swap furniture item:', id);
+    dispatch(addNotification({
+      type: 'info',
+      message: 'Furniture swap feature coming soon!',
+    }));
+  };
+
+  // Handle remove furniture item
+  const handleRemoveFurniture = (id: string) => {
+    setSelectedFurniture(prev => prev.filter(item => item.id !== id));
+  };
+
   // Handle selection step completion
   const handleSelectionComplete = () => {
     completeStep('selection');
@@ -280,64 +411,92 @@ export function DesignStudio() {
 
   // Handle render generation
   const handleGenerateRender = async () => {
+    if (!roomData) return;
+    
     setIsRendering(true);
     setRenderProgress(0);
-    
+
     try {
       const selectedItems = selectedFurniture.filter(item => item.isSelected);
       
-      // 模拟进度更新
-      const progressInterval = setInterval(() => {
-        setRenderProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return prev;
-          }
-          return prev + 10;
-        });
-      }, 500);
-      
-      // 调用渲染 API
-      console.log('Generating multi-render...');
-      const response = await aiApi.generateMultiRender({
-        roomImageUrl: roomData?.imageUrl || '',
-        furnitureItems: selectedItems.map(item => ({
-          productId: item.id,
-        })),
-        style: preferences.style,
-        renderQuality: 'high'
+      if (selectedItems.length === 0) {
+        console.warn('No furniture selected for rendering');
+        setIsRendering(false);
+        return;
+      }
+
+      // Step 1: Initial setup
+      setRenderProgress(10);
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Step 2: Use multi-furniture render API for one-time processing
+      setRenderProgress(30);
+      console.log('Generating multi-furniture render with selected items:', selectedItems);
+
+      // Prepare furniture data for API
+      const furnitureData = selectedItems.map(item => ({
+        id: item.id,
+        name: item.name,
+        imageUrl: item.imageUrl // Include product image if available
+      }));
+
+      // Call the new multi-render API
+      const multiRenderResult = await fetch(getApiUrl('/multi-render'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          imageUrl: roomData.imageUrl, // Use original clean URL
+          selectedFurniture: furnitureData,
+          roomType: roomData.roomType
+        }),
       });
-      console.log('Render response:', response);
-      
-      clearInterval(progressInterval);
+
+      if (!multiRenderResult.ok) {
+        throw new Error(`Multi-render API failed: ${multiRenderResult.status}`);
+      }
+
+      const renderData = await multiRenderResult.json();
+      console.log('Multi-furniture render result:', renderData);
+
+      // Step 3: Processing
+      setRenderProgress(70);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Step 4: Finalize rendering
+      setRenderProgress(90);
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Step 5: Complete
       setRenderProgress(100);
-      
-      // 更新房间图片为渲染结果
-      if (response.renderedImageUrl) {
-        setRoomData(prev => prev ? {
-          ...prev,
-          imageUrl: response.renderedImageUrl
-        } : null);
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Update room data with the final processed image
+      if (renderData.success && renderData.processedImageUrl) {
+        setRoomData(prev => prev ? { ...prev, imageUrl: renderData.processedImageUrl } : null);
+        console.log('Updated room data with multi-render result:', renderData.processedImageUrl);
+      } else {
+        throw new Error('Multi-render API did not return a valid image URL');
       }
       
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setShowFinalResult(true);
-      completeStep('confirmation');
-      
-    } catch (error) {
-      console.error('Error generating render:', error);
-      // 降级：使用原图
-      const steps = [15, 40, 65, 85, 100];
-      for (const progress of steps) {
-        await new Promise(resolve => setTimeout(resolve, 600));
-        setRenderProgress(progress);
-      }
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setShowFinalResult(true);
-      completeStep('confirmation');
-      alert('Failed to generate render. Showing original image.');
-    } finally {
       setIsRendering(false);
+      setShowFinalResult(true);
+      completeStep('confirmation');
+
+      dispatch(addNotification({
+        type: 'success',
+        message: `Successfully generated rendering with ${selectedItems.length} furniture items using multi-image fusion!`,
+      }));
+
+    } catch (error: any) {
+      console.error('Multi-furniture render failed:', error);
+      setIsRendering(false);
+      
+      dispatch(addNotification({
+        type: 'error',
+        message: 'Failed to generate rendering. Please try again. Error: ' + error.message,
+      }));
     }
   };
 
@@ -391,7 +550,7 @@ export function DesignStudio() {
                       roomSetup={roomSetup}
                       onRoomSetupChange={setRoomSetup}
                       roomData={roomData}
-                      isAnalyzing={isAnalyzing}
+                      isAnalyzing={isUploadingOrDetecting}
                       onUpload={handleImageUpload}
                       onComplete={handleUploadComplete}
                       isCompleted={step.status === 'completed'}
@@ -410,12 +569,15 @@ export function DesignStudio() {
                     <SelectionStepContent
                       selectedFurniture={selectedFurniture}
                       onToggleFurniture={handleToggleFurniture}
-                      isLoading={isLoadingFurniture}
+                      onSwapFurniture={handleSwapFurniture}
+                      onRemoveFurniture={handleRemoveFurniture}
+                      isLoading={isFurnitureLoading}
                       totalCost={totalCost}
                       budget={preferences.budget}
                       withinBudget={withinBudget}
                       onComplete={handleSelectionComplete}
                       isCompleted={step.status === 'completed'}
+                      onGoBackToBudget={() => goBackToStep('vision')}
                     />
                   )}
                   {step.id === 'confirmation' && (
@@ -424,6 +586,8 @@ export function DesignStudio() {
                       isRendering={isRendering}
                       showFinalResult={showFinalResult}
                       totalCost={totalCost}
+                      selectedFurniture={selectedFurniture}
+                      dispatch={dispatch}
                     />
                   )}
                 </StepCard>
@@ -438,7 +602,7 @@ export function DesignStudio() {
           <div className="flex-1 overflow-y-auto">
             <RenderingCanvas
               roomData={roomData}
-              isAnalyzing={isAnalyzing}
+              isAnalyzing={isUploadingOrDetecting}
               isRendering={isRendering}
               renderProgress={renderProgress}
               showFinalResult={showFinalResult}
@@ -452,9 +616,8 @@ export function DesignStudio() {
           <div className="h-[280px] border-t border-border bg-card overflow-y-auto">
             <FurnitureListPanel
               selectedFurniture={selectedFurniture}
-              isLoading={isLoadingFurniture}
+              isLoading={isFurnitureLoading}
               totalCost={totalCost}
-              showFinalResult={showFinalResult}
             />
           </div>
         </div>
@@ -566,6 +729,30 @@ function UploadStepContent({ roomSetup, onRoomSetupChange, roomData, isAnalyzing
   onComplete: () => void;
   isCompleted: boolean;
 }) {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      alert('Image size must be less than 10MB');
+      return;
+    }
+
+    onUpload(file);
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
   const getRoomSizeLabel = (size: RoomSize) => {
     const labels = {
       small: 'Small (< 150 sq ft)',
@@ -576,19 +763,17 @@ function UploadStepContent({ roomSetup, onRoomSetupChange, roomData, isAnalyzing
     return labels[size];
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('File input changed!', event.target.files);
-    const file = event.target.files?.[0];
-    if (file) {
-      console.log('File selected:', file.name, file.type, file.size);
-      onUpload(file);
-    } else {
-      console.log('No file selected');
-    }
-  };
-
   return (
     <div className="space-y-4">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/jpg"
+        onChange={handleFileSelect}
+        style={{ display: 'none' }}
+      />
+
       {/* Room Intent Selection */}
       <div>
         <label className="block mb-2 font-medium" style={{ fontSize: 'var(--text-label)' }}>Design Intent</label>
@@ -690,46 +875,35 @@ function UploadStepContent({ roomSetup, onRoomSetupChange, roomData, isAnalyzing
 
       {/* Upload Area */}
       {!roomData ? (
-        <div className="relative">
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/jpg"
-            onChange={handleFileSelect}
-            disabled={isAnalyzing}
-            className="hidden"
-            id="room-image-upload"
-          />
-          <label
-            htmlFor="room-image-upload"
-            className={`block w-full aspect-video border-2 border-dashed border-border rounded-lg hover:border-primary transition-colors flex flex-col items-center justify-center gap-3 bg-background group ${
-              isAnalyzing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-            }`}
-          >
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                <div className="text-center">
-                  <h5 className="mb-1">Analyzing Room...</h5>
-                  <p className="text-muted-foreground" style={{ fontSize: 'var(--text-caption)' }}>
-                    AI is detecting room details
-                  </p>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Upload className="w-8 h-8 text-primary" />
-                </div>
-                <div className="text-center">
-                  <h5 className="mb-1">Upload Room Photo</h5>
-                  <p className="text-muted-foreground" style={{ fontSize: 'var(--text-caption)' }}>
-                    Click or drag to upload (JPG, PNG)
-                  </p>
-                </div>
-              </>
-            )}
-          </label>
-        </div>
+        <button
+          onClick={handleUploadClick}
+          disabled={isAnalyzing}
+          className="w-full aspect-video border-2 border-dashed border-border rounded-lg hover:border-primary transition-colors flex flex-col items-center justify-center gap-3 bg-background group disabled:opacity-50"
+        >
+          {isAnalyzing ? (
+            <>
+              <Loader2 className="w-10 h-10 text-primary animate-spin" />
+              <div className="text-center">
+                <h5 className="mb-1">Analyzing Room...</h5>
+                <p className="text-muted-foreground" style={{ fontSize: 'var(--text-caption)' }}>
+                  AI is detecting room details
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                <Upload className="w-8 h-8 text-primary" />
+              </div>
+              <div className="text-center">
+                <h5 className="mb-1">Upload Room Photo</h5>
+                <p className="text-muted-foreground" style={{ fontSize: 'var(--text-caption)' }}>
+                  Click to upload (JPG, PNG, max 10MB)
+                </p>
+              </div>
+            </>
+          )}
+        </button>
       ) : (
         <>
           <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
@@ -900,15 +1074,18 @@ function VisionStepContent({ roomData, preferences, onPreferencesChange, onCompl
 }
 
 // Selection Step Content
-function SelectionStepContent({ selectedFurniture, onToggleFurniture, isLoading, totalCost, budget, withinBudget, onComplete, isCompleted }: {
+function SelectionStepContent({ selectedFurniture, onToggleFurniture, onSwapFurniture, onRemoveFurniture, isLoading, totalCost, budget, withinBudget, onComplete, isCompleted, onGoBackToBudget }: {
   selectedFurniture: FurnitureItem[];
   onToggleFurniture: (id: string) => void;
+  onSwapFurniture: (id: string) => void;
+  onRemoveFurniture: (id: string) => void;
   isLoading: boolean;
   totalCost: number;
   budget: { min: number; max: number };
   withinBudget: boolean;
   onComplete: () => void;
   isCompleted: boolean;
+  onGoBackToBudget?: () => void;
 }) {
   if (isLoading) {
     return (
@@ -969,95 +1146,68 @@ function SelectionStepContent({ selectedFurniture, onToggleFurniture, isLoading,
       {/* Furniture Items */}
       <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
         {selectedFurniture.map((item, index) => (
-          <FurnitureCard key={item.id} item={item} index={index} isCompleted={isCompleted} onToggle={onToggleFurniture} />
+          <FurnitureComparisonCard 
+            key={item.id} 
+            item={item} 
+            index={index} 
+            isCompleted={isCompleted} 
+            onToggle={onToggleFurniture} 
+            onSwap={onSwapFurniture} 
+            onRemove={onRemoveFurniture} 
+          />
         ))}
       </div>
 
       {/* Confirm Button */}
       {!isCompleted && (
-        <button
-          onClick={onComplete}
-          disabled={!withinBudget}
-          className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
+        <div className="space-y-2">
           {withinBudget ? (
-            <>
+            <button
+              onClick={onComplete}
+              className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+            >
               <Check className="w-5 h-5" />
               Confirm Selection
-            </>
+            </button>
           ) : (
-            <>
-              <DollarSign className="w-5 h-5" />
-              Adjust Budget or Items
-            </>
-          )}
-        </button>
-      )}
-    </div>
-  );
-}
-
-// Furniture Card Component
-function FurnitureCard({ item, index, isCompleted, onToggle }: { item: FurnitureItem; index: number; isCompleted: boolean; onToggle: (id: string) => void }) {
-  return (
-    <div className="bg-background border border-border rounded-lg overflow-hidden hover:border-primary/50 transition-all group">
-      <div className="flex gap-3 p-3">
-        {/* Product Image */}
-        <div className="w-24 h-24 flex-shrink-0 bg-muted rounded overflow-hidden">
-          <img 
-            src={item.imageUrl} 
-            alt={item.name} 
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-          />
-        </div>
-
-        {/* Product Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0" style={{ fontSize: 'var(--text-small)' }}>
-                  {index + 1}
-                </span>
-                <h5 className="truncate">{item.name}</h5>
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    // Auto-deselect most expensive items to fit budget
+                    const sortedItems = [...selectedFurniture]
+                      .filter(item => item.isSelected)
+                      .sort((a, b) => b.price - a.price);
+                    
+                    let currentTotal = totalCost;
+                    for (const item of sortedItems) {
+                      if (currentTotal <= budget.max) break;
+                      onToggleFurniture(item.id);
+                      currentTotal -= item.price;
+                    }
+                  }}
+                  className="px-4 py-3 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors flex items-center justify-center gap-2"
+                >
+                  <DollarSign className="w-4 h-4" />
+                  Auto-Adjust Items
+                </button>
+                <button
+                  onClick={onGoBackToBudget}
+                  className="px-4 py-3 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Palette className="w-4 h-4" />
+                  Adjust Budget
+                </button>
               </div>
-              <p className="text-muted-foreground" style={{ fontSize: 'var(--text-small)' }}>
-                {item.category}
-              </p>
+              <button
+                onClick={onComplete}
+                className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+              >
+                <Check className="w-5 h-5" />
+                Continue Anyway (${(totalCost - budget.max).toLocaleString()} over)
+              </button>
             </div>
-            <div className="text-right flex-shrink-0">
-              <p className="text-primary font-medium" style={{ fontSize: 'var(--text-h5)' }}>
-                ${item.price.toLocaleString()}
-              </p>
-            </div>
-          </div>
-
-          {/* Dimensions */}
-          <div className="flex items-center gap-1.5 mb-2 text-muted-foreground">
-            <Ruler className="w-3.5 h-3.5 flex-shrink-0" />
-            <span style={{ fontSize: 'var(--text-small)' }}>{item.dimensions}</span>
-          </div>
-
-          {/* AI Reason */}
-          <div className="bg-accent/5 border border-accent/20 rounded px-2 py-1.5 flex items-start gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-accent flex-shrink-0 mt-0.5" />
-            <p className="text-muted-foreground" style={{ fontSize: 'var(--text-small)' }}>
-              {item.reason}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      {!isCompleted && (
-        <div className="border-t border-border px-3 py-2 flex items-center gap-2">
-          <button className="flex-1 px-3 py-1.5 bg-card border border-border rounded hover:border-primary transition-colors flex items-center justify-center gap-1.5">
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span style={{ fontSize: 'var(--text-small)' }}>Swap Item</span>
-          </button>
-          <button className="px-3 py-1.5 bg-card border border-border rounded hover:border-destructive hover:text-destructive transition-colors flex items-center justify-center gap-1.5" onClick={() => onToggle(item.id)}>
-            <span style={{ fontSize: 'var(--text-small)' }}>Remove</span>
-          </button>
+          )}
         </div>
       )}
     </div>
@@ -1065,12 +1215,35 @@ function FurnitureCard({ item, index, isCompleted, onToggle }: { item: Furniture
 }
 
 // Confirmation Step Content
-function ConfirmationStepContent({ onGenerate, isRendering, showFinalResult, totalCost }: {
+function ConfirmationStepContent({ onGenerate, isRendering, showFinalResult, totalCost, selectedFurniture, dispatch }: {
   onGenerate: () => void;
   isRendering: boolean;
   showFinalResult: boolean;
   totalCost: number;
+  selectedFurniture: FurnitureItem[];
+  dispatch: AppDispatch;
 }) {
+  const handlePurchaseAll = () => {
+    selectedFurniture.filter(item => item.isSelected).forEach(item => {
+      const cartItem = {
+        itemId: `item_${Date.now()}_${item.id}`,
+        productId: item.id,
+        productName: item.name,
+        quantity: 1,
+        unitPrice: { amount: item.price, currency: 'USD' },
+        thumbnailUrl: item.imageUrl,
+        isInStock: true,
+        addedAt: new Date().toISOString(),
+      };
+      dispatch(addItem(cartItem));
+    });
+    
+    dispatch(addNotification({
+      type: 'success',
+      message: `Added ${selectedFurniture.filter(item => item.isSelected).length} items to cart!`,
+    }));
+  };
+
   return (
     <div className="space-y-4">
       {!showFinalResult ? (
@@ -1116,7 +1289,10 @@ function ConfirmationStepContent({ onGenerate, isRendering, showFinalResult, tot
             </p>
           </div>
 
-          <button className="w-full px-6 py-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
+          <button 
+            onClick={handlePurchaseAll}
+            className="w-full px-6 py-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+          >
             <ShoppingCart className="w-5 h-5" />
             Purchase All (${totalCost.toLocaleString()})
           </button>
@@ -1228,7 +1404,13 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
       <div className="max-w-6xl mx-auto h-full flex flex-col">
         <div className="flex-1 mb-4">
           <div className="relative h-full rounded-lg overflow-hidden border border-border bg-muted">
-            <img src={roomData.imageUrl} alt="Room" className="w-full h-full object-cover" />
+            <ImageWithRetry 
+              src={roomData.imageUrl} 
+              alt="Room" 
+              className="w-full h-full object-cover"
+              fallbackType="room"
+              onRetry={(retryCount) => console.log(`Retrying room image: ${retryCount}`)}
+            />
             {showFinalResult && (
               <div className="absolute top-4 left-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg flex items-center gap-2 shadow-lg">
                 <CheckCircle className="w-5 h-5" />
@@ -1274,12 +1456,14 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
 }
 
 // Furniture List Panel
-function FurnitureListPanel({ selectedFurniture, isLoading, totalCost, showFinalResult }: {
+function FurnitureListPanel({ selectedFurniture, isLoading, totalCost }: {
   selectedFurniture: FurnitureItem[];
   isLoading: boolean;
   totalCost: number;
-  showFinalResult: boolean;
+  // showFinalResult: boolean; // Commented out as it's not used
 }) {
+  const selectedItems = selectedFurniture.filter(item => item.isSelected);
+
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -1293,14 +1477,17 @@ function FurnitureListPanel({ selectedFurniture, isLoading, totalCost, showFinal
     );
   }
 
-  if (selectedFurniture.length === 0) {
+  if (selectedItems.length === 0) {
     return (
       <div className="h-full flex items-center justify-center p-6">
         <div className="text-center max-w-md">
           <Sofa className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
           <h5 className="mb-2">Furniture Selection</h5>
           <p className="text-muted-foreground" style={{ fontSize: 'var(--text-caption)' }}>
-            Complete the steps above to see AI-recommended furniture
+            {selectedFurniture.length > 0 
+              ? "No furniture items selected. Toggle items in the selection step above."
+              : "Complete the steps above to see AI-recommended furniture"
+            }
           </p>
         </div>
       </div>
@@ -1311,7 +1498,7 @@ function FurnitureListPanel({ selectedFurniture, isLoading, totalCost, showFinal
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h4 className="mb-1">Selected Furniture ({selectedFurniture.length} items)</h4>
+          <h4 className="mb-1">Selected Furniture ({selectedItems.length} items)</h4>
           <p className="text-muted-foreground" style={{ fontSize: 'var(--text-caption)' }}>
             AI-curated pieces that work together perfectly
           </p>
@@ -1325,10 +1512,16 @@ function FurnitureListPanel({ selectedFurniture, isLoading, totalCost, showFinal
       </div>
 
       <div className="grid grid-cols-5 gap-4">
-        {selectedFurniture.map((item) => (
+        {selectedItems.map((item) => (
           <div key={item.id} className="bg-background border border-border rounded-lg overflow-hidden hover:border-primary/50 transition-colors group">
             <div className="aspect-square bg-muted overflow-hidden">
-              <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+              <ImageWithRetry 
+                src={item.imageUrl} 
+                alt={item.name} 
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                fallbackType="furniture"
+                onRetry={(retryCount) => console.log(`Retrying furniture item image: ${item.name}, attempt: ${retryCount}`)}
+              />
             </div>
             <div className="p-3">
               <h5 className="mb-1 text-sm">{item.name}</h5>

@@ -1,42 +1,79 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import {
-  RoomType,
-  RoomDimensions,
-  Money,
-  UserPreferences,
-  DetectedFurnitureItem,
-  Product,
-  Position2D,
-} from '../types/domain';
-import { getApiBaseUrl } from '../utils/apiConfig';
+import { fetchAPI, API_BASE_URL } from './api';
+import { RoomDimensions, DetectedFurnitureItem } from '../types/domain';
 
-const API_BASE_URL = getApiBaseUrl();
+// ============= 类型定义 =============
 
-// Request/Response Types
-interface RecommendationRequest {
-  roomType: RoomType;
-  dimensions: RoomDimensions;
-  budget?: Money;
-  preferences: UserPreferences;
-  language: string;
+export interface UploadImageResponse {
+  imageUrl: string;
+  detectedObjects?: any[];
 }
 
-interface RecommendationResponse {
-  success: boolean;
-  recommendations: Array<{
+export interface DetectFurnitureRequest {
+  imageUrl: string;
+  roomType?: string;
+}
+
+export interface DetectFurnitureResponse {
+  roomType: string;
+  dimensions: string;
+  furniture: string[];
+  style: string;
+  confidence: number;
+}
+
+export interface SmartRecommendRequest {
+  roomType: string;
+  style: string;
+  budget: { min: number; max: number };
+  intent: 'refresh' | 'redesign';
+  existingFurniture?: string[];
+}
+
+export interface FurnitureItem {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  imageUrl: string;
+  reason: string;
+  dimensions: string;
+  existingItem?: {
+    name: string;
+    imageUrl: string;
+    estimatedValue: number;
+  };
+  isSelected?: boolean;
+}
+
+export interface SmartRecommendResponse {
+  recommendations: FurnitureItem[];
+  totalCost: number;
+  withinBudget: boolean;
+}
+
+export interface MultiRenderRequest {
+  roomImageUrl: string;
+  furnitureItems: Array<{
     productId: string;
-    productName: string;
-    position: Position2D;
-    rotation: number;
-    reasoning: string;
-    price: number;
+    position?: { x: number; y: number };
+    scale?: number;
   }>;
-  totalPrice: number;
-  budgetExceeded: boolean;
-  exceededAmount?: number;
+  style: string;
+  renderQuality?: 'draft' | 'high';
 }
 
-interface ChatRequest {
+export interface MultiRenderResponse {
+  renderedImageUrl: string;
+  processingTime: number;
+  furniturePlacements?: Array<{
+    productId: string;
+    position: { x: number; y: number };
+    confidence: number;
+  }>;
+}
+
+// Chat API 接口
+export interface ChatRequest {
   sessionId: string;
   message: string;
   language: 'en' | 'zh';
@@ -45,23 +82,24 @@ interface ChatRequest {
   };
 }
 
-interface ChatResponse {
+export interface ChatResponse {
   success: boolean;
   reply: string;
   actions: any[];
 }
 
-interface DetectionRequest {
+// Detection API 接口
+export interface DetectionRequest {
   imageUrl: string;
   roomDimensions: RoomDimensions;
 }
 
-interface RoomTypeAnalysis {
+export interface RoomTypeAnalysis {
   value: 'living_room' | 'bedroom' | 'dining_room' | 'home_office';
   confidence: number; // 0-100
 }
 
-interface RoomDimensionsAnalysis {
+export interface RoomDimensionsAnalysis {
   length: number;
   width: number;
   height: number;
@@ -69,37 +107,40 @@ interface RoomDimensionsAnalysis {
   confidence: number; // 0-100
 }
 
-interface RoomStyleAnalysis {
+export interface RoomStyleAnalysis {
   value: 'Modern' | 'Nordic' | 'Classic' | 'Minimalist' | 'Industrial' | 'Contemporary' | 'Traditional' | 'Bohemian';
   confidence: number; // 0-100
 }
 
-interface FurnitureCountAnalysis {
+export interface FurnitureCountAnalysis {
   value: number;
   confidence: number; // 0-100
 }
 
-interface DetectionResponse {
+export interface DetectionResponse {
+  success: boolean;
   detectedItems: DetectedFurnitureItem[];
   isEmpty: boolean;
-  
+
   // 新增：智能分析结果
   roomType?: RoomTypeAnalysis;
   roomDimensions?: RoomDimensionsAnalysis;
   roomStyle?: RoomStyleAnalysis;
   furnitureCount?: FurnitureCountAnalysis;
-  
+
   // 保留原有字段（向后兼容）
   estimatedRoomDimensions?: RoomDimensions;
 }
 
-interface ReplacementRequest {
+// Replacement API 接口
+export interface ReplacementRequest {
   imageUrl: string;
   detectedItemId: string;
   replacementProductId: string;
 }
 
-interface ReplacementResponse {
+export interface ReplacementResponse {
+  success: boolean;
   processedImageUrl: string;
   replacement: {
     detectedItemId: string;
@@ -109,7 +150,8 @@ interface ReplacementResponse {
   };
 }
 
-interface PlacementRequest {
+// Placement API 接口
+export interface PlacementRequest {
   imageUrl: string;
   productId: string;
   imagePosition: { x: number; y: number };
@@ -117,7 +159,8 @@ interface PlacementRequest {
   scale: number;
 }
 
-interface PlacementResponse {
+export interface PlacementResponse {
+  success: boolean;
   processedImageUrl: string;
   placement: {
     placementId: string;
@@ -130,149 +173,91 @@ interface PlacementResponse {
   };
 }
 
-export const aiApi = createApi({
-  reducerPath: 'aiApi',
-  baseQuery: fetchBaseQuery({ baseUrl: API_BASE_URL }),
-  endpoints: (builder) => ({
-    // AI Recommendations
-    getRecommendations: builder.mutation<RecommendationResponse, RecommendationRequest>({
-      query: (data) => ({
-        url: '/recommend',
-        method: 'POST',
-        body: data,
-      }),
-    }),
-    
-    // AI Chat
-    sendChatMessage: builder.mutation<ChatResponse, ChatRequest>({
-      query: (data) => ({
-        url: '/chat',
-        method: 'POST',
-        body: data,
-      }),
-    }),
-    
-    // Image Upload
-    uploadImage: builder.mutation<{ imageUrl: string }, FormData>({
-      query: (formData) => ({
-        url: '/upload',
-        method: 'POST',
-        body: formData,
-      }),
-    }),
-    
-    // Furniture Detection
-    detectFurniture: builder.mutation<DetectionResponse, DetectionRequest>({
-      query: (data) => ({
-        url: '/detect',
-        method: 'POST',
-        body: data,
-      }),
-    }),
-    
-    // Furniture Replacement (for furnished rooms)
-    replaceFurniture: builder.mutation<ReplacementResponse, ReplacementRequest>({
-      query: (data) => ({
-        url: '/replace',
-        method: 'POST',
-        body: data,
-      }),
-    }),
-    
-    // Furniture Placement (for empty rooms)
-    placeFurniture: builder.mutation<PlacementResponse, PlacementRequest>({
-      query: (data) => ({
-        url: '/place',
-        method: 'POST',
-        body: data,
-      }),
-    }),
-    
-    // Product Search
-    searchProducts: builder.query<{ success: boolean; products: Product[]; total: number }, {
-      q?: string;
-      categories?: string[];
-      collections?: string[];
-      minPrice?: number;
-      maxPrice?: number;
-      limit?: number;
-    }>({
-      query: (params) => ({
-        url: '/products/search',
-        params,
-      }),
-    }),
-    
-    // Get Product Details
-    getProductById: builder.query<{ success: boolean; product: Product }, string>({
-      query: (id) => `/products/${id}`,
-    }),
-    
-    // Get Categories
-    getCategories: builder.query<{ success: boolean; categories: Array<{ id: string; name: string; productCount: number }> }, void>({
-      query: () => '/products/categories',
-    }),
-    
-    // Get Categories by Room Type
-    getCategoriesByRoomType: builder.query<{ success: boolean; roomType: string; categories: Array<{ id: string; name: string; priority: number }> }, string>({
-      query: (roomType) => `/products/categories/by-room-type?roomType=${roomType}`,
-    }),
-    
-    // Get Collections
-    getCollections: builder.query<{ success: boolean; collections: Array<{ id: string; name: string }> }, void>({
-      query: () => '/products/collections',
-    }),
-    
-    // Get Upload Signature (for Cloudinary direct upload)
-    getUploadSignature: builder.query<{
-      success: boolean;
-      apiKey: string;
-      cloudName: string;
-      timestamp: number;
-      signature: string;
-      publicId: string;
-      expiresAt: number;
-    }, void>({
-      query: () => '/upload/signature',
-    }),
-    
-    // Smart Product Recommendations
-    getSmartProductRecommendations: builder.mutation<{
-      success: boolean;
-      recommendedProductIds: string[];
-      reasoning?: string;
-      products: Product[];
-    }, {
-      roomType: RoomType;
-      roomDimensions: RoomDimensions;
-      preferences: {
-        selectedCategories?: string[];
-        selectedCollections?: string[];
-        budget?: Money;
-      };
-      language?: string;
-    }>({
-      query: (data) => ({
-        url: '/products/smart-recommend',
-        method: 'POST',
-        body: data,
-      }),
-    }),
-  }),
-});
+// ============= API 服务 =============
 
-export const {
-  useGetRecommendationsMutation,
-  useSendChatMessageMutation,
-  useUploadImageMutation,
-  useGetUploadSignatureQuery,
-  useDetectFurnitureMutation,
-  useReplaceFurnitureMutation,
-  usePlaceFurnitureMutation,
-  useSearchProductsQuery,
-  useGetProductByIdQuery,
-  useGetCategoriesQuery,
-  useGetCategoriesByRoomTypeQuery,
-  useGetCollectionsQuery,
-  useGetSmartProductRecommendationsMutation,
-} = aiApi;
+export const aiApi = {
+  /**
+   * 上传图片
+   */
+  async uploadImage(file: File): Promise<UploadImageResponse> {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const response = await fetch(`${API_BASE_URL}/api/ai/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Upload failed');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * 检测房间中的家具
+   */
+  async detectFurniture(request: DetectFurnitureRequest): Promise<DetectFurnitureResponse> {
+    return fetchAPI<DetectFurnitureResponse>('/api/ai/detect', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+
+  /**
+   * 获取智能推荐
+   */
+  async getSmartRecommendations(request: SmartRecommendRequest): Promise<SmartRecommendResponse> {
+    return fetchAPI<SmartRecommendResponse>('/api/ai/products/smart-recommend', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+
+  /**
+   * 生成多家具渲染图
+   */
+  async generateMultiRender(request: MultiRenderRequest): Promise<MultiRenderResponse> {
+    return fetchAPI<MultiRenderResponse>('/api/ai/multi-render', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+
+  /**
+   * 获取产品详情
+   */
+  async getProductById(id: string): Promise<FurnitureItem> {
+    return fetchAPI<FurnitureItem>(`/api/ai/products/${id}`);
+  },
+
+  /**
+   * 搜索产品
+   */
+  async searchProducts(params: {
+    category?: string;
+    style?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    roomType?: string;
+  }): Promise<{ products: FurnitureItem[] }> {
+    const queryString = new URLSearchParams(
+      Object.entries(params)
+        .filter(([_, v]) => v !== undefined && v !== null)
+        .map(([k, v]) => [k, String(v)])
+    ).toString();
+
+    return fetchAPI<{ products: FurnitureItem[] }>(
+      `/api/ai/products/search?${queryString}`
+    );
+  },
+
+  /**
+   * 健康检查
+   */
+  async healthCheck(): Promise<{ status: string; service: string }> {
+    return fetchAPI<{ status: string; service: string }>('/health');
+  },
+};
