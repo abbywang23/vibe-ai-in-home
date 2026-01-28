@@ -1104,7 +1104,8 @@ export class ImageProcessingService {
   async generateMultiFurnitureRender(
     imageUrl: string,
     selectedFurniture: Array<{ id: string; name: string; imageUrl?: string }>,
-    roomType: string
+    roomType: string,
+    req?: Request
   ): Promise<FurniturePlacementResponse> {
     console.log('Starting multi-furniture render with Decor8AI API...');
     
@@ -1218,7 +1219,7 @@ export class ImageProcessingService {
       fs.writeFileSync(localPath, Buffer.from(imageBuffer));
       
       // Use request-based base URL if available, otherwise fallback to env or localhost
-      const baseUrl = getBaseUrl();
+      const baseUrl = getBaseUrl(req);
       const processedImageUrl = `${baseUrl}/uploads/${filename}`;
 
       console.log(`✅ Multi-furniture render completed successfully: ${filename}`);

@@ -29,7 +29,8 @@ import VisualizationCanvas from '../components/VisualizationCanvas';
 import NotificationSnackbar from '../components/NotificationSnackbar';
 import RoomImageManager from '../components/RoomImageManager';
 import { RoomType, RoomDimensions, UserPreferences, MessageSender, ChatMessage as ChatMessageType, PlanningSession, RoomDesign, ShoppingCart as ShoppingCartType, RoomImage, DetectedFurnitureItem, Product } from '../types/domain';
-import { useSendChatMessageMutation, useUploadImageMutation, useDetectFurnitureMutation, useReplaceFurnitureMutation, usePlaceFurnitureMutation } from '../services/aiApi';
+import { useSendChatMessageMutation, useDetectFurnitureMutation, useReplaceFurnitureMutation, usePlaceFurnitureMutation } from '../services/aiApi';
+import { uploadToCloudinary, validateImageFile, UploadProgress } from '../utils/cloudinaryUpload';
 import ImageProcessingService from '../services/ImageProcessingService';
 import { brandColors, spacing } from '../theme/brandTheme';
 
@@ -50,7 +51,8 @@ export default function PlannerPage() {
   const [setupMode, setSetupMode] = useState<SetupMode | null>(null);
   
   const [sendChat, { isLoading: isLoadingChat }] = useSendChatMessageMutation();
-  const [uploadImage, { isLoading: isUploadingImage }] = useUploadImageMutation();
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [detectFurniture, { isLoading: isDetectingFurniture }] = useDetectFurnitureMutation();
   const [replaceFurniture, { isLoading: isReplacingFurniture }] = useReplaceFurnitureMutation();
   const [placeFurnitureInImage, { isLoading: isPlacingFurniture }] = usePlaceFurnitureMutation();
@@ -72,10 +74,30 @@ export default function PlannerPage() {
       setCurrentPreviewUrl(config.imagePreviewUrl);
       
       try {
-        // Upload image
-        const formData = new FormData();
-        formData.append('image', config.imageFile);
-        const uploadResult = await uploadImage(formData).unwrap();
+        // Validate file
+        const validation = validateImageFile(config.imageFile);
+        if (!validation.valid) {
+          dispatch(addNotification({
+            type: 'error',
+            message: validation.error || 'Invalid image file'
+          }));
+          return;
+        }
+        
+        setIsUploadingImage(true);
+        setUploadProgress(0);
+        
+        // Upload directly to Cloudinary with progress tracking
+        const uploadResult = await uploadToCloudinary(config.imageFile, (progress: UploadProgress) => {
+          setUploadProgress(progress.percentage);
+        });
+        
+        if (!uploadResult.success) {
+          throw new Error('Upload failed');
+        }
+        
+        setIsUploadingImage(false);
+        setUploadProgress(0);
         
         // Save image URL for new flow
         setRoomImageUrl(uploadResult.imageUrl);
@@ -116,11 +138,13 @@ export default function PlannerPage() {
         
         // Move to AI detection step
         setCurrentStep('detection');
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to upload image:', error);
+        setIsUploadingImage(false);
+        setUploadProgress(0);
         dispatch(addNotification({
           type: 'error',
-          message: 'Failed to upload image. Please try again.',
+          message: error.message || 'Failed to upload image. Please try again.',
         }));
       }
     } else {
@@ -196,9 +220,30 @@ export default function PlannerPage() {
     setCurrentPreviewUrl(previewUrl);
     
     try {
-      const formData = new FormData();
-      formData.append('image', file);
-      const uploadResult = await uploadImage(formData).unwrap();
+      // Validate file
+      const validation = validateImageFile(file);
+      if (!validation.valid) {
+        dispatch(addNotification({
+          type: 'error',
+          message: validation.error || 'Invalid image file'
+        }));
+        return;
+      }
+      
+      setIsUploadingImage(true);
+      setUploadProgress(0);
+      
+      // Upload directly to Cloudinary with progress tracking
+      const uploadResult = await uploadToCloudinary(file, (progress: UploadProgress) => {
+        setUploadProgress(progress.percentage);
+      });
+      
+      if (!uploadResult.success) {
+        throw new Error('Upload failed');
+      }
+      
+      setIsUploadingImage(false);
+      setUploadProgress(0);
       
       // Create room image object and save to state immediately
       const roomImage: RoomImage = {
@@ -212,9 +257,15 @@ export default function PlannerPage() {
         uploadedAt: new Date().toISOString(),
       };
       dispatch(setRoomImage(roomImage));
-    } catch (error) {
-      console.error('Failed to upload image:', error);
-      // Even if upload fails, show preview URL
+      } catch (error: any) {
+        console.error('Failed to upload image:', error);
+        setIsUploadingImage(false);
+        setUploadProgress(0);
+        dispatch(addNotification({
+          type: 'error',
+          message: error.message || 'Failed to upload image. Please try again.'
+        }));
+        // Even if upload fails, show preview URL
       const roomImage: RoomImage = {
         imageId: `image_${Date.now()}`,
         originalUrl: previewUrl,
@@ -292,8 +343,30 @@ export default function PlannerPage() {
     setCurrentPreviewUrl(previewUrl);
 
     try {
-      const formData = await ImageProcessingService.prepareForUpload(file);
-      const result = await uploadImage(formData).unwrap();
+      // Validate file
+      const validation = validateImageFile(file);
+      if (!validation.valid) {
+        dispatch(addNotification({
+          type: 'error',
+          message: validation.error || 'Invalid image file'
+        }));
+        return;
+      }
+      
+      setIsUploadingImage(true);
+      setUploadProgress(0);
+      
+      // Upload directly to Cloudinary with progress tracking
+      const result = await uploadToCloudinary(file, (progress: UploadProgress) => {
+        setUploadProgress(progress.percentage);
+      });
+      
+      if (!result.success) {
+        throw new Error('Upload failed');
+      }
+      
+      setIsUploadingImage(false);
+      setUploadProgress(0);
 
       dispatch(addNotification({
         type: 'success',
@@ -312,11 +385,13 @@ export default function PlannerPage() {
         uploadedAt: new Date().toISOString(),
       };
       dispatch(setRoomImage(roomImage));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to upload image:', error);
+      setIsUploadingImage(false);
+      setUploadProgress(0);
       dispatch(addNotification({
         type: 'error',
-        message: 'Failed to upload image. Please try again.',
+        message: error.message || 'Failed to upload image. Please try again.',
       }));
     }
   };

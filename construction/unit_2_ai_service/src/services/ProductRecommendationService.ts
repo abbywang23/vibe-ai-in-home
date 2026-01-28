@@ -39,12 +39,31 @@ export class ProductRecommendationService {
       preferences: request.preferences,
     });
 
-    // Step 1: Get candidate products based on filters
-    // If no categories selected, get all products (filtered by collections and budget if specified)
+    // Step 1: Determine categories to use
+    // If user didn't specify categories, get appropriate categories for the room type
+    let categoriesToUse: string[] | undefined = undefined;
+    
+    if (request.preferences.selectedCategories && request.preferences.selectedCategories.length > 0) {
+      // Use user-specified categories
+      categoriesToUse = request.preferences.selectedCategories;
+    } else {
+      // Auto-determine categories based on room type
+      try {
+        const roomTypeCategories = await this.productClient.getCategoriesByRoomType(request.roomType);
+        if (roomTypeCategories && roomTypeCategories.length > 0) {
+          categoriesToUse = roomTypeCategories.map(cat => cat.id);
+          console.log(`Auto-selected categories for ${request.roomType}:`, categoriesToUse);
+        } else {
+          console.warn(`No categories found for room type: ${request.roomType}`);
+        }
+      } catch (error) {
+        console.error('Failed to get categories by room type:', error);
+      }
+    }
+
+    // Step 2: Get candidate products based on filters
     const searchParams: ProductSearchParams = {
-      categories: request.preferences.selectedCategories && request.preferences.selectedCategories.length > 0 
-        ? request.preferences.selectedCategories 
-        : undefined,
+      categories: categoriesToUse,
       collections: request.preferences.selectedCollections && request.preferences.selectedCollections.length > 0
         ? request.preferences.selectedCollections
         : undefined,
@@ -144,7 +163,7 @@ export class ProductRecommendationService {
     candidateProducts: Product[],
     aiClient: any
   ): Promise<SmartRecommendationResponse> {
-    const systemPrompt = this.buildSystemPrompt(request.language || 'en');
+    const systemPrompt = this.buildSystemPrompt(request.language || 'en', request.roomType);
     const userPrompt = this.buildUserPrompt(request, candidateProducts);
 
     const messages: ChatMessage[] = [
@@ -185,9 +204,14 @@ export class ProductRecommendationService {
   /**
    * Build system prompt for AI
    */
-  private buildSystemPrompt(language: string): string {
+  private buildSystemPrompt(language: string, roomType: RoomType): string {
+    // Get room-specific restrictions
+    const roomRestrictions = this.getRoomTypeRestrictions(roomType, language);
+    
     if (language === 'zh') {
       return `你是一个专业的家具推荐专家。你的任务是根据用户的房间信息、偏好和可用商品，智能推荐最合适的家具产品。
+
+${roomRestrictions}
 
 请按照以下JSON格式返回推荐结果：
 {
@@ -200,9 +224,12 @@ export class ProductRecommendationService {
 2. 考虑房间类型、尺寸、预算、风格偏好
 3. 确保推荐的商品符合用户选择的类别和系列
 4. 优先推荐性价比高、风格匹配的商品
-5. 提供清晰的推荐理由`;
+5. 提供清晰的推荐理由
+6. **严格遵守房间类型限制，不要推荐不适合该房间类型的家具**`;
     } else {
       return `You are a professional furniture recommendation expert. Your task is to intelligently recommend the most suitable furniture products based on user's room information, preferences, and available products.
+
+${roomRestrictions}
 
 Please return recommendations in the following JSON format:
 {
@@ -215,8 +242,54 @@ Requirements:
 2. Consider room type, dimensions, budget, style preferences
 3. Ensure recommended products match user's selected categories and collections
 4. Prioritize products with good value and style match
-5. Provide clear reasoning for recommendations`;
+5. Provide clear reasoning for recommendations
+6. **STRICTLY follow room type restrictions - do NOT recommend furniture unsuitable for this room type**`;
     }
+  }
+
+  /**
+   * Get room type specific restrictions for the prompt
+   */
+  private getRoomTypeRestrictions(roomType: RoomType, language: string): string {
+    const restrictions: Record<RoomType, { zh: string; en: string }> = {
+      [RoomType.BEDROOM]: {
+        zh: `**重要限制：这是卧室（Bedroom），请只推荐适合卧室的家具。**
+- 必须推荐：床（Bed）、储物柜（Storage）、床头柜等
+- 禁止推荐：沙发（Sofa）、咖啡桌（Coffee Table）等客厅家具
+- 可选推荐：椅子（Chair）、桌子（Table，如梳妆台）`,
+        en: `**IMPORTANT RESTRICTION: This is a BEDROOM - only recommend bedroom-appropriate furniture.**
+- MUST recommend: Beds, Storage (wardrobes, dressers), Nightstands
+- DO NOT recommend: Sofas, Coffee Tables, or other living room furniture
+- Optional: Chairs, Tables (like dressing tables)`
+      },
+      [RoomType.LIVING_ROOM]: {
+        zh: `**重要限制：这是客厅（Living Room），请推荐适合客厅的家具。**
+- 必须推荐：沙发（Sofa）、茶几（Coffee Table）、椅子（Chair）等
+- 可选推荐：储物柜（Storage）、边桌（Side Table）等`,
+        en: `**IMPORTANT RESTRICTION: This is a LIVING ROOM - recommend living room furniture.**
+- MUST recommend: Sofas, Coffee Tables, Chairs
+- Optional: Storage, Side Tables`
+      },
+      [RoomType.DINING_ROOM]: {
+        zh: `**重要限制：这是餐厅（Dining Room），请推荐适合餐厅的家具。**
+- 必须推荐：餐桌（Dining Table）、餐椅（Dining Chairs）
+- 可选推荐：储物柜（Storage，如餐边柜）`,
+        en: `**IMPORTANT RESTRICTION: This is a DINING ROOM - recommend dining room furniture.**
+- MUST recommend: Dining Tables, Dining Chairs
+- Optional: Storage (like sideboards)`
+      },
+      [RoomType.HOME_OFFICE]: {
+        zh: `**重要限制：这是家庭办公室（Home Office），请推荐适合办公的家具。**
+- 必须推荐：书桌（Desk）、办公椅（Office Chair）、储物柜（Storage）
+- 可选推荐：书架（Bookshelf）等`,
+        en: `**IMPORTANT RESTRICTION: This is a HOME OFFICE - recommend office furniture.**
+- MUST recommend: Desks, Office Chairs, Storage
+- Optional: Bookshelves`
+      },
+    };
+
+    const restriction = restrictions[roomType];
+    return restriction ? (language === 'zh' ? restriction.zh : restriction.en) : '';
   }
 
   /**

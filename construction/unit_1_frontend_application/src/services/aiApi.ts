@@ -192,6 +192,19 @@ export const aiApi = createApi({
       query: () => '/products/collections',
     }),
     
+    // Get Upload Signature (for Cloudinary direct upload)
+    getUploadSignature: builder.query<{
+      success: boolean;
+      apiKey: string;
+      cloudName: string;
+      timestamp: number;
+      signature: string;
+      publicId: string;
+      expiresAt: number;
+    }, void>({
+      query: () => '/upload/signature',
+    }),
+    
     // Smart Product Recommendations
     getSmartProductRecommendations: builder.mutation<{
       success: boolean;
@@ -221,6 +234,7 @@ export const {
   useGetRecommendationsMutation,
   useSendChatMessageMutation,
   useUploadImageMutation,
+  useGetUploadSignatureQuery,
   useDetectFurnitureMutation,
   useReplaceFurnitureMutation,
   usePlaceFurnitureMutation,

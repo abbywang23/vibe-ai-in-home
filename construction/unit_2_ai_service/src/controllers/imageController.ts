@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
+import crypto from 'crypto';
 import { ImageProcessingService } from '../services/ImageProcessingService';
 
 // Configure multer for file uploads
@@ -27,8 +28,46 @@ export class ImageController {
   uploadMiddleware = upload.single('image');
 
   /**
+   * GET /api/ai/upload/signature
+   * Get Cloudinary upload signature for frontend direct upload
+   */
+  async getUploadSignature(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const cloudinaryConfig = {
+        apiKey: process.env.CLOUDINARY_API_KEY || '117752995173679',
+        apiSecret: process.env.CLOUDINARY_API_SECRET || 'OGiujqsUNHsYduK3mg96lEg_L4I',
+        cloudName: process.env.CLOUDINARY_CLOUD_NAME || 'dyurkavye'
+      };
+
+      // Generate timestamp (valid for 1 hour)
+      const timestamp = Math.floor(Date.now() / 1000);
+      
+      // Generate unique public_id
+      const randomId = crypto.randomBytes(8).toString('hex');
+      const publicId = `user_uploads/room_${timestamp}_${randomId}`;
+      
+      // Generate signature: sha1(public_id=xxx&timestamp=xxx + api_secret)
+      const signatureString = `public_id=${publicId}&timestamp=${timestamp}${cloudinaryConfig.apiSecret}`;
+      const signature = crypto.createHash('sha1').update(signatureString).digest('hex');
+
+      res.json({
+        success: true,
+        apiKey: cloudinaryConfig.apiKey,
+        cloudName: cloudinaryConfig.cloudName,
+        timestamp,
+        signature,
+        publicId,
+        // Signature is valid for 1 hour (3600 seconds)
+        expiresAt: timestamp + 3600
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * POST /api/ai/upload
-   * Upload room image
+   * Upload room image (kept for backward compatibility, but not used as fallback)
    */
   async uploadImage(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -172,7 +211,8 @@ export class ImageController {
       const result = await this.imageService.generateMultiFurnitureRender(
         imageUrl,
         selectedFurniture,
-        roomType || 'living room'
+        roomType || 'living room',
+        req
       );
 
       res.json(result);

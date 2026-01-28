@@ -30,7 +30,8 @@ import { addNotification } from '../store/slices/uiSlice';
 import { FurnitureComparisonCard } from './FurnitureComparisonCard';
 import ImageWithRetry from './ui/ImageWithRetry';
 import { getApiUrl } from '../utils/apiConfig';
-import { useUploadImageMutation, useDetectFurnitureMutation, useGetSmartProductRecommendationsMutation, usePlaceFurnitureMutation, useReplaceFurnitureMutation } from '../services/aiApi';
+import { useDetectFurnitureMutation, useGetSmartProductRecommendationsMutation } from '../services/aiApi';
+import { uploadToCloudinary, validateImageFile, UploadProgress } from '../utils/cloudinaryUpload';
 import { RoomType, RoomDimensions, RoomImage, DimensionUnit } from '../types/domain';
 
 type StepId = 'upload' | 'vision' | 'selection' | 'confirmation';
@@ -90,11 +91,11 @@ export function DesignStudio() {
   const dispatch = useDispatch<AppDispatch>();
 
   // API hooks
-  const [uploadImage, { isLoading: isUploading }] = useUploadImageMutation();
   const [detectFurniture, { isLoading: isDetecting }] = useDetectFurnitureMutation();
+  const [uploadProgress, setUploadProgress] = React.useState<number>(0);
+  const [isUploading, setIsUploading] = React.useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = React.useState<string | null>(null);
   const [getSmartRecommendations, { isLoading: isLoadingRecommendations }] = useGetSmartProductRecommendationsMutation();
-  const [placeFurniture] = usePlaceFurnitureMutation();
-  const [replaceFurniture] = useReplaceFurnitureMutation();
 
   const [steps, setSteps] = useState<Step[]>([
     { id: 'upload', number: 1, title: 'Room Setup', subtitle: 'Upload & analyze your space', icon: <Upload className="w-5 h-5" />, status: 'active' },
@@ -156,14 +157,22 @@ export function DesignStudio() {
     setExpandedStep(stepId);
   };
 
-  // Handle image upload with real API
+  // Handle image upload with Cloudinary direct upload
   const handleImageUpload = async (file: File) => {
     try {
-      // Upload image
-      const formData = new FormData();
-      formData.append('image', file);
+      // Validate file
+      const validation = validateImageFile(file);
+      if (!validation.valid) {
+        dispatch(addNotification({
+          type: 'error',
+          message: validation.error || 'Invalid image file'
+        }));
+        return;
+      }
       
-      const uploadResult = await uploadImage(formData).unwrap();
+      // Create preview URL immediately and show image
+      const previewUrl = URL.createObjectURL(file);
+      setPreviewImageUrl(previewUrl);
       
       // Get room dimensions based on room setup
       const getRoomDimensions = (size: RoomSize): RoomDimensions => {
@@ -178,13 +187,59 @@ export function DesignStudio() {
 
       const dimensions = getRoomDimensions(roomSetup.size);
       
+      // Set roomData immediately with preview URL so image displays right away
+      const previewRoomData: RoomData = {
+        imageUrl: previewUrl, // Use preview URL first
+        roomType: roomSetup.roomType,
+        dimensions: `${dimensions.length}' × ${dimensions.width}'`,
+        furniture: [],
+        style: 'Uploading...',
+        confidence: 0
+      };
+      setRoomData(previewRoomData);
+      
+      setIsUploading(true);
+      setUploadProgress(0);
+      
+      // Upload directly to Cloudinary with progress tracking
+      const uploadResult = await uploadToCloudinary(file, (progress: UploadProgress) => {
+        setUploadProgress(progress.percentage);
+      });
+      
+      if (!uploadResult.success) {
+        throw new Error('Upload failed');
+      }
+      
+      setUploadProgress(100);
+      
+      // Clean up preview URL
+      if (previewImageUrl) {
+        URL.revokeObjectURL(previewImageUrl);
+        setPreviewImageUrl(null);
+      }
+      
+      // Upload complete - hide progress bar
+      setIsUploading(false);
+      setUploadProgress(0);
+      
+      // Update roomData with Cloudinary URL
+      const cloudinaryRoomData: RoomData = {
+        imageUrl: uploadResult.imageUrl, // Now use Cloudinary URL
+        roomType: roomSetup.roomType,
+        dimensions: `${dimensions.length}' × ${dimensions.width}'`,
+        furniture: [],
+        style: 'Analyzing...',
+        confidence: 0
+      };
+      setRoomData(cloudinaryRoomData);
+      
       // Detect furniture in the uploaded image
       const detectionResult = await detectFurniture({
         imageUrl: uploadResult.imageUrl,
         roomDimensions: dimensions,
       }).unwrap();
 
-      // Process detection results
+      // Process detection results and update roomData
       const data: RoomData = {
         imageUrl: uploadResult.imageUrl,
         roomType: roomSetup.roomType,
@@ -214,6 +269,10 @@ export function DesignStudio() {
       };
       dispatch(setRoomImage(roomImage));
 
+      // Mark upload and detection as complete
+      setIsUploading(false);
+      setUploadProgress(0);
+
       dispatch(addNotification({
         type: 'success',
         message: `Room analyzed successfully! ${detectionResult.detectedItems.length} furniture items detected.`,
@@ -221,7 +280,9 @@ export function DesignStudio() {
 
     } catch (error: any) {
       console.error('Image upload/detection failed:', error);
-      const errorMessage = error.data?.message || 'Failed to process image. Please try again.';
+      setIsUploading(false);
+      setUploadProgress(0);
+      const errorMessage = error.message || error.data?.message || 'Failed to process image. Please try again.';
       dispatch(addNotification({
         type: 'error',
         message: errorMessage,
@@ -264,11 +325,30 @@ export function DesignStudio() {
         unit: DimensionUnit.FEET
       };
 
+      // Get appropriate categories for the room type
+      // If roomType is not available, don't pass selectedCategories to let backend handle it
+      let selectedCategories: string[] | undefined = undefined;
+      if (roomTypeEnum) {
+        try {
+          // Fetch categories for this room type
+          const categoriesResponse = await fetch(getApiUrl('/products/categories/by-room-type') + `?roomType=${roomTypeEnum}`);
+          if (categoriesResponse.ok) {
+            const categoriesData = await categoriesResponse.json();
+            if (categoriesData.success && categoriesData.categories && categoriesData.categories.length > 0) {
+              // Use category IDs from the response
+              selectedCategories = categoriesData.categories.map((cat: { id: string; name: string }) => cat.id);
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to fetch categories by room type, proceeding without category filter:', error);
+        }
+      }
+
       const recommendationResult = await getSmartRecommendations({
         roomType: roomTypeEnum,
         roomDimensions: dimensions,
         preferences: {
-          selectedCategories: ['Sofa', 'Coffee Table', 'Armchair'], // Based on detected furniture
+          selectedCategories: selectedCategories, // Dynamically get categories based on room type
           selectedCollections: [],
           budget: {
             amount: preferences.budget.max,
@@ -278,20 +358,31 @@ export function DesignStudio() {
         language: 'en'
       }).unwrap();
 
+      // Create a simple SVG placeholder as data URI
+      const createPlaceholderImage = (text: string) => {
+        const svg = `<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+          <rect width="400" height="300" fill="#f3f4f6"/>
+          <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="16" fill="#9ca3af" text-anchor="middle" dy=".3em">${text}</text>
+        </svg>`;
+        return `data:image/svg+xml;base64,${btoa(svg)}`;
+      };
+
       // Convert API response to FurnitureItem format
       const furniture: FurnitureItem[] = recommendationResult.products.map((product, index) => ({
         id: product.id,
         name: product.name,
         category: product.category,
         price: product.price,
-        imageUrl: product.images?.[0]?.url || '/placeholder-furniture.jpg',
+        imageUrl: product.images && product.images.length > 0 && product.images[0]?.url
+          ? product.images[0].url
+          : createPlaceholderImage(product.name),
         reason: `AI selected this ${product.category.toLowerCase()} for its perfect fit with your ${preferences.style} style and room dimensions`,
         dimensions: product.dimensions ? 
           `${product.dimensions.width}"W × ${product.dimensions.depth}"D × ${product.dimensions.height}"H` : 
           'Dimensions available',
         existingItem: index < 3 ? {
           name: `Existing ${product.category}`,
-          imageUrl: '/placeholder-old-furniture.jpg',
+          imageUrl: createPlaceholderImage(`Existing ${product.category}`),
           estimatedValue: Math.floor(product.price * 0.4)
         } : undefined,
         isSelected: true
@@ -551,6 +642,7 @@ export function DesignStudio() {
                       onRoomSetupChange={setRoomSetup}
                       roomData={roomData}
                       isAnalyzing={isUploadingOrDetecting}
+                      uploadProgress={uploadProgress}
                       onUpload={handleImageUpload}
                       onComplete={handleUploadComplete}
                       isCompleted={step.status === 'completed'}
@@ -609,6 +701,8 @@ export function DesignStudio() {
               preferences={preferences}
               selectedFurniture={selectedFurniture}
               totalCost={totalCost}
+              isUploading={isUploading}
+              uploadProgress={uploadProgress}
             />
           </div>
 
@@ -720,11 +814,12 @@ function StepCard({ step, isExpanded, onToggle, isLast, children }: StepCardProp
 }
 
 // Upload Step Content
-function UploadStepContent({ roomSetup, onRoomSetupChange, roomData, isAnalyzing, onUpload, onComplete, isCompleted }: {
+function UploadStepContent({ roomSetup, onRoomSetupChange, roomData, isAnalyzing, uploadProgress, onUpload, onComplete, isCompleted }: {
   roomSetup: RoomSetup;
   onRoomSetupChange: (setup: RoomSetup) => void;
   roomData: RoomData | null;
   isAnalyzing: boolean;
+  uploadProgress: number;
   onUpload: (file: File) => void;
   onComplete: () => void;
   isCompleted: boolean;
@@ -883,11 +978,27 @@ function UploadStepContent({ roomSetup, onRoomSetupChange, roomData, isAnalyzing
           {isAnalyzing ? (
             <>
               <Loader2 className="w-10 h-10 text-primary animate-spin" />
-              <div className="text-center">
-                <h5 className="mb-1">Analyzing Room...</h5>
-                <p className="text-muted-foreground" style={{ fontSize: 'var(--text-caption)' }}>
-                  AI is detecting room details
-                </p>
+              <div className="text-center w-full px-4">
+                <h5 className="mb-1">
+                  {uploadProgress > 0 && uploadProgress < 100 ? 'Uploading Image...' : 'Analyzing Room...'}
+                </h5>
+                {uploadProgress > 0 && uploadProgress < 100 ? (
+                  <div className="mt-3 space-y-2">
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div
+                        className="bg-primary h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-muted-foreground text-sm">
+                      {uploadProgress}% uploaded
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground" style={{ fontSize: 'var(--text-caption)' }}>
+                    AI is detecting room details
+                  </p>
+                )}
               </div>
             </>
           ) : (
@@ -1318,7 +1429,7 @@ function ConfirmationStepContent({ onGenerate, isRendering, showFinalResult, tot
 }
 
 // Rendering Canvas
-function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, showFinalResult, preferences, selectedFurniture, totalCost }: {
+function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, showFinalResult, preferences, selectedFurniture, totalCost, isUploading, uploadProgress }: {
   roomData: RoomData | null;
   isAnalyzing: boolean;
   isRendering: boolean;
@@ -1327,6 +1438,8 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
   preferences: DesignPreferences;
   selectedFurniture: FurnitureItem[];
   totalCost: number;
+  isUploading?: boolean;
+  uploadProgress?: number;
 }) {
   if (!roomData) {
     return (
@@ -1344,7 +1457,47 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
     );
   }
 
-  if (isAnalyzing) {
+  if (isAnalyzing && !isUploading) {
+    // Show image with overlay if roomData exists and not uploading, otherwise show loading screen
+    if (roomData && roomData.imageUrl) {
+      return (
+        <div className="h-full p-6">
+          <div className="max-w-6xl mx-auto h-full flex flex-col">
+            <div className="flex-1 mb-4 relative">
+              <div className="relative h-full rounded-lg overflow-hidden border border-border bg-muted">
+                <ImageWithRetry 
+                  src={roomData.imageUrl} 
+                  alt="Room" 
+                  className="w-full h-full object-cover"
+                  fallbackType="room"
+                  onRetry={(retryCount) => console.log(`Retrying room image: ${retryCount}`)}
+                />
+                {/* Analysis Overlay */}
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <div className="text-center max-w-md bg-background/95 backdrop-blur-sm rounded-lg p-8 mx-4">
+                    <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                      <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                    </div>
+                    <h3 className="mb-2">Analyzing Your Room</h3>
+                    <p className="text-muted-foreground mb-4" style={{ fontSize: 'var(--text-base)' }}>
+                      AI is detecting room type, dimensions, existing furniture, and style
+                    </p>
+                    <div className="space-y-2 text-left max-w-xs mx-auto">
+                      <AIStatusItem label="Detecting room type" status="processing" />
+                      <AIStatusItem label="Measuring dimensions" status="processing" />
+                      <AIStatusItem label="Identifying furniture" status="processing" />
+                      <AIStatusItem label="Analyzing style" status="processing" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Fallback: show loading screen if no image yet
     return (
       <div className="h-full flex items-center justify-center p-12">
         <div className="text-center max-w-md">
@@ -1418,6 +1571,20 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
               </div>
             )}
           </div>
+          {/* Upload Progress Bar - shown below image when uploading */}
+          {isUploading && uploadProgress !== undefined && (
+            <div className="mt-4 space-y-2">
+              <div className="w-full bg-muted rounded-full h-2">
+                <div
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              <p className="text-center text-sm text-muted-foreground">
+                {uploadProgress < 100 ? `Uploading... ${uploadProgress}%` : 'Upload complete!'}
+              </p>
+            </div>
+          )}
         </div>
         
         {showFinalResult ? (

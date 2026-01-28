@@ -82,6 +82,12 @@ export function setupRoutes(): Router {
   );
 
   // Image processing endpoints
+  // Get upload signature for frontend direct upload
+  router.get('/api/ai/upload/signature', (req, res, next) =>
+    imageController.getUploadSignature(req, res, next)
+  );
+
+  // Legacy upload endpoint (kept for backward compatibility)
   router.post('/api/ai/upload', 
     imageController.uploadMiddleware,
     (req, res, next) => imageController.uploadImage(req, res, next)

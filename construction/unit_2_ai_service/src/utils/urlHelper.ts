@@ -15,7 +15,7 @@ export function getBaseUrl(req?: Request): string {
       const hostname = host.split(':')[0];
       const port = host.split(':')[1] || (protocol === 'https' ? '443' : '80');
       
-      // If accessing via IP address (like 10.1.10.217), use that
+      // If accessing via IP address (like 192.168.101.70), use that
       if (hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
         return `${protocol}://${hostname}:${port}`;
       }

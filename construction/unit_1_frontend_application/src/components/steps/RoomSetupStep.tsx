@@ -9,6 +9,7 @@ import {
   FormControl,
   InputLabel,
   CircularProgress,
+  LinearProgress,
   Alert,
 } from '@mui/material';
 import UploadIcon from '@mui/icons-material/Upload';
@@ -23,7 +24,8 @@ import { AppDispatch } from '../../store';
 import { configureRoom } from '../../store/slices/sessionSlice';
 import { setRoomConfig } from '../../store/slices/designSlice';
 import { RoomType, RoomDimensions, DimensionUnit } from '../../types/domain';
-import { useUploadImageMutation, useDetectFurnitureMutation } from '../../services/aiApi';
+import { useDetectFurnitureMutation } from '../../services/aiApi';
+import { uploadToCloudinary, validateImageFile, UploadProgress } from '../../utils/cloudinaryUpload';
 import StepCard from '../shared/StepCard';
 import { brandColors, typography } from '../../theme/brandTheme';
 
@@ -47,8 +49,9 @@ export default function RoomSetupStep({ step, isExpanded, onToggle, onComplete }
   const [roomData, setRoomData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [uploadImage, { isLoading: isUploading }] = useUploadImageMutation();
   const [detectFurniture, { isLoading: isDetecting }] = useDetectFurnitureMutation();
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   const isAnalyzing = isUploading || isDetecting;
   const isCompleted = step.status === 'completed';
@@ -95,11 +98,27 @@ export default function RoomSetupStep({ step, isExpanded, onToggle, onComplete }
     setError(null);
 
     try {
-      // Upload image
-      const formData = new FormData();
-      formData.append('image', file);
+      // Validate file
+      const validation = validateImageFile(file);
+      if (!validation.valid) {
+        setError(validation.error || 'Invalid image file');
+        return;
+      }
       
-      const uploadResult = await uploadImage(formData).unwrap();
+      setIsUploading(true);
+      setUploadProgress(0);
+      
+      // Upload directly to Cloudinary with progress tracking
+      const uploadResult = await uploadToCloudinary(file, (progress: UploadProgress) => {
+        setUploadProgress(progress.percentage);
+      });
+      
+      if (!uploadResult.success) {
+        throw new Error('Upload failed');
+      }
+      
+      setIsUploading(false);
+      setUploadProgress(0);
       
       // Detect furniture in the uploaded image
       const dimensions = getRoomDimensions(roomSize);
@@ -122,7 +141,9 @@ export default function RoomSetupStep({ step, isExpanded, onToggle, onComplete }
       setRoomData(data);
     } catch (error: any) {
       console.error('Image upload/detection failed:', error);
-      setError(error.data?.message || 'Failed to process image. Please try again.');
+      setIsUploading(false);
+      setUploadProgress(0);
+      setError(error.message || error.data?.message || 'Failed to process image. Please try again.');
     }
   };
 
@@ -312,13 +333,35 @@ export default function RoomSetupStep({ step, isExpanded, onToggle, onComplete }
             {isAnalyzing ? (
               <>
                 <CircularProgress size={40} sx={{ color: brandColors.primary }} />
-                <Box sx={{ textAlign: 'center' }}>
+                <Box sx={{ textAlign: 'center', width: '100%', px: 2 }}>
                   <Typography variant="h6" sx={{ mb: 0.5 }}>
-                    {isUploading ? 'Uploading Image...' : 'Analyzing Room...'}
+                    {isUploading && uploadProgress > 0 && uploadProgress < 100 ? 'Uploading Image...' : isUploading ? 'Preparing Upload...' : 'Analyzing Room...'}
                   </Typography>
-                  <Typography sx={{ color: brandColors.mutedForeground, fontSize: typography.sizes.caption }}>
-                    {isUploading ? 'Please wait while we upload your image' : 'AI is detecting room details'}
-                  </Typography>
+                  {isUploading && uploadProgress > 0 && uploadProgress < 100 ? (
+                    <Box sx={{ mt: 2, width: '100%' }}>
+                      <LinearProgress
+                        variant="determinate"
+                        value={uploadProgress}
+                        sx={{
+                          height: 8,
+                          borderRadius: 4,
+                          backgroundColor: brandColors.muted,
+                          mb: 1,
+                          '& .MuiLinearProgress-bar': {
+                            backgroundColor: brandColors.primary,
+                            borderRadius: 4,
+                          },
+                        }}
+                      />
+                      <Typography sx={{ color: brandColors.mutedForeground, fontSize: typography.sizes.caption }}>
+                        {uploadProgress}% uploaded
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Typography sx={{ color: brandColors.mutedForeground, fontSize: typography.sizes.caption }}>
+                      {isUploading ? 'Please wait while we upload your image' : 'AI is detecting room details'}
+                    </Typography>
+                  )}
                 </Box>
               </>
             ) : (
