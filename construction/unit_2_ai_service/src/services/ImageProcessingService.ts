@@ -4,6 +4,36 @@ import { ProductServiceClient } from '../clients/ProductServiceClient';
 import * as fs from 'fs';
 import * as path from 'path';
 
+type JsonObject = Record<string, unknown>;
+type JsonPath = Array<string | number>;
+
+function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function getJsonPath(root: unknown, path: JsonPath): unknown {
+  let current: unknown = root;
+  for (const seg of path) {
+    if (typeof seg === 'number') {
+      if (!Array.isArray(current) || seg < 0 || seg >= current.length) return undefined;
+      current = current[seg];
+      continue;
+    }
+    if (!isJsonObject(current)) return undefined;
+    current = current[seg];
+  }
+  return current;
+}
+
+function getStringAtPath(root: unknown, path: JsonPath): string | undefined {
+  const value = getJsonPath(root, path);
+  return typeof value === 'string' ? value : undefined;
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 // Type definitions for API responses
 interface QwenAnalysisResponse {
   choices: Array<{
@@ -838,9 +868,11 @@ export class ImageProcessingService {
       formData.append('public_id', publicId);
 
       // Upload to Cloudinary
+      // Note: Don't set Content-Type header manually when using FormData - let it set the boundary automatically
       const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`, {
         method: 'POST',
-        body: formData
+        body: formData,
+        headers: formData.getHeaders() // This sets the correct Content-Type with boundary
       });
 
       if (!uploadResponse.ok) {
@@ -848,26 +880,27 @@ export class ImageProcessingService {
         throw new Error(`Cloudinary upload failed: ${uploadResponse.status} - ${errorText}`);
       }
 
-      const uploadResult = await uploadResponse.json() as any;
-      
+      const uploadResult: unknown = await uploadResponse.json();
+
       // Extract URL (matching script logic: prefer secure_url, fallback to url)
-      const secureUrl = uploadResult.secure_url;
-      const url = uploadResult.url;
-      
+      const secureUrl = getStringAtPath(uploadResult, ['secure_url']);
       if (secureUrl) {
         console.log(`✅ Successfully uploaded to Cloudinary: ${secureUrl}`);
         return secureUrl;
-      } else if (url) {
-        console.log(`✅ Successfully uploaded to Cloudinary: ${url}`);
-        return url;
-      } else {
-        console.error('Upload response:', JSON.stringify(uploadResult, null, 2));
-        throw new Error('No URL returned from Cloudinary');
       }
 
-    } catch (error: any) {
+      const url = getStringAtPath(uploadResult, ['url']);
+      if (url) {
+        console.log(`✅ Successfully uploaded to Cloudinary: ${url}`);
+        return url;
+      }
+
+      console.error('Upload response:', JSON.stringify(uploadResult, null, 2));
+      throw new Error('No URL returned from Cloudinary');
+
+    } catch (error) {
       console.error('❌ Cloudinary upload error:', error);
-      throw new Error(`Failed to upload to Cloudinary: ${error.message}`);
+      throw new Error(`Failed to upload to Cloudinary: ${getErrorMessage(error)}`);
     }
   }
 
@@ -902,8 +935,11 @@ export class ImageProcessingService {
           continue;
         }
 
-        const taskResult = await taskResponse.json() as any;
-        const taskStatus = taskResult.output?.task_status || taskResult.task_status || 'UNKNOWN';
+        const taskResult: unknown = await taskResponse.json();
+        const taskStatus =
+          getStringAtPath(taskResult, ['output', 'task_status']) ??
+          getStringAtPath(taskResult, ['task_status']) ??
+          'UNKNOWN';
         
         // Only print if status changed (similar to script behavior)
         if (taskStatus !== lastStatus) {
@@ -924,12 +960,13 @@ export class ImageProcessingService {
           console.log('');
           
           // Extract image URL from various possible paths (matching script logic)
-          const imageUrl = taskResult.output?.results?.[0]?.url ||
-                          taskResult.output?.result?.[0]?.url ||
-                          taskResult.output?.results?.[0]?.image ||
-                          taskResult.output?.result?.[0]?.image ||
-                          taskResult.output?.image_url ||
-                          taskResult.output?.choices?.[0]?.message?.content?.[0]?.image;
+          const imageUrl =
+            getStringAtPath(taskResult, ['output', 'results', 0, 'url']) ||
+            getStringAtPath(taskResult, ['output', 'result', 0, 'url']) ||
+            getStringAtPath(taskResult, ['output', 'results', 0, 'image']) ||
+            getStringAtPath(taskResult, ['output', 'result', 0, 'image']) ||
+            getStringAtPath(taskResult, ['output', 'image_url']) ||
+            getStringAtPath(taskResult, ['output', 'choices', 0, 'message', 'content', 0, 'image']);
 
           if (imageUrl && imageUrl !== 'null') {
             console.log(`✅ 成功生成图片！`);
@@ -952,10 +989,10 @@ export class ImageProcessingService {
         }
         // Continue polling for PENDING/RUNNING status
         
-      } catch (error: any) {
+      } catch (error) {
         // Only log errors every 10 attempts to avoid spam
         if (attempt % 10 === 1) {
-          console.warn(`[${attempt}] Polling error:`, error.message);
+          console.warn(`[${attempt}] Polling error:`, getErrorMessage(error));
         }
         // Continue polling even on error
       }
