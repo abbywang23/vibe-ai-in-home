@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import {
   Box,
@@ -9,6 +9,7 @@ import {
   FormControl,
   InputLabel,
   CircularProgress,
+  Alert,
 } from '@mui/material';
 import UploadIcon from '@mui/icons-material/Upload';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -22,6 +23,7 @@ import { AppDispatch } from '../../store';
 import { configureRoom } from '../../store/slices/sessionSlice';
 import { setRoomConfig } from '../../store/slices/designSlice';
 import { RoomType, RoomDimensions, DimensionUnit } from '../../types/domain';
+import { useUploadImageMutation, useDetectFurnitureMutation } from '../../services/aiApi';
 import StepCard from '../shared/StepCard';
 import { brandColors, typography } from '../../theme/brandTheme';
 
@@ -37,13 +39,18 @@ interface RoomSetupStepProps {
 
 export default function RoomSetupStep({ step, isExpanded, onToggle, onComplete }: RoomSetupStepProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [intent, setIntent] = useState<RoomIntent>('refresh');
   const [roomType, setRoomType] = useState<RoomType>(RoomType.LIVING_ROOM);
   const [roomSize, setRoomSize] = useState<RoomSize>('medium');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [roomData, setRoomData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
+  const [uploadImage, { isLoading: isUploading }] = useUploadImageMutation();
+  const [detectFurniture, { isLoading: isDetecting }] = useDetectFurnitureMutation();
+
+  const isAnalyzing = isUploading || isDetecting;
   const isCompleted = step.status === 'completed';
 
   const getRoomSizeLabel = (size: RoomSize) => {
@@ -67,21 +74,56 @@ export default function RoomSetupStep({ step, isExpanded, onToggle, onComplete }
   };
 
   const handleImageUpload = async () => {
-    setIsAnalyzing(true);
-    
-    // Simulate AI analysis
-    await new Promise(resolve => setTimeout(resolve, 2500));
+    fileInputRef.current?.click();
+  };
 
-    const data = {
-      roomType: 'Living Room',
-      dimensions: "12' × 15'",
-      furniture: ['Sofa', 'Coffee Table', 'Armchair'],
-      style: 'Modern Minimalist',
-      confidence: 95
-    };
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-    setRoomData(data);
-    setIsAnalyzing(false);
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      setError('Image size must be less than 10MB');
+      return;
+    }
+
+    setError(null);
+
+    try {
+      // Upload image
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const uploadResult = await uploadImage(formData).unwrap();
+      
+      // Detect furniture in the uploaded image
+      const dimensions = getRoomDimensions(roomSize);
+      const detectionResult = await detectFurniture({
+        imageUrl: uploadResult.imageUrl,
+        roomDimensions: dimensions,
+      }).unwrap();
+
+      // Process detection results
+      const data = {
+        roomType: roomType,
+        dimensions: `${dimensions.length}' × ${dimensions.width}'`,
+        furniture: detectionResult.detectedItems.map(item => item.furnitureType),
+        style: 'Detected from image',
+        confidence: 95,
+        isEmpty: detectionResult.isEmpty,
+        detectedItems: detectionResult.detectedItems,
+      };
+
+      setRoomData(data);
+    } catch (error: any) {
+      console.error('Image upload/detection failed:', error);
+      setError(error.data?.message || 'Failed to process image. Please try again.');
+    }
   };
 
   const handleComplete = () => {
@@ -100,6 +142,22 @@ export default function RoomSetupStep({ step, isExpanded, onToggle, onComplete }
       onToggle={onToggle}
     >
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/jpg"
+          onChange={handleFileSelect}
+          style={{ display: 'none' }}
+        />
+
+        {/* Error display */}
+        {error && (
+          <Alert severity="error" onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
         {/* Room Intent Selection */}
         <Box>
           <Typography sx={{ mb: 1, fontWeight: 500, fontSize: typography.sizes.label }}>
@@ -235,7 +293,7 @@ export default function RoomSetupStep({ step, isExpanded, onToggle, onComplete }
         {!roomData ? (
           <Button
             onClick={handleImageUpload}
-            disabled={isAnalyzing}
+            disabled={isAnalyzing || isCompleted}
             variant="outlined"
             sx={{
               width: '100%',
@@ -256,10 +314,10 @@ export default function RoomSetupStep({ step, isExpanded, onToggle, onComplete }
                 <CircularProgress size={40} sx={{ color: brandColors.primary }} />
                 <Box sx={{ textAlign: 'center' }}>
                   <Typography variant="h6" sx={{ mb: 0.5 }}>
-                    Analyzing Room...
+                    {isUploading ? 'Uploading Image...' : 'Analyzing Room...'}
                   </Typography>
                   <Typography sx={{ color: brandColors.mutedForeground, fontSize: typography.sizes.caption }}>
-                    AI is detecting room details
+                    {isUploading ? 'Please wait while we upload your image' : 'AI is detecting room details'}
                   </Typography>
                 </Box>
               </>
@@ -283,7 +341,7 @@ export default function RoomSetupStep({ step, isExpanded, onToggle, onComplete }
                     Upload Room Photo
                   </Typography>
                   <Typography sx={{ color: brandColors.mutedForeground, fontSize: typography.sizes.caption }}>
-                    Click or drag to upload (JPG, PNG)
+                    Click to upload (JPG, PNG, max 10MB)
                   </Typography>
                 </Box>
               </>

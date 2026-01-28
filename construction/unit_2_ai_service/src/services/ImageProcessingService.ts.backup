@@ -363,7 +363,7 @@ export class ImageProcessingService {
   }
 
   /**
-   * Replace furniture using AI - Multi-image fusion approach
+   * Replace furniture using AI
    */
   private async replaceFurnitureWithAI(
     imageUrl: string,
@@ -393,17 +393,62 @@ export class ImageProcessingService {
         imageData = imageUrl;
       }
 
-      // Use wan2.6-image for multi-image fusion
-      console.log('Using wan2.6-image for furniture replacement with multi-image fusion...');
-      
-      // Construct prompt for furniture replacement
-      const replacementPrompt = `将这个房间中的现有家具替换为${product.name}。要求：
-1. 保持房间的整体布局和风格
-2. 新家具应该与房间的色彩搭配和谐
-3. 确保家具的尺寸和比例适合房间空间
-4. 保持自然的光线和阴影效果
-5. 生成高质量、真实感的室内设计效果图
-请生成一张专业的室内设计渲染图，展示${product.name}完美融入到这个房间中，替换原有家具的效果。`;
+      // Step 1: Use Qwen-VL to analyze the room and product
+      console.log('Step 1: Analyzing room and product with Qwen-VL...');
+      const systemPrompt = `你是一个专业的室内设计师。请帮助用户在房间图片中替换现有家具为Castlery家具产品。
+
+请分析房间图片，然后生成一个详细的描述，说明如何将${product.name}替换到房间中，包括：
+1. 房间的布局和风格
+2. 产品的特点和风格
+3. 最佳的放置位置和角度
+4. 整体设计效果
+
+请用中文描述，描述要详细且专业，适合用于图像生成。`;
+
+      const analysisResponse = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.DASHSCOPE_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'qwen3-vl-plus',
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt
+            },
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'image_url',
+                  image_url: { url: imageData }
+                },
+                {
+                  type: 'text',
+                  text: `请分析这张房间图片，并描述如何将${product.name}替换到房间中，使其看起来自然和谐。`
+                }
+              ]
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 1000
+        }),
+      });
+
+      if (!analysisResponse.ok) {
+        const errorText = await analysisResponse.text();
+        throw new Error(`Qwen-VL API error: ${analysisResponse.status} - ${errorText}`);
+      }
+
+      const analysisResult = await analysisResponse.json();
+      const designDescription = analysisResult.choices[0].message.content;
+      console.log('Analysis result:', designDescription);
+
+      // Step 2: Use Qwen-Image to generate the rendered image
+      console.log('Step 2: Generating rendered image with Qwen-Image...');
+      const imagePrompt = `专业的室内设计渲染图，${designDescription}。高质量、真实感、专业摄影风格，自然光线，细节丰富。`;
 
       const imageGenResponse = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
         method: 'POST',
@@ -412,39 +457,35 @@ export class ImageProcessingService {
           'Authorization': `Bearer ${process.env.DASHSCOPE_API_KEY}`,
         },
         body: JSON.stringify({
-          model: 'wan2.6-image',
+          model: 'qwen-image-max',
           input: {
             messages: [
               {
                 role: 'user',
                 content: [
                   {
-                    text: replacementPrompt
-                  },
-                  {
-                    image: imageData
+                    text: imagePrompt
                   }
                 ]
               }
             ]
           },
           parameters: {
-            prompt_extend: true,
-            watermark: false,
+            size: '1664*928',
             n: 1,
-            enable_interleave: false,
-            size: '1280*1280'
+            prompt_extend: true,
+            watermark: false
           }
         }),
       });
 
       if (!imageGenResponse.ok) {
         const errorText = await imageGenResponse.text();
-        throw new Error(`wan2.6-image API error: ${imageGenResponse.status} - ${errorText}`);
+        throw new Error(`Qwen-Image API error: ${imageGenResponse.status} - ${errorText}`);
       }
 
-      const imageGenResult = await imageGenResponse.json() as any;
-      console.log('wan2.6-image generation result:', imageGenResult);
+      const imageGenResult = await imageGenResponse.json();
+      console.log('Qwen image generation result:', imageGenResult);
 
       // Extract generated image URL
       if (imageGenResult.output && imageGenResult.output.choices && imageGenResult.output.choices.length > 0) {
@@ -468,7 +509,7 @@ export class ImageProcessingService {
           const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
           const processedImageUrl = `${baseUrl}/uploads/${filename}`;
 
-          console.log(`Successfully generated replacement image using wan2.6-image: ${filename}`);
+          console.log(`Successfully generated replacement image: ${filename}`);
 
           return {
             success: true,
@@ -484,11 +525,11 @@ export class ImageProcessingService {
           throw new Error('No generated image in response content');
         }
       } else {
-        throw new Error('Invalid response format from wan2.6-image API');
+        throw new Error('Invalid response format from Qwen-Image API');
       }
 
     } catch (error) {
-      console.error('wan2.6-image generation failed:', error);
+      console.error('AI image generation failed:', error);
       
       // Fallback to copying original image with new filename
       console.log('Falling back to image copy approach...');
@@ -556,7 +597,7 @@ export class ImageProcessingService {
   }
 
   /**
-   * Place furniture using AI - Multi-image fusion approach
+   * Place furniture using AI
    */
   private async placeFurnitureWithAI(
     imageUrl: string,
@@ -588,17 +629,62 @@ export class ImageProcessingService {
         imageData = imageUrl;
       }
 
-      // Use wan2.6-image for multi-image fusion
-      console.log('Using wan2.6-image for furniture placement with multi-image fusion...');
-      
-      // Construct prompt for furniture placement
-      const placementPrompt = `在这个房间中放置${product.name}家具。要求：
-1. 将家具放置在房间的合适位置（大约在图片的${imagePosition.x}%, ${imagePosition.y}%位置）
-2. 家具旋转角度为${rotation}度，缩放比例为${scale}
-3. 确保家具与房间风格协调，光线自然
-4. 保持房间的整体布局和透视关系
-5. 生成高质量、真实感的室内设计效果图
-请生成一张专业的室内设计渲染图，展示${product.name}完美融入到这个房间中的效果。`;
+      // Step 1: Use Qwen-VL to analyze the room and product
+      console.log('Step 1: Analyzing room for furniture placement with Qwen-VL...');
+      const systemPrompt = `你是一个专业的室内设计师。请帮助用户在空房间图片中放置Castlery家具产品。
+
+请分析房间图片，然后生成一个详细的描述，说明如何将${product.name}放置在房间中，包括：
+1. 房间的布局和风格
+2. 产品的特点和风格
+3. 最佳的放置位置和角度（考虑用户指定的位置：x=${imagePosition.x}%, y=${imagePosition.y}%）
+4. 整体设计效果
+
+请用中文描述，描述要详细且专业，适合用于图像生成。`;
+
+      const analysisResponse = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.DASHSCOPE_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'qwen3-vl-plus',
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt
+            },
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'image_url',
+                  image_url: { url: imageData }
+                },
+                {
+                  type: 'text',
+                  text: `请分析这张房间图片，并描述如何将${product.name}放置在房间中的指定位置（x=${imagePosition.x}%, y=${imagePosition.y}%），旋转角度${rotation}度，缩放比例${scale}，使其看起来自然和谐。`
+                }
+              ]
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 1000
+        }),
+      });
+
+      if (!analysisResponse.ok) {
+        const errorText = await analysisResponse.text();
+        throw new Error(`Qwen-VL API error: ${analysisResponse.status} - ${errorText}`);
+      }
+
+      const analysisResult = await analysisResponse.json();
+      const designDescription = analysisResult.choices[0].message.content;
+      console.log('Analysis result:', designDescription);
+
+      // Step 2: Use Qwen-Image to generate the rendered image
+      console.log('Step 2: Generating rendered image with Qwen-Image...');
+      const imagePrompt = `专业的室内设计渲染图，${designDescription}。高质量、真实感、专业摄影风格，自然光线，细节丰富。`;
 
       const imageGenResponse = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
         method: 'POST',
@@ -607,39 +693,35 @@ export class ImageProcessingService {
           'Authorization': `Bearer ${process.env.DASHSCOPE_API_KEY}`,
         },
         body: JSON.stringify({
-          model: 'wan2.6-image',
+          model: 'qwen-image-max',
           input: {
             messages: [
               {
                 role: 'user',
                 content: [
                   {
-                    text: placementPrompt
-                  },
-                  {
-                    image: imageData
+                    text: imagePrompt
                   }
                 ]
               }
             ]
           },
           parameters: {
-            prompt_extend: true,
-            watermark: false,
+            size: '1664*928',
             n: 1,
-            enable_interleave: false,
-            size: '1280*1280'
+            prompt_extend: true,
+            watermark: false
           }
         }),
       });
 
       if (!imageGenResponse.ok) {
         const errorText = await imageGenResponse.text();
-        throw new Error(`wan2.6-image API error: ${imageGenResponse.status} - ${errorText}`);
+        throw new Error(`Qwen-Image API error: ${imageGenResponse.status} - ${errorText}`);
       }
 
-      const imageGenResult = await imageGenResponse.json() as any;
-      console.log('wan2.6-image generation result:', imageGenResult);
+      const imageGenResult = await imageGenResponse.json();
+      console.log('Qwen image generation result:', imageGenResult);
 
       // Extract generated image URL
       if (imageGenResult.output && imageGenResult.output.choices && imageGenResult.output.choices.length > 0) {
@@ -663,7 +745,7 @@ export class ImageProcessingService {
           const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
           const processedImageUrl = `${baseUrl}/uploads/${filename}`;
 
-          console.log(`Successfully generated placement image using wan2.6-image: ${filename}`);
+          console.log(`Successfully generated placement image: ${filename}`);
 
           return {
             success: true,
@@ -682,11 +764,11 @@ export class ImageProcessingService {
           throw new Error('No generated image in response content');
         }
       } else {
-        throw new Error('Invalid response format from wan2.6-image API');
+        throw new Error('Invalid response format from Qwen-Image API');
       }
 
     } catch (error) {
-      console.error('wan2.6-image generation failed:', error);
+      console.error('AI image generation failed:', error);
       
       // Fallback to copying original image with new filename
       console.log('Falling back to image copy approach...');
@@ -762,265 +844,8 @@ export class ImageProcessingService {
   }
 
   /**
-   * Upload image to Cloudinary and return URL
+   * Generate mock furniture detection (fallback)
    */
-  private async uploadToCloudinary(imageUrl: string, imageName: string): Promise<string> {
-    const cloudinaryConfig = {
-      apiKey: process.env.CLOUDINARY_API_KEY || '117752995173679',
-      apiSecret: process.env.CLOUDINARY_API_SECRET || 'OGiujqsUNHsYduK3mg96lEg_L4I',
-      cloudName: process.env.CLOUDINARY_CLOUD_NAME || 'dyurkavye'
-    };
-
-    try {
-      // Get image buffer
-      let imageBuffer: Buffer;
-      
-      if (imageUrl.startsWith('http://localhost') || imageUrl.startsWith('http://127.0.0.1')) {
-        // For local URLs, read the file directly
-        const imagePath = imageUrl.replace(/^https?:\/\/[^\/]+/, '');
-        const fullPath = path.join(process.cwd(), imagePath.replace('/uploads/', 'uploads/'));
-        
-        if (fs.existsSync(fullPath)) {
-          imageBuffer = fs.readFileSync(fullPath);
-        } else {
-          throw new Error('Local image file not found');
-        }
-      } else {
-        // For remote URLs, fetch the image
-        const imageResponse = await fetch(imageUrl);
-        if (!imageResponse.ok) {
-          throw new Error(`Failed to fetch image: ${imageResponse.status}`);
-        }
-        imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-      }
-
-      // Generate timestamp and public_id for signature
-      const timestamp = Math.floor(Date.now() / 1000);
-      const publicId = `multi_render_${imageName}_${timestamp}`;
-      
-      // Generate signature: sha1(public_id=xxx&timestamp=xxx + api_secret)
-      const crypto = require('crypto');
-      const signatureString = `public_id=${publicId}&timestamp=${timestamp}${cloudinaryConfig.apiSecret}`;
-      const signature = crypto.createHash('sha1').update(signatureString).digest('hex');
-
-      // Create form data for upload
-      const FormData = require('form-data');
-      const formData = new FormData();
-      formData.append('file', imageBuffer);
-      formData.append('api_key', cloudinaryConfig.apiKey);
-      formData.append('timestamp', timestamp.toString());
-      formData.append('signature', signature);
-      formData.append('public_id', publicId);
-
-      // Upload to Cloudinary
-      const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`, {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error(`Cloudinary upload failed: ${uploadResponse.status}`);
-      }
-
-      const uploadResult = await uploadResponse.json();
-      
-      if (uploadResult.secure_url) {
-        console.log(`Successfully uploaded to Cloudinary: ${uploadResult.secure_url}`);
-        return uploadResult.secure_url;
-      } else if (uploadResult.url) {
-        console.log(`Successfully uploaded to Cloudinary: ${uploadResult.url}`);
-        return uploadResult.url;
-      } else {
-        throw new Error('No URL returned from Cloudinary');
-      }
-
-    } catch (error) {
-      console.error('Cloudinary upload error:', error);
-      throw new Error(`Failed to upload to Cloudinary: ${error.message}`);
-    }
-  }
-
-  /**
-   * Poll task status until completion
-   */
-  private async pollTaskStatus(taskId: string, maxAttempts: number = 120, interval: number = 3000): Promise<string> {
-    console.log(`Starting to poll task ${taskId} (max ${maxAttempts} attempts, ${interval}ms interval)`);
-    
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        await new Promise(resolve => setTimeout(resolve, interval));
-        
-        const taskResponse = await fetch(`https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${process.env.DASHSCOPE_API_KEY}`
-          }
-        });
-
-        if (!taskResponse.ok) {
-          console.warn(`[${attempt}] Task status query failed: ${taskResponse.status}`);
-          continue;
-        }
-
-        const taskResult = await taskResponse.json();
-        const taskStatus = taskResult.output?.task_status || taskResult.task_status;
-        
-        if (attempt % 10 === 0) {
-          console.log(`[${attempt}] Task status: ${taskStatus}`);
-        }
-
-        if (taskStatus === 'SUCCEEDED') {
-          // Extract image URL from various possible paths
-          const imageUrl = taskResult.output?.results?.[0]?.url ||
-                          taskResult.output?.result?.[0]?.url ||
-                          taskResult.output?.results?.[0]?.image ||
-                          taskResult.output?.result?.[0]?.image ||
-                          taskResult.output?.image_url ||
-                          taskResult.output?.choices?.[0]?.message?.content?.[0]?.image;
-
-          if (imageUrl) {
-            console.log(`✅ Task completed successfully! Image URL: ${imageUrl}`);
-            return imageUrl;
-          } else {
-            throw new Error('Task succeeded but no image URL found in response');
-          }
-        } else if (taskStatus === 'FAILED') {
-          console.error('Task failed:', taskResult);
-          throw new Error(`Task failed: ${JSON.stringify(taskResult)}`);
-        }
-        // Continue polling for PENDING/RUNNING status
-        
-      } catch (error) {
-        if (attempt % 10 === 1) {
-          console.warn(`[${attempt}] Polling error:`, error.message);
-        }
-      }
-    }
-
-    throw new Error(`Task polling timeout after ${maxAttempts} attempts`);
-  }
-
-  /**
-   * Generate multi-furniture render using wan2.5-i2i-preview with Cloudinary upload
-   */
-  async generateMultiFurnitureRender(
-    imageUrl: string,
-    selectedFurniture: Array<{ id: string; name: string; imageUrl?: string }>,
-    roomType: string
-  ): Promise<FurniturePlacementResponse> {
-    console.log('Starting multi-furniture render with Cloudinary + wan2.5-i2i-preview...');
-    
-    try {
-      // Step 1: Upload room image to Cloudinary
-      console.log('Step 1: Uploading room image to Cloudinary...');
-      const roomImageCloudinaryUrl = await this.uploadToCloudinary(imageUrl, 'room');
-      
-      // Step 2: Prepare images array (room + product images)
-      const images: string[] = [roomImageCloudinaryUrl];
-      
-      // Add product image URLs (limit to 3 more to stay within API limits)
-      let productImageCount = 0;
-      for (const furniture of selectedFurniture) {
-        if (furniture.imageUrl && productImageCount < 3) {
-          images.push(furniture.imageUrl);
-          productImageCount++;
-          console.log(`Added product image: ${furniture.name}`);
-        }
-      }
-
-      console.log(`Using ${images.length} images for generation`);
-
-      // Step 3: Construct prompt for multi-furniture placement
-      const furnitureList = selectedFurniture.map(item => item.name).join('、');
-      const prompt = `请基于房间图片和家具产品图片，生成一张现代简约风格的${roomType}渲染图。将以下Castlery家具产品自然地融入到房间中：${furnitureList}。
-
-要求：
-1. 合理安排所有家具的位置，确保空间布局协调
-2. 家具之间保持适当的距离和比例关系  
-3. 整体风格统一，色彩搭配和谐
-4. 保持房间的自然光线和阴影效果
-5. 创造一个实用且美观的生活空间
-
-请生成一张专业的室内设计渲染图，展示所有选中的家具完美融入到这个房间中的效果。`;
-
-      // Step 4: Submit async task to wan2.5-i2i-preview
-      console.log('Step 2: Submitting async task to wan2.5-i2i-preview...');
-      
-      const taskResponse = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/image2image/image-synthesis', {
-        method: 'POST',
-        headers: {
-          'X-DashScope-Async': 'enable',
-          'Authorization': `Bearer ${process.env.DASHSCOPE_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'wan2.5-i2i-preview',
-          input: {
-            prompt: prompt,
-            images: images
-          },
-          parameters: {
-            n: 1
-          }
-        })
-      });
-
-      if (!taskResponse.ok) {
-        const errorText = await taskResponse.text();
-        throw new Error(`wan2.5-i2i-preview API error: ${taskResponse.status} - ${errorText}`);
-      }
-
-      const taskResult = await taskResponse.json();
-      const taskId = taskResult.task_id || taskResult.output?.task_id;
-      
-      if (!taskId) {
-        throw new Error('No task ID returned from API');
-      }
-
-      console.log(`✅ Task submitted successfully! Task ID: ${taskId}`);
-
-      // Step 5: Poll for task completion
-      console.log('Step 3: Polling for task completion...');
-      const generatedImageUrl = await this.pollTaskStatus(taskId);
-
-      // Step 6: Download and save the generated image locally
-      console.log('Step 4: Downloading and saving generated image...');
-      const imageResponse = await fetch(generatedImageUrl);
-      if (!imageResponse.ok) {
-        throw new Error(`Failed to download generated image: ${imageResponse.status}`);
-      }
-      const imageBuffer = await imageResponse.arrayBuffer();
-      
-      const timestamp = Date.now();
-      const filename = `multi_render_${timestamp}.png`;
-      const localPath = path.join(this.uploadsDir, filename);
-      
-      fs.writeFileSync(localPath, Buffer.from(imageBuffer));
-      
-      const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
-      const processedImageUrl = `${baseUrl}/uploads/${filename}`;
-
-      console.log(`✅ Multi-furniture render completed successfully: ${filename}`);
-
-      return {
-        success: true,
-        processedImageUrl,
-        placement: {
-          placementId: `multi_render_${timestamp}`,
-          productId: selectedFurniture.map(f => f.id).join(','),
-          productName: furnitureList,
-          imagePosition: { x: 50, y: 50 }, // Center position for multi-furniture
-          scale: 1,
-          rotation: 0,
-          appliedAt: new Date().toISOString(),
-        }
-      };
-
-    } catch (error) {
-      console.error('Multi-furniture render failed:', error);
-      throw error;
-    }
-  }
   private generateMockDetection(imageUrl: string): FurnitureDetectionResponse {
     // Simulate detection based on URL or random
     const isEmpty = Math.random() > 0.5;

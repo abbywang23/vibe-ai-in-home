@@ -12,6 +12,7 @@ import * as React from 'react';
 import { useGetSmartProductRecommendationsMutation } from '../services/aiApi';
 import { brandColors, spacing } from '../theme/brandTheme';
 import { Product, UserPreferences, RoomType, RoomDimensions } from '../types/domain';
+import ImageWithRetry from './ui/ImageWithRetry';
 
 interface ProductListDisplayProps {
   preferences: UserPreferences;
@@ -245,7 +246,7 @@ export default function ProductListDisplay({
                 }}
               >
                 {product.images?.[0]?.url ? (
-                  <img
+                  <ImageWithRetry
                     src={product.images[0].url}
                     alt={product.name}
                     style={{
@@ -254,9 +255,23 @@ export default function ProductListDisplay({
                       objectFit: 'cover',
                       display: 'block',
                     }}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder-furniture.jpg';
-                    }}
+                    fallbackType="product"
+                    onRetry={(retryCount) => console.log(`Retrying product image: ${product.name}, attempt: ${retryCount}`)}
+                    errorPlaceholder={
+                      <Box
+                        sx={{
+                          width: '100%',
+                          height: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: brandColors.lightGray,
+                          color: brandColors.darkGray,
+                        }}
+                      >
+                        <Typography variant="caption">No Image</Typography>
+                      </Box>
+                    }
                   />
                 ) : (
                   <Box

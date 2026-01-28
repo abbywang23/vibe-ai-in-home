@@ -99,5 +99,9 @@ export function setupRoutes(): Router {
     imageController.placeFurniture(req, res, next)
   );
 
+  router.post('/api/ai/multi-render', (req, res, next) =>
+    imageController.generateMultiFurnitureRender(req, res, next)
+  );
+
   return router;
 }

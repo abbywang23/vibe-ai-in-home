@@ -15,6 +15,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import ShareIcon from '@mui/icons-material/Share';
 import FlashOnIcon from '@mui/icons-material/FlashOn';
 import { RootState } from '../../store';
+import { useReplaceFurnitureMutation } from '../../services/aiApi';
 import { brandColors, typography } from '../../theme/brandTheme';
 import StepCard from '../shared/StepCard';
 
@@ -33,9 +34,13 @@ interface FinalReviewStepProps {
 
 export default function FinalReviewStep({ step, isExpanded, onToggle, onComplete }: FinalReviewStepProps) {
   const cart = useSelector((state: RootState) => state.cart);
+  const design = useSelector((state: RootState) => state.design);
+  
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
   const [showFinalResult, setShowFinalResult] = useState(false);
+
+  const [replaceFurniture] = useReplaceFurnitureMutation();
 
   const totalCost = cart.items.reduce((sum, item) => sum + item.unitPrice.amount * item.quantity, 0);
 
@@ -43,16 +48,43 @@ export default function FinalReviewStep({ step, isExpanded, onToggle, onComplete
     setIsRendering(true);
     setRenderProgress(0);
 
-    const steps = [15, 40, 65, 85, 100];
-    for (const progress of steps) {
-      await new Promise(resolve => setTimeout(resolve, 600));
-      setRenderProgress(progress);
-    }
+    try {
+      // Simulate progress updates
+      const progressSteps = [15, 40, 65, 85, 100];
+      
+      for (let i = 0; i < progressSteps.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, 600));
+        setRenderProgress(progressSteps[i]);
+        
+        // Try to call real API at different stages
+        if (i === 2 && design.roomImage?.originalUrl) { // At 65% progress
+          try {
+            // Example: Replace furniture if we have detected items
+            if (design.roomImage.detectedFurniture.length > 0 && cart.items.length > 0) {
+              const firstDetectedItem = design.roomImage.detectedFurniture[0];
+              const firstCartItem = cart.items[0];
+              
+              await replaceFurniture({
+                imageUrl: design.roomImage.originalUrl,
+                detectedItemId: firstDetectedItem.itemId,
+                replacementProductId: firstCartItem.productId,
+              }).unwrap();
+            }
+          } catch (apiError) {
+            console.warn('API call failed, continuing with simulation:', apiError);
+          }
+        }
+      }
 
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setIsRendering(false);
-    setShowFinalResult(true);
-    onComplete();
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setIsRendering(false);
+      setShowFinalResult(true);
+      onComplete();
+      
+    } catch (error: any) {
+      console.error('Render generation failed:', error);
+      setIsRendering(false);
+    }
   };
 
   return (

@@ -143,4 +143,40 @@ export class ImageController {
       next(error);
     }
   }
+
+  /**
+   * POST /api/ai/multi-render
+   * Generate multi-furniture render using image fusion
+   */
+  async generateMultiFurnitureRender(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { imageUrl, selectedFurniture, roomType } = req.body;
+
+      if (!imageUrl || !selectedFurniture || !Array.isArray(selectedFurniture)) {
+        res.status(400).json({
+          success: false,
+          message: 'imageUrl and selectedFurniture array are required'
+        });
+        return;
+      }
+
+      if (selectedFurniture.length === 0) {
+        res.status(400).json({
+          success: false,
+          message: 'At least one furniture item must be selected'
+        });
+        return;
+      }
+
+      const result = await this.imageService.generateMultiFurnitureRender(
+        imageUrl,
+        selectedFurniture,
+        roomType || 'living room'
+      );
+
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
