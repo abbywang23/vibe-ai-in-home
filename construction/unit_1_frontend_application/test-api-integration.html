@@ -35,12 +35,22 @@
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:3001/api/ai';
+        // Get API base URL from environment or prompt user
+        const API_BASE_URL = window.API_BASE_URL || prompt('Please enter API Base URL (e.g., https://api.example.com):');
+        if (!API_BASE_URL) {
+            alert('API Base URL is required. Please set window.API_BASE_URL or enter it when prompted.');
+        }
+        const API_BASE = API_BASE_URL ? `${API_BASE_URL}/api/ai` : '';
+        const HEALTH_URL = API_BASE_URL ? `${API_BASE_URL}/health` : '';
 
         async function testHealthCheck() {
             const resultDiv = document.getElementById('health-result');
+            if (!HEALTH_URL) {
+                resultDiv.innerHTML = '<div class="error"><strong>✗ Error:</strong> API Base URL not configured</div>';
+                return;
+            }
             try {
-                const response = await fetch('http://localhost:3001/health');
+                const response = await fetch(HEALTH_URL);
                 const data = await response.json();
                 resultDiv.innerHTML = `<div class="success"><strong>✓ Success:</strong><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
             } catch (error) {

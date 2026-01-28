@@ -1,5 +1,6 @@
 import { fetchAPI, API_BASE_URL } from './api';
 import { RoomDimensions, DetectedFurnitureItem } from '../types/domain';
+import { uploadToCloudinary, validateImageFile } from '../utils/cloudinaryUpload';
 
 // ============= 类型定义 =============
 
@@ -8,25 +9,33 @@ export interface UploadImageResponse {
   detectedObjects?: any[];
 }
 
+// 注意：detectFurniture 方法已废弃，请使用 detectRoom 方法
+// @deprecated 使用 DetectionRequest 和 DetectionResponse
 export interface DetectFurnitureRequest {
   imageUrl: string;
-  roomType?: string;
+  roomDimensions: RoomDimensions;
 }
 
 export interface DetectFurnitureResponse {
-  roomType: string;
-  dimensions: string;
-  furniture: string[];
-  style: string;
-  confidence: number;
+  success: boolean;
+  detectedItems: DetectedFurnitureItem[];
+  isEmpty: boolean;
+  roomType?: RoomTypeAnalysis;
+  roomDimensions?: RoomDimensionsAnalysis;
+  roomStyle?: RoomStyleAnalysis;
+  furnitureCount?: FurnitureCountAnalysis;
+  estimatedRoomDimensions?: RoomDimensions;
 }
 
 export interface SmartRecommendRequest {
   roomType: string;
-  style: string;
-  budget: { min: number; max: number };
-  intent: 'refresh' | 'redesign';
-  existingFurniture?: string[];
+  roomDimensions: RoomDimensions;
+  preferences?: {
+    selectedCategories?: string[];
+    selectedCollections?: string[];
+    budget?: { amount: number; currency: string };
+  };
+  language?: string;
 }
 
 export interface FurnitureItem {
@@ -35,8 +44,8 @@ export interface FurnitureItem {
   category: string;
   price: number;
   imageUrl: string;
-  reason: string;
-  dimensions: string;
+  reason?: string;
+  dimensions?: string;
   existingItem?: {
     name: string;
     imageUrl: string;
@@ -46,30 +55,37 @@ export interface FurnitureItem {
 }
 
 export interface SmartRecommendResponse {
-  recommendations: FurnitureItem[];
-  totalCost: number;
-  withinBudget: boolean;
+  success: boolean;
+  recommendedProductIds: string[];
+  reasoning?: string;
+  products: FurnitureItem[];
 }
 
 export interface MultiRenderRequest {
-  roomImageUrl: string;
-  furnitureItems: Array<{
-    productId: string;
-    position?: { x: number; y: number };
-    scale?: number;
+  imageUrl: string;
+  selectedFurniture: Array<{
+    id: string;
+    name: string;
+    imageUrl?: string;
   }>;
-  style: string;
-  renderQuality?: 'draft' | 'high';
+  roomType?: string;
 }
 
 export interface MultiRenderResponse {
-  renderedImageUrl: string;
-  processingTime: number;
-  furniturePlacements?: Array<{
+  success: boolean;
+  processedImageUrl: string;
+  placement: {
+    placementId: string;
     productId: string;
-    position: { x: number; y: number };
-    confidence: number;
-  }>;
+    productName: string;
+    imagePosition: { x: number; y: number };
+    scale: number;
+    rotation: number;
+    appliedAt: string;
+  };
+  // 向后兼容字段
+  renderedImageUrl?: string;
+  processingTime?: number;
 }
 
 // Chat API 接口
@@ -177,30 +193,51 @@ export interface PlacementResponse {
 
 export const aiApi = {
   /**
-   * 上传图片
+   * 上传图片 - 直接上传到 Cloudinary
+   * @param file 要上传的图片文件
+   * @param onProgress 可选的上传进度回调
    */
-  async uploadImage(file: File): Promise<UploadImageResponse> {
-    const formData = new FormData();
-    formData.append('image', file);
-
-    const response = await fetch(`${API_BASE_URL}/api/ai/upload`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Upload failed');
+  async uploadImage(file: File, onProgress?: (percentage: number) => void): Promise<UploadImageResponse> {
+    // 验证文件
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      throw new Error(validation.error || 'Invalid file');
     }
 
-    return response.json();
+    try {
+      // 直接上传到 Cloudinary
+      const result = await uploadToCloudinary(file, (progress) => {
+        if (onProgress) {
+          onProgress(progress.percentage);
+        }
+      });
+
+      // 返回格式与后端兼容
+      return {
+        imageUrl: result.imageUrl,
+        detectedObjects: [], // Cloudinary 上传不包含检测结果
+      };
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Upload failed');
+    }
   },
 
   /**
    * 检测房间中的家具
+   * @deprecated 请使用 detectRoom 方法
    */
   async detectFurniture(request: DetectFurnitureRequest): Promise<DetectFurnitureResponse> {
     return fetchAPI<DetectFurnitureResponse>('/api/ai/detect', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+
+  /**
+   * 检测房间（使用 DetectionRequest/DetectionResponse）
+   */
+  async detectRoom(request: DetectionRequest): Promise<DetectionResponse> {
+    return fetchAPI<DetectionResponse>('/api/ai/detect', {
       method: 'POST',
       body: JSON.stringify(request),
     });

@@ -358,10 +358,12 @@ export class ImageProcessingService {
     // 使用增强的 prompt
     const prompts = getRoomAnalysisPrompts(
       roomDimensions ? {
-        length: roomDimensions.length,
-        width: roomDimensions.width,
-        height: roomDimensions.height,
-        unit: roomDimensions.unit,
+        roomDimensions: {
+          length: roomDimensions.length,
+          width: roomDimensions.width,
+          height: roomDimensions.height,
+          unit: roomDimensions.unit,
+        }
       } : undefined
     );
 

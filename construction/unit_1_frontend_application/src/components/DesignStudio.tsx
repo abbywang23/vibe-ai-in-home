@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { FurnitureComparisonCard } from './FurnitureComparisonCard';
 import { aiApi } from '../services/aiApi';
+import { RoomDimensions, FurnitureDimensions } from '../types/domain';
 
 type StepId = 'upload' | 'vision' | 'selection' | 'confirmation';
 type StepStatus = 'pending' | 'active' | 'completed' | 'locked';
@@ -82,7 +83,7 @@ interface Step {
 export function DesignStudio() {
   // 🔍 DEBUG: 确认这是 unit_1_frontend_application 的版本
   console.log('🎯 DesignStudio loaded from unit_1_frontend_application with API integration');
-  console.log('📍 API Base URL:', import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001');
+  console.log('📍 API Base URL:', import.meta.env.VITE_API_BASE_URL || 'NOT SET - Please configure VITE_API_BASE_URL in .env');
   
   const [steps, setSteps] = useState<Step[]>([
     { id: 'upload', number: 1, title: 'Room Setup', subtitle: 'Upload & analyze your space', icon: <Upload className="w-5 h-5" />, status: 'active' },
@@ -130,6 +131,17 @@ export function DesignStudio() {
     }
   };
 
+  // Helper function to convert size to room dimensions
+  const getRoomDimensionsFromSize = (size: RoomSize): RoomDimensions => {
+    const sizeMap: Record<RoomSize, RoomDimensions> = {
+      small: { length: 3, width: 3, height: 2.5, unit: 'meters' },
+      medium: { length: 5, width: 4, height: 2.8, unit: 'meters' },
+      large: { length: 7, width: 6, height: 3, unit: 'meters' },
+      xlarge: { length: 10, width: 8, height: 3, unit: 'meters' },
+    };
+    return sizeMap[size];
+  };
+
   // Handle image upload
   const handleImageUpload = async (file: File) => {
     setIsAnalyzing(true);
@@ -140,22 +152,31 @@ export function DesignStudio() {
       const uploadResponse = await aiApi.uploadImage(file);
       console.log('Upload response:', uploadResponse);
       
-      // 2. 检测家具
+      // 2. 检测家具 - 使用正确的接口格式
       console.log('Detecting furniture...');
-      const detectResponse = await aiApi.detectFurniture({
+      const roomDimensions = getRoomDimensionsFromSize(roomSetup.size);
+      const detectResponse = await aiApi.detectRoom({
         imageUrl: uploadResponse.imageUrl,
-        roomType: roomSetup.roomType
+        roomDimensions: roomDimensions
       });
       console.log('Detect response:', detectResponse);
       
-      // 3. 更新状态
+      // 3. 更新状态 - 适配新的响应格式
+      const detectedRoomType = detectResponse.roomType?.value || roomSetup.roomType;
+      const detectedDimensions = detectResponse.roomDimensions 
+        ? `${detectResponse.roomDimensions.length}×${detectResponse.roomDimensions.width}m`
+        : `${roomDimensions.length}×${roomDimensions.width}m`;
+      const detectedFurniture = detectResponse.detectedItems.map(item => item.furnitureType);
+      const detectedStyle = detectResponse.roomStyle?.value || 'Modern';
+      const confidence = detectResponse.roomType?.confidence || detectResponse.roomStyle?.confidence || 85;
+      
       const data: RoomData = {
         imageUrl: uploadResponse.imageUrl,
-        roomType: detectResponse.roomType,
-        dimensions: detectResponse.dimensions,
-        furniture: detectResponse.furniture,
-        style: detectResponse.style,
-        confidence: detectResponse.confidence
+        roomType: detectedRoomType,
+        dimensions: detectedDimensions,
+        furniture: detectedFurniture,
+        style: detectedStyle,
+        confidence: confidence
       };
       
       setRoomData(data);
@@ -193,20 +214,108 @@ export function DesignStudio() {
     try {
       // 调用智能推荐 API
       console.log('Getting smart recommendations...');
+      const roomDimensions = getRoomDimensionsFromSize(roomSetup.size);
       const response = await aiApi.getSmartRecommendations({
         roomType: roomData?.roomType || roomSetup.roomType,
-        style: preferences.style,
-        budget: preferences.budget,
-        intent: preferences.intent,
-        existingFurniture: roomData?.furniture || []
+        roomDimensions: roomDimensions,
+        preferences: {
+          selectedCategories: preferences.intent === 'refresh' ? roomData?.furniture : undefined,
+          budget: preferences.budget ? {
+            amount: preferences.budget.max,
+            currency: 'SGD'
+          } : undefined
+        },
+        language: 'en'
       });
       console.log('Recommendations response:', response);
       
-      // 更新家具列表
-      const furnitureWithSelection = response.recommendations.map(item => ({
-        ...item,
-        isSelected: true
-      }));
+      // 更新家具列表 - 适配新的响应格式
+      // 解析 reasoning 文本，提取每个产品的解释
+      const parseReasoningForProduct = (reasoningText: string | undefined, productId: string, productName: string, category: string): string => {
+        if (!reasoningText || typeof reasoningText !== 'string') {
+          return `AI selected this ${category} based on your room size, style preferences, and budget.`;
+        }
+        
+        // 如果 reasoning 是 JSON 字符串，尝试解析
+        let reasoning: string = reasoningText;
+        try {
+          const parsed = JSON.parse(reasoningText);
+          if (parsed.reasoning && typeof parsed.reasoning === 'string') {
+            reasoning = parsed.reasoning;
+          } else if (typeof parsed === 'string') {
+            reasoning = parsed;
+          } else {
+            // 如果是对象但不是字符串，转换为字符串
+            reasoning = JSON.stringify(parsed);
+          }
+        } catch {
+          // 不是 JSON，直接使用原文本
+        }
+        
+        // 确保 reasoning 是字符串
+        if (typeof reasoning !== 'string') {
+          return `AI selected this ${category} based on your room size, style preferences, and budget.`;
+        }
+        
+        // 尝试从长文本中提取该产品的解释
+        // 查找包含产品ID或产品名称的部分
+        const productIdPattern = new RegExp(`product-\\d+|${productId}`, 'i');
+        const productNamePattern = new RegExp(productName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+        
+        // 尝试找到该产品的解释段落
+        const lines = reasoning.split('\n');
+        let productReason = '';
+        
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          if (productIdPattern.test(line) || productNamePattern.test(line)) {
+            // 提取该产品相关的解释（当前行和后续几行）
+            const explanationLines: string[] = [line];
+            for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+              if (lines[j].trim() && !lines[j].match(/^\d+\./)) {
+                explanationLines.push(lines[j]);
+              } else if (lines[j].match(/^\d+\./)) {
+                break; // 遇到下一个产品编号，停止
+              }
+            }
+            productReason = explanationLines.join(' ').trim();
+            break;
+          }
+        }
+        
+        // 如果找到了特定产品的解释，使用它；否则使用通用解释
+        if (productReason) {
+          // 清理 Markdown 格式
+          return productReason
+            .replace(/\*\*(.*?)\*\*/g, '$1') // 移除粗体
+            .replace(/\n\n/g, ' ') // 替换双换行
+            .replace(/\n/g, ' ') // 替换单换行
+            .replace(/product-\d+/gi, '') // 移除产品ID引用
+            .trim();
+        }
+        
+        // 如果没有找到特定解释，返回通用文本
+        return `AI selected this ${category} based on your room size, style preferences, and budget.`;
+      };
+      
+      const furnitureWithSelection = response.products.map((item, index) => {
+        // 处理 dimensions：将 FurnitureDimensions 对象转换为字符串
+        const dims = item.dimensions as FurnitureDimensions;
+        const unit = dims.unit || 'cm';
+        const dimensionsStr = `${dims.width}${unit} W × ${dims.depth}${unit} D × ${dims.height}${unit} H`;
+        
+        // 提取该产品的 reasoning
+        const productReason = parseReasoningForProduct(response.reasoning, item.id, item.name, item.category);
+        
+        return {
+          ...item,
+          dimensions: dimensionsStr,
+          isSelected: true,
+          reason: typeof productReason === 'string' ? productReason : String(productReason || 'AI recommended'),
+          // 确保 imageUrl 存在（使用第一个图片）
+          imageUrl: item.images && item.images.length > 0 ? item.images[0].url : item.imageUrl || '',
+        } as FurnitureItem;
+      });
       setSelectedFurniture(furnitureWithSelection);
       
     } catch (error) {
@@ -300,23 +409,25 @@ export function DesignStudio() {
       // 调用渲染 API
       console.log('Generating multi-render...');
       const response = await aiApi.generateMultiRender({
-        roomImageUrl: roomData?.imageUrl || '',
-        furnitureItems: selectedItems.map(item => ({
-          productId: item.id,
+        imageUrl: roomData?.imageUrl || '',
+        selectedFurniture: selectedItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          imageUrl: item.imageUrl
         })),
-        style: preferences.style,
-        renderQuality: 'high'
+        roomType: roomData?.roomType || roomSetup.roomType
       });
       console.log('Render response:', response);
       
       clearInterval(progressInterval);
       setRenderProgress(100);
       
-      // 更新房间图片为渲染结果
-      if (response.renderedImageUrl) {
+      // 更新房间图片为渲染结果 - 适配新的响应格式
+      const renderedImage = response.processedImageUrl || response.renderedImageUrl;
+      if (renderedImage) {
         setRoomData(prev => prev ? {
           ...prev,
-          imageUrl: response.renderedImageUrl
+          imageUrl: renderedImage
         } : null);
       }
       
@@ -1042,7 +1153,7 @@ function FurnitureCard({ item, index, isCompleted, onToggle }: { item: Furniture
           <div className="bg-accent/5 border border-accent/20 rounded px-2 py-1.5 flex items-start gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-accent flex-shrink-0 mt-0.5" />
             <p className="text-muted-foreground" style={{ fontSize: 'var(--text-small)' }}>
-              {item.reason}
+              {typeof item.reason === 'string' ? item.reason : (item.reason ? String(item.reason) : 'AI recommended')}
             </p>
           </div>
         </div>

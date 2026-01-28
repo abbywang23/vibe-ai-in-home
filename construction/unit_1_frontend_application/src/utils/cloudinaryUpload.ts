@@ -1,4 +1,8 @@
-import { getApiUrl } from './apiConfig';
+import { API_BASE_URL } from '../services/api';
+
+function getApiUrl(endpoint: string): string {
+  return `${API_BASE_URL}${endpoint}`;
+}
 
 export interface UploadSignature {
   success: boolean;
@@ -29,7 +33,7 @@ export interface UploadResult {
  * Get upload signature from backend
  */
 export async function getUploadSignature(): Promise<UploadSignature> {
-  const response = await fetch(getApiUrl('/upload/signature'));
+  const response = await fetch(getApiUrl('/api/ai/upload/signature'));
   
   if (!response.ok) {
     throw new Error(`Failed to get upload signature: ${response.statusText}`);
