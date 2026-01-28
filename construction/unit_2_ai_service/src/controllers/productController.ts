@@ -158,7 +158,7 @@ export class ProductController {
         return;
       }
 
-      const { roomType, roomDimensions, preferences, language } = req.body;
+      const { roomType, roomDimensions, preferences, language, existingFurniture } = req.body;
 
       console.log('getSmartRecommendations - Request body:', JSON.stringify(req.body, null, 2));
 
@@ -178,6 +178,7 @@ export class ProductController {
         roomType,
         roomDimensions,
         preferences: preferences || {},
+        existingFurniture: Array.isArray(existingFurniture) ? existingFurniture : undefined,
         language: language || 'en',
       });
 

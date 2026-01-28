@@ -190,7 +190,7 @@ export class ImageController {
    */
   async generateMultiFurnitureRender(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { imageUrl, selectedFurniture, roomType } = req.body;
+      const { imageUrl, selectedFurniture, roomType, roomDimensions } = req.body;
 
       if (!imageUrl || !selectedFurniture || !Array.isArray(selectedFurniture)) {
         res.status(400).json({
@@ -212,6 +212,7 @@ export class ImageController {
         imageUrl,
         selectedFurniture,
         roomType || 'living room',
+        roomDimensions, // Pass roomDimensions to service
         req
       );
 

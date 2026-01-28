@@ -93,6 +93,19 @@ export interface DetectedFurnitureItem {
   furnitureType: SupportedFurnitureType;
   boundingBox: BoundingBox;
   confidence: number;
+  // 新增：已有家具特征（可选，向后兼容）
+  style?: 'Modern' | 'Nordic' | 'Classic' | 'Minimalist' | 'Industrial' | 'Contemporary' | 'Traditional' | 'Bohemian' | null;
+  material?: string | null;
+  color?: string | null;
+  sizeBucket?: 'small' | 'medium' | 'large' | null;
+  estimatedDimensions?: {
+    width: number | null;
+    depth: number | null;
+    height: number | null;
+    unit: 'meters';
+    confidence: number; // 0-100
+  } | null;
+  notes?: string | null;
 }
 
 export interface BoundingBox {

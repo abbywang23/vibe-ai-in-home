@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { FurnitureComparisonCard } from './FurnitureComparisonCard';
 import { aiApi } from '../services/aiApi';
-import { RoomDimensions, FurnitureDimensions } from '../types/domain';
+import { RoomDimensions, FurnitureDimensions, DetectedFurnitureItem } from '../types/domain';
 
 type StepId = 'upload' | 'vision' | 'selection' | 'confirmation';
 type StepStatus = 'pending' | 'active' | 'completed' | 'locked';
@@ -46,6 +46,7 @@ interface RoomData {
   furniture: string[];
   style: string;
   confidence: number;
+  detectedItems?: DetectedFurnitureItem[]; // 保存完整的检测结果（含特征）
 }
 
 interface DesignPreferences {
@@ -219,7 +220,8 @@ export function DesignStudio() {
         dimensions: detectedDimensions,
         furniture: detectedFurniture,
         style: detectedStyle,
-        confidence: confidence
+        confidence: confidence,
+        detectedItems: detectResponse.detectedItems // 保存完整的检测结果（含特征）
       };
       
       setRoomData(data);
@@ -268,6 +270,7 @@ export function DesignStudio() {
             currency: 'SGD'
           } : undefined
         },
+        existingFurniture: roomData?.detectedItems, // 传递已有家具特征
         language: 'en'
       });
       console.log('Recommendations response:', response);
@@ -525,6 +528,7 @@ export function DesignStudio() {
       
       // 调用渲染 API
       console.log('Generating multi-render...');
+      const roomDimensions = getRoomDimensionsFromSize(roomSetup.size);
       const response = await aiApi.generateMultiRender({
         imageUrl: roomData?.imageUrl || '',
         selectedFurniture: selectedItems.map(item => ({
@@ -532,7 +536,8 @@ export function DesignStudio() {
           name: item.name,
           imageUrl: item.imageUrl
         })),
-        roomType: roomData?.roomType || roomSetup.roomType
+        roomType: roomData?.roomType || roomSetup.roomType,
+        roomDimensions: roomDimensions // Pass room dimensions to Decor8
       });
       console.log('Render response:', response);
       
