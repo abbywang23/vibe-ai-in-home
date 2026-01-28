@@ -1,46 +1,33 @@
-import axios from 'axios';
-import { getApiBaseUrl } from '../utils/apiConfig';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
-const API_BASE_URL = getApiBaseUrl();
-
-export const apiClient = axios.create({
+export const apiConfig = {
   baseURL: API_BASE_URL,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
-});
+};
 
-// Request interceptor
-apiClient.interceptors.request.use(
-  (config) => {
-    // Add any auth tokens or custom headers here
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+export async function fetchAPI<T>(
+  endpoint: string,
+  options?: RequestInit
+): Promise<T> {
+  const url = `${API_BASE_URL}${endpoint}`;
+  
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...apiConfig.headers,
+      ...options?.headers,
+    },
+  });
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || `HTTP ${response.status}: ${response.statusText}`);
   }
-);
+  
+  return response.json();
+}
 
-// Response interceptor
-apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
-    // Handle errors globally
-    if (error.response) {
-      // Server responded with error status
-      console.error('API Error:', error.response.data);
-    } else if (error.request) {
-      // Request made but no response
-      console.error('Network Error:', error.message);
-    } else {
-      // Something else happened
-      console.error('Error:', error.message);
-    }
-    return Promise.reject(error);
-  }
-);
-
-export default apiClient;
+export { API_BASE_URL };

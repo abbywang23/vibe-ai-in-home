@@ -1,30 +1,10 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import { Provider } from 'react-redux';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, CssBaseline } from '@mui/material';
-import './index.css';
-import HomePage from './pages/HomePage';
-import PlannerPage from './pages/PlannerPage';
-import PlannerFlowPage from './pages/PlannerFlowPage';
-import { DesignStudio } from './components/DesignStudio';
-import { store } from './store';
-import { brandTheme } from './theme/brandTheme';
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './styles/index.css'
+import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Provider store={store}>
-      <ThemeProvider theme={brandTheme}>
-        <CssBaseline />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/planner" element={<DesignStudio />} />
-            <Route path="/planner-flow" element={<PlannerFlowPage />} />
-            <Route path="/planner-old" element={<PlannerPage />} />
-          </Routes>
-        </BrowserRouter>
-      </ThemeProvider>
-    </Provider>
+    <App />
   </StrictMode>,
-);
+)
