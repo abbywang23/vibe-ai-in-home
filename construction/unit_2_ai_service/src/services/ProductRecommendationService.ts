@@ -2,6 +2,7 @@ import { ProductServiceClient } from '../clients/ProductServiceClient';
 import { AIClientFactory } from '../clients/AIClientFactory';
 import { ChatMessage } from '../clients/AIClient';
 import { Product, RoomType, RoomDimensions, ProductSearchParams } from '../models/types';
+import { DetectedFurnitureItem } from './ImageProcessingService';
 
 export interface SmartRecommendationRequest {
   roomType: RoomType;
@@ -11,6 +12,7 @@ export interface SmartRecommendationRequest {
     selectedCollections?: string[];
     budget?: { amount: number; currency: string };
   };
+  existingFurniture?: DetectedFurnitureItem[];
   language?: string;
 }
 
@@ -27,6 +29,50 @@ export interface SmartRecommendationResponse {
  */
 export class ProductRecommendationService {
   constructor(private productClient: ProductServiceClient) {}
+
+  private truncate(text: string, maxLen: number): string {
+    if (text.length <= maxLen) return text;
+    return text.slice(0, maxLen);
+  }
+
+  private buildExistingFurnitureSection(lang: string, existingFurniture?: DetectedFurnitureItem[]): string {
+    const items = Array.isArray(existingFurniture) ? existingFurniture : [];
+    if (items.length === 0) {
+      return lang === 'zh'
+        ? `\n用户房间中已存在的家具（来自图片识别）：无（或未提供）\n`
+        : `\nExisting furniture detected in the room (from image analysis): None (or not provided)\n`;
+    }
+
+    const top = [...items]
+      .sort((a, b) => (typeof b.confidence === 'number' ? b.confidence : 0) - (typeof a.confidence === 'number' ? a.confidence : 0))
+      .slice(0, 10);
+
+    let out =
+      lang === 'zh'
+        ? `\n用户房间中已存在的家具（来自图片识别，Top ${top.length}）：\n`
+        : `\nExisting furniture detected in the room (Top ${top.length}):\n`;
+
+    top.forEach((it, idx) => {
+      const dims = it.estimatedDimensions;
+      const dimsStr =
+        dims && (dims.width !== null || dims.depth !== null || dims.height !== null)
+          ? `${dims.width ?? '?'}W × ${dims.depth ?? '?'}D × ${dims.height ?? '?'}H ${dims.unit} (conf:${dims.confidence})`
+          : 'unknown';
+
+      const parts: string[] = [];
+      parts.push(`type=${it.furnitureType}`);
+      parts.push(`dims=${dimsStr}`);
+      if (it.sizeBucket) parts.push(`size=${it.sizeBucket}`);
+      if (it.style) parts.push(`style=${it.style}`);
+      if (it.material) parts.push(`material=${this.truncate(it.material, 40)}`);
+      if (it.color) parts.push(`color=${this.truncate(it.color, 40)}`);
+      if (it.notes) parts.push(`notes=${this.truncate(it.notes, 120)}`);
+
+      out += `${idx + 1}. ${parts.join(', ')}\n`;
+    });
+
+    return out;
+  }
 
   /**
    * Generate smart product recommendations using AI
@@ -183,19 +229,22 @@ export class ProductRecommendationService {
     // Parse AI response to extract product IDs
     const recommendedIds = this.parseAIResponse(aiResponse, candidateProducts);
     
-    // Get recommended products
-    const recommendedProducts = candidateProducts.filter(p => recommendedIds.includes(p.id));
+    // Ensure no duplicates in recommended IDs (extra safety check)
+    const uniqueRecommendedIds = Array.from(new Set(recommendedIds));
+    
+    // Get recommended products (filter will naturally deduplicate by product ID)
+    const recommendedProducts = candidateProducts.filter(p => uniqueRecommendedIds.includes(p.id));
 
     console.log('generateAIRecommendations - Returning:', {
       success: true,
-      recommendedProductIds: recommendedIds.length,
+      recommendedProductIds: uniqueRecommendedIds.length,
       products: recommendedProducts.length,
       productIds: recommendedProducts.map(p => p.id),
     });
 
     return {
       success: true,
-      recommendedProductIds: recommendedIds,
+      recommendedProductIds: uniqueRecommendedIds,
       reasoning: aiResponse,
       products: recommendedProducts,
     };
@@ -225,7 +274,8 @@ ${roomRestrictions}
 3. 确保推荐的商品符合用户选择的类别和系列
 4. 优先推荐性价比高、风格匹配的商品
 5. 提供清晰的推荐理由
-6. **严格遵守房间类型限制，不要推荐不适合该房间类型的家具**`;
+6. 结合“房间中已存在的家具”（如果提供），做“替换 + 补齐”的混合推荐：既给出可替换升级的同类，也补齐缺失的关键品类，并尽量保持风格/材质/颜色协调、尺寸合适
+7. **严格遵守房间类型限制，不要推荐不适合该房间类型的家具**`;
     } else {
       return `You are a professional furniture recommendation expert. Your task is to intelligently recommend the most suitable furniture products based on user's room information, preferences, and available products.
 
@@ -243,7 +293,8 @@ Requirements:
 3. Ensure recommended products match user's selected categories and collections
 4. Prioritize products with good value and style match
 5. Provide clear reasoning for recommendations
-6. **STRICTLY follow room type restrictions - do NOT recommend furniture unsuitable for this room type**`;
+6. If existing furniture info is provided, make a mixed plan of both replacements (same type upgrades) and missing essentials; keep style/material/color cohesive and dimensions appropriate
+7. **STRICTLY follow room type restrictions - do NOT recommend furniture unsuitable for this room type**`;
     }
   }
 
@@ -333,6 +384,9 @@ Available Products (${candidateProducts.length} items):
 `;
     }
 
+    // Existing furniture context (helps decide replacement vs missing essentials)
+    prompt += this.buildExistingFurnitureSection(lang, request.existingFurniture);
+
     // Add product information
     candidateProducts.forEach((product, index) => {
       prompt += `\n${index + 1}. Product ID: ${product.id}\n`;
@@ -375,12 +429,16 @@ Available Products (${candidateProducts.length} items):
         if (parsed.recommendedProductIds && Array.isArray(parsed.recommendedProductIds)) {
           console.log('Found recommendedProductIds:', parsed.recommendedProductIds);
           
-          // Validate product IDs exist
-          const validIds = parsed.recommendedProductIds.filter((id: string) =>
-            candidateProducts.some(p => p.id === id)
-          );
+          // Validate product IDs exist and remove duplicates
+          const validIds: string[] = Array.from(new Set(
+            parsed.recommendedProductIds
+              .filter((id: unknown): id is string => typeof id === 'string')
+              .filter((id: string) =>
+                candidateProducts.some(p => p.id === id)
+              )
+          ));
           
-          console.log('Valid product IDs after validation:', validIds);
+          console.log('Valid product IDs after validation and deduplication:', validIds);
           
           if (validIds.length > 0) {
             return validIds;
@@ -401,16 +459,18 @@ Available Products (${candidateProducts.length} items):
       }
     });
 
-    console.log('Product IDs extracted from text:', productIds);
+    // Remove duplicates
+    const uniqueProductIds = Array.from(new Set(productIds));
+    console.log('Product IDs extracted from text (after deduplication):', uniqueProductIds);
 
     // If still no results, return first 5-8 products as fallback
-    if (productIds.length === 0) {
+    if (uniqueProductIds.length === 0) {
       const fallbackIds = candidateProducts.slice(0, 8).map(p => p.id);
       console.log('Using fallback: returning first products:', fallbackIds);
       return fallbackIds;
     }
 
-    return productIds.slice(0, 10); // Limit to 10 products
+    return uniqueProductIds.slice(0, 10); // Limit to 10 products
   }
 
   /**

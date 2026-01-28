@@ -108,7 +108,19 @@ export const ROOM_ANALYSIS_SYSTEM_PROMPT = `你是一个专业的室内设计师
         "width": 0-100,
         "height": 0-100
       },
-      "confidence": 0-1
+      "confidence": 0-1,
+      "style": "Modern" | "Nordic" | "Classic" | "Minimalist" | "Industrial" | "Contemporary" | "Traditional" | "Bohemian" | null,
+      "material": string | null,
+      "color": string | null,
+      "sizeBucket": "small" | "medium" | "large" | null,
+      "estimatedDimensions": {
+        "width": number | null,
+        "depth": number | null,
+        "height": number | null,
+        "unit": "meters",
+        "confidence": 0-100
+      } | null,
+      "notes": string | null
     }
   ],
   "furnitureCount": {
@@ -126,6 +138,7 @@ export function getRoomAnalysisUserPrompt(options?: RoomAnalysisPromptOptions): 
 1. **房间类型**：从 living_room, bedroom, dining_room, home_office 中选择最匹配的类型
 2. **家具检测**：仅识别系统支持的家具类型（sofa, table, chair, storage, bed, desk），列出所有检测到的家具，包括类型、位置（bounding box，使用0-100的百分比坐标）、置信度（0-1之间的小数）
    - 注意：只识别上述6种家具类型，忽略装饰品、植物、灯具、地毯等其他物品
+   - 对每个 detectedItems[]，请额外输出以下“已有家具特征”（无法判断可填 null，但必须给出字段，保证 JSON 可解析）：\n     - style：从 Modern/Nordic/Classic/Minimalist/Industrial/Contemporary/Traditional/Bohemian 中选最接近的（可为 null）\n     - material：主要材质（如 fabric/leather/wood/metal/glass…，可为 null）\n     - color：主色/主配色（1-2 个词即可，如 warm_gray / walnut / black，可为 null）\n     - sizeBucket：small/medium/large（基于占地与房间比例，可为 null）\n     - estimatedDimensions：估算尺寸（meters），包含 width/depth/height 以及 confidence(0-100)；无法估算则整体为 null\n     - notes：一句话补充特征（如 “L-shape sectional”, “round table”, “with drawers”，可为 null）
 3. **房间尺寸**：估计房间的长、宽、高（单位：米或英尺）
 4. **房间风格**：识别装饰风格（Modern, Nordic, Classic, Minimalist, Industrial, Contemporary, Traditional, Bohemian等）
 5. **是否为空**：判断房间是否为空房间

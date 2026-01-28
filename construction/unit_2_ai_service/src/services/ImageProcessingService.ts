@@ -14,6 +14,35 @@ function isJsonObject(value: unknown): value is JsonObject {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function clampNumber(value: unknown, min: number, max: number): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
+}
+
+function normalizeNullableString(value: unknown, maxLen: number): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.length > maxLen ? trimmed.slice(0, maxLen) : trimmed;
+}
+
+const ROOM_STYLE_VALUES = [
+  'Modern',
+  'Nordic',
+  'Classic',
+  'Minimalist',
+  'Industrial',
+  'Contemporary',
+  'Traditional',
+  'Bohemian',
+] as const;
+
+function isRoomStyleValue(value: unknown): value is RoomStyleAnalysis['value'] {
+  return typeof value === 'string' && (ROOM_STYLE_VALUES as readonly string[]).includes(value);
+}
+
 function getJsonPath(root: unknown, path: JsonPath): unknown {
   let current: unknown = root;
   for (const seg of path) {
@@ -78,6 +107,18 @@ export interface DetectedFurnitureItem {
     height: number;
   };
   confidence: number;
+  style?: RoomStyleAnalysis['value'] | null;
+  material?: string | null;
+  color?: string | null;
+  sizeBucket?: 'small' | 'medium' | 'large' | null;
+  estimatedDimensions?: {
+    width: number | null;
+    depth: number | null;
+    height: number | null;
+    unit: 'meters';
+    confidence: number; // 0-100
+  } | null;
+  notes?: string | null;
 }
 
 export interface RoomTypeAnalysis {
@@ -459,10 +500,53 @@ export class ImageProcessingService {
             }
             return isValid;
           })
-          .map((item: any) => ({
-            ...item,
-            furnitureType: item.furnitureType as SupportedFurnitureType,
-          }));
+          .map((item: any) => {
+            const style = isRoomStyleValue(item.style) ? item.style : null;
+            const material = normalizeNullableString(item.material, 40);
+            const color = normalizeNullableString(item.color, 40);
+            const notes = normalizeNullableString(item.notes, 120);
+
+            const sizeBucket: DetectedFurnitureItem['sizeBucket'] =
+              item.sizeBucket === 'small' || item.sizeBucket === 'medium' || item.sizeBucket === 'large'
+                ? item.sizeBucket
+                : null;
+
+            let estimatedDimensions: DetectedFurnitureItem['estimatedDimensions'] = null;
+            if (isJsonObject(item.estimatedDimensions)) {
+              const w = getJsonPath(item.estimatedDimensions, ['width']);
+              const d = getJsonPath(item.estimatedDimensions, ['depth']);
+              const h = getJsonPath(item.estimatedDimensions, ['height']);
+              const conf = clampNumber(getJsonPath(item.estimatedDimensions, ['confidence']), 0, 100) ?? 0;
+
+              const width = typeof w === 'number' && Number.isFinite(w) && w >= 0 ? w : null;
+              const depth = typeof d === 'number' && Number.isFinite(d) && d >= 0 ? d : null;
+              const height = typeof h === 'number' && Number.isFinite(h) && h >= 0 ? h : null;
+
+              // 只要至少有一个维度有效，就保留该对象；否则置空
+              if (width !== null || depth !== null || height !== null) {
+                estimatedDimensions = {
+                  width,
+                  depth,
+                  height,
+                  unit: 'meters',
+                  confidence: conf,
+                };
+              }
+            }
+
+            return {
+              itemId: typeof item.itemId === 'string' ? item.itemId : String(item.itemId ?? ''),
+              furnitureType: item.furnitureType as SupportedFurnitureType,
+              boundingBox: item.boundingBox,
+              confidence: typeof item.confidence === 'number' ? item.confidence : 0,
+              style,
+              material,
+              color,
+              sizeBucket,
+              estimatedDimensions,
+              notes,
+            };
+          });
         
         console.log(`✅ 家具检测结果: 原始 ${result.detectedItems?.length || 0} 件，过滤后 ${validDetectedItems.length} 件`);
         
@@ -1197,6 +1281,7 @@ export class ImageProcessingService {
     imageUrl: string,
     selectedFurniture: Array<{ id: string; name: string; imageUrl?: string }>,
     roomType: string,
+    roomDimensions?: { length: number; width: number; height: number; unit: string },
     req?: Request
   ): Promise<FurniturePlacementResponse> {
     console.log('Starting multi-furniture render with Decor8AI API...');
@@ -1208,23 +1293,85 @@ export class ImageProcessingService {
     }
 
     try {
-      // Step 1: Upload room image to Cloudinary
-      console.log('Step 1: Uploading room image to Cloudinary...');
-      const roomImageCloudinaryUrl = await this.uploadToCloudinary(imageUrl, 'room');
-      console.log(`✅ Room image uploaded: ${roomImageCloudinaryUrl}`);
+      // Step 1: Use the Cloudinary URL directly (frontend already uploaded to Cloudinary)
+      console.log('Step 1: Using Cloudinary URL from frontend...');
+      const roomImageCloudinaryUrl = imageUrl;
+      console.log(`✅ Using Cloudinary URL: ${roomImageCloudinaryUrl}`);
       
-      // Step 2: Prepare decor_items from selected furniture
-      console.log('Step 2: Preparing decor items from selected furniture...');
-      const decorItems: Array<{ url: string; name: string }> = [];
+      // Step 2: Query product details to get dimensions
+      console.log('Step 2: Querying product dimensions...');
+      const productIds = selectedFurniture.map(f => f.id).filter(Boolean);
+      let productsMap: Map<string, any> = new Map();
+      
+      if (productIds.length > 0) {
+        try {
+          const products = await this.productClient.searchProducts({ productIds });
+          products.forEach(p => {
+            productsMap.set(p.id, p);
+          });
+          console.log(`✅ Found dimensions for ${products.length} products`);
+        } catch (error) {
+          console.warn('⚠️ Failed to query product dimensions, continuing without them:', error);
+        }
+      }
+
+      // Step 3: Prepare decor_items from selected furniture with dimensions
+      console.log('Step 3: Preparing decor items from selected furniture...');
+      const decorItems: Array<{ 
+        url: string; 
+        name: string; 
+        product_id?: string;
+        dimensions?: { width: number | null; depth: number | null; height: number | null; unit: string };
+      }> = [];
       
       for (const furniture of selectedFurniture) {
         if (furniture.imageUrl) {
-          // Use product image URL directly (can be HTTPS URL or Cloudinary URL)
-          decorItems.push({
+          const product = furniture.id ? productsMap.get(furniture.id) : null;
+          
+          // Build optimized name with clear instructions for Decor8
+          // This helps Decor8 distinguish furniture items from room images
+          let optimizedName = `Furniture item: ${furniture.name}`;
+          
+          // Add dimensions to name if available (helps with size matching)
+          if (product && product.dimensions) {
+            const dims = product.dimensions;
+            const dimParts: string[] = [];
+            if (dims.width !== null) dimParts.push(`W${dims.width}${dims.unit === 'meters' ? 'm' : 'ft'}`);
+            if (dims.depth !== null) dimParts.push(`D${dims.depth}${dims.unit === 'meters' ? 'm' : 'ft'}`);
+            if (dims.height !== null) dimParts.push(`H${dims.height}${dims.unit === 'meters' ? 'm' : 'ft'}`);
+            
+            if (dimParts.length > 0) {
+              optimizedName += ` (${dimParts.join(' ')})`;
+            }
+          }
+          
+          // Add instruction to extract furniture from product image with constraints
+          optimizedName += ' - Extract ONLY this furniture piece from the product image and place it in the room. Keep all other room elements unchanged: preserve walls, floors, windows, doors, existing furniture, decorations, lighting, and overall room layout. Only modify/add this specific furniture item.';
+          
+          const decorItem: any = {
             url: furniture.imageUrl,
-            name: furniture.name
-          });
-          console.log(`✅ Added decor item: ${furniture.name} -> ${furniture.imageUrl}`);
+            name: optimizedName
+          };
+          
+          // Add product_id if available
+          if (furniture.id) {
+            decorItem.product_id = furniture.id;
+          }
+          
+          // Add dimensions if available (for API structure)
+          if (product && product.dimensions) {
+            decorItem.dimensions = {
+              width: product.dimensions.width ?? null,
+              depth: product.dimensions.depth ?? null,
+              height: product.dimensions.height ?? null,
+              unit: product.dimensions.unit || 'meters'
+            };
+            console.log(`✅ Added decor item with dimensions: ${furniture.name} - ${product.dimensions.width}W × ${product.dimensions.depth}D × ${product.dimensions.height}H ${product.dimensions.unit}`);
+          } else {
+            console.log(`✅ Added decor item: ${furniture.name} -> ${furniture.imageUrl} (no dimensions available)`);
+          }
+          
+          decorItems.push(decorItem);
         } else {
           console.warn(`⚠️ Skipping ${furniture.name} - no image URL provided`);
         }
@@ -1236,7 +1383,7 @@ export class ImageProcessingService {
 
       console.log(`Using ${decorItems.length} decor items for generation`);
 
-      // Step 3: Map roomType to Decor8AI room_type format
+      // Step 4: Map roomType to Decor8AI room_type format
       const roomTypeMap: Record<string, string> = {
         'living room': 'livingroom',
         'livingroom': 'livingroom',
@@ -1253,10 +1400,10 @@ export class ImageProcessingService {
       const decor8RoomType = roomTypeMap[roomType.toLowerCase()] || 'livingroom';
       console.log(`Mapped room type: "${roomType}" -> "${decor8RoomType}"`);
 
-      // Step 4: Call Decor8AI API
-      console.log('Step 3: Calling Decor8AI generate_designs_for_room API...');
+      // Step 5: Call Decor8AI API
+      console.log('Step 4: Calling Decor8AI generate_designs_for_room API...');
       
-      const requestPayload = {
+      const requestPayload: any = {
         input_image_url: roomImageCloudinaryUrl,
         room_type: decor8RoomType,
         design_style: 'minimalist', // Default to minimalist, can be made configurable
@@ -1264,6 +1411,19 @@ export class ImageProcessingService {
         scale_factor: 2, // Max 1536 pixels, no additional charge
         decor_items: JSON.stringify(decorItems)
       };
+      
+      // Add room dimensions if provided
+      if (roomDimensions) {
+        requestPayload.room_dimensions = {
+          length: roomDimensions.length,
+          width: roomDimensions.width,
+          height: roomDimensions.height,
+          unit: roomDimensions.unit || 'meters'
+        };
+        console.log(`✅ Added room dimensions: ${roomDimensions.length} × ${roomDimensions.width} × ${roomDimensions.height} ${roomDimensions.unit || 'meters'}`);
+      } else {
+        console.log('⚠️ No room dimensions provided, Decor8 will infer from image');
+      }
 
       console.log('Request payload:', JSON.stringify({
         ...requestPayload,
@@ -1296,25 +1456,11 @@ export class ImageProcessingService {
       const generatedImageUrl = apiResult.info.images[0].url;
       console.log(`✅ Image generated successfully! URL: ${generatedImageUrl}`);
 
-      // Step 5: Download and save the generated image locally
-      console.log('Step 4: Downloading and saving generated image...');
-      const imageResponse = await fetch(generatedImageUrl);
-      if (!imageResponse.ok) {
-        throw new Error(`Failed to download generated image: ${imageResponse.status}`);
-      }
-      const imageBuffer = await imageResponse.arrayBuffer();
-      
-      const timestamp = Date.now();
-      const filename = `multi_render_${timestamp}.png`;
-      const localPath = path.join(this.uploadsDir, filename);
-      
-      fs.writeFileSync(localPath, Buffer.from(imageBuffer));
-      
-      // Use request-based base URL if available, otherwise fallback to env or localhost
-      const baseUrl = getBaseUrl(req);
-      const processedImageUrl = `${baseUrl}/uploads/${filename}`;
+      // Step 5: Upload the generated image to Cloudinary
+      console.log('Step 5: Uploading generated image to Cloudinary...');
+      const processedImageUrl = await this.uploadToCloudinary(generatedImageUrl, 'multi_render');
 
-      console.log(`✅ Multi-furniture render completed successfully: ${filename}`);
+      console.log(`✅ Multi-furniture render completed successfully: ${processedImageUrl}`);
 
       const furnitureList = selectedFurniture.map(item => item.name).join('、');
       
@@ -1322,7 +1468,7 @@ export class ImageProcessingService {
         success: true,
         processedImageUrl,
         placement: {
-          placementId: `multi_render_${timestamp}`,
+          placementId: `multi_render_${Date.now()}`,
           productId: selectedFurniture.map(f => f.id).join(','),
           productName: furnitureList,
           imagePosition: { x: 50, y: 50 }, // Center position for multi-furniture

@@ -35,6 +35,7 @@ export interface SmartRecommendRequest {
     selectedCollections?: string[];
     budget?: { amount: number; currency: string };
   };
+  existingFurniture?: DetectedFurnitureItem[];
   language?: string;
 }
 
@@ -69,6 +70,7 @@ export interface MultiRenderRequest {
     imageUrl?: string;
   }>;
   roomType?: string;
+  roomDimensions?: RoomDimensions;
 }
 
 export interface MultiRenderResponse {
