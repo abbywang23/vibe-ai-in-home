@@ -4,6 +4,36 @@ import { ProductServiceClient } from '../clients/ProductServiceClient';
 import * as fs from 'fs';
 import * as path from 'path';
 
+type JsonObject = Record<string, unknown>;
+type JsonPath = Array<string | number>;
+
+function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function getJsonPath(root: unknown, path: JsonPath): unknown {
+  let current: unknown = root;
+  for (const seg of path) {
+    if (typeof seg === 'number') {
+      if (!Array.isArray(current) || seg < 0 || seg >= current.length) return undefined;
+      current = current[seg];
+      continue;
+    }
+    if (!isJsonObject(current)) return undefined;
+    current = current[seg];
+  }
+  return current;
+}
+
+function getStringAtPath(root: unknown, path: JsonPath): string | undefined {
+  const value = getJsonPath(root, path);
+  return typeof value === 'string' ? value : undefined;
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 // Type definitions for API responses
 interface QwenAnalysisResponse {
   choices: Array<{
@@ -822,21 +852,25 @@ export class ImageProcessingService {
         throw new Error(`Cloudinary upload failed: ${uploadResponse.status}`);
       }
 
-      const uploadResult = await uploadResponse.json();
-      
-      if (uploadResult.secure_url) {
-        console.log(`Successfully uploaded to Cloudinary: ${uploadResult.secure_url}`);
-        return uploadResult.secure_url;
-      } else if (uploadResult.url) {
-        console.log(`Successfully uploaded to Cloudinary: ${uploadResult.url}`);
-        return uploadResult.url;
-      } else {
-        throw new Error('No URL returned from Cloudinary');
+      const uploadResult: unknown = await uploadResponse.json();
+
+      const secureUrl = getStringAtPath(uploadResult, ['secure_url']);
+      if (secureUrl) {
+        console.log(`Successfully uploaded to Cloudinary: ${secureUrl}`);
+        return secureUrl;
       }
+
+      const url = getStringAtPath(uploadResult, ['url']);
+      if (url) {
+        console.log(`Successfully uploaded to Cloudinary: ${url}`);
+        return url;
+      }
+
+      throw new Error('No URL returned from Cloudinary');
 
     } catch (error) {
       console.error('Cloudinary upload error:', error);
-      throw new Error(`Failed to upload to Cloudinary: ${error.message}`);
+      throw new Error(`Failed to upload to Cloudinary: ${getErrorMessage(error)}`);
     }
   }
 
@@ -862,8 +896,10 @@ export class ImageProcessingService {
           continue;
         }
 
-        const taskResult = await taskResponse.json();
-        const taskStatus = taskResult.output?.task_status || taskResult.task_status;
+        const taskResult: unknown = await taskResponse.json();
+        const taskStatus =
+          getStringAtPath(taskResult, ['output', 'task_status']) ??
+          getStringAtPath(taskResult, ['task_status']);
         
         if (attempt % 10 === 0) {
           console.log(`[${attempt}] Task status: ${taskStatus}`);
@@ -871,12 +907,13 @@ export class ImageProcessingService {
 
         if (taskStatus === 'SUCCEEDED') {
           // Extract image URL from various possible paths
-          const imageUrl = taskResult.output?.results?.[0]?.url ||
-                          taskResult.output?.result?.[0]?.url ||
-                          taskResult.output?.results?.[0]?.image ||
-                          taskResult.output?.result?.[0]?.image ||
-                          taskResult.output?.image_url ||
-                          taskResult.output?.choices?.[0]?.message?.content?.[0]?.image;
+          const imageUrl =
+            getStringAtPath(taskResult, ['output', 'results', 0, 'url']) ||
+            getStringAtPath(taskResult, ['output', 'result', 0, 'url']) ||
+            getStringAtPath(taskResult, ['output', 'results', 0, 'image']) ||
+            getStringAtPath(taskResult, ['output', 'result', 0, 'image']) ||
+            getStringAtPath(taskResult, ['output', 'image_url']) ||
+            getStringAtPath(taskResult, ['output', 'choices', 0, 'message', 'content', 0, 'image']);
 
           if (imageUrl) {
             console.log(`✅ Task completed successfully! Image URL: ${imageUrl}`);
@@ -892,7 +929,7 @@ export class ImageProcessingService {
         
       } catch (error) {
         if (attempt % 10 === 1) {
-          console.warn(`[${attempt}] Polling error:`, error.message);
+          console.warn(`[${attempt}] Polling error:`, getErrorMessage(error));
         }
       }
     }
@@ -970,8 +1007,10 @@ export class ImageProcessingService {
         throw new Error(`wan2.5-i2i-preview API error: ${taskResponse.status} - ${errorText}`);
       }
 
-      const taskResult = await taskResponse.json();
-      const taskId = taskResult.task_id || taskResult.output?.task_id;
+      const taskResult: unknown = await taskResponse.json();
+      const taskId =
+        getStringAtPath(taskResult, ['task_id']) ||
+        getStringAtPath(taskResult, ['output', 'task_id']);
       
       if (!taskId) {
         throw new Error('No task ID returned from API');
