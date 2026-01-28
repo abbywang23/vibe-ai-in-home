@@ -64,14 +64,19 @@ interface FurnitureItem {
   category: string;
   price: number;
   imageUrl: string;
-  reason: string;
-  dimensions: string;
+  reason?: string;
+  dimensions?: string;
   existingItem?: {
     name: string;
     imageUrl: string;
     estimatedValue: number;
   };
   isSelected?: boolean;
+  // 临时支持 API 返回的 Product 类型中的 images 属性
+  images?: Array<{
+    url: string;
+    alt: string;
+  }>;
 }
 
 export type { FurnitureItem };
@@ -116,6 +121,7 @@ export function DesignStudio() {
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
   const [showFinalResult, setShowFinalResult] = useState(false);
+  const [swappingItemId, setSwappingItemId] = useState<string | null>(null);
 
   // Update step status helper
   const updateStepStatus = (stepId: StepId, status: StepStatus) => {
@@ -399,22 +405,41 @@ export function DesignStudio() {
         return `AI selected this ${category} based on your room size, style preferences, and budget.`;
       };
       
-      const furnitureWithSelection = response.products.map((item, index) => {
-        // 处理 dimensions：将 FurnitureDimensions 对象转换为字符串
-        const dims = item.dimensions as FurnitureDimensions;
-        const unit = dims.unit || 'cm';
-        const dimensionsStr = `${dims.width}${unit} W × ${dims.depth}${unit} D × ${dims.height}${unit} H`;
+      const furnitureWithSelection = response.products.map((item) => {
+        // 类型断言：API 返回的产品可能包含 images 属性
+        const productWithImages = item as FurnitureItem & {
+          images?: Array<{ url: string; alt: string }>;
+          dimensions?: string | FurnitureDimensions;
+        };
+        
+        // 处理 dimensions：可能是 FurnitureDimensions 对象或字符串
+        let dimensionsStr: string;
+        if (typeof productWithImages.dimensions === 'string') {
+          dimensionsStr = productWithImages.dimensions;
+        } else if (productWithImages.dimensions && typeof productWithImages.dimensions === 'object') {
+          const dims = productWithImages.dimensions as FurnitureDimensions;
+          const unit = dims.unit || 'cm';
+          dimensionsStr = `${dims.width}${unit} W × ${dims.depth}${unit} D × ${dims.height}${unit} H`;
+        } else {
+          dimensionsStr = 'Dimensions not available';
+        }
         
         // 提取该产品的 reasoning
         const productReason = parseReasoningForProduct(response.reasoning, item.id, item.name, item.category);
+        
+        // 处理 imageUrl：优先使用 images 数组，否则使用 imageUrl
+        let imageUrl = item.imageUrl || '';
+        if (productWithImages.images && productWithImages.images.length > 0) {
+          // 优先使用第二个图片，否则使用第一个
+          imageUrl = productWithImages.images.length > 1 ? productWithImages.images[1].url : productWithImages.images[0].url;
+        }
         
         return {
           ...item,
           dimensions: dimensionsStr,
           isSelected: true,
           reason: typeof productReason === 'string' ? productReason : String(productReason || 'AI recommended'),
-          // 确保 imageUrl 存在（优先使用第二个图片，否则使用第一个）
-          imageUrl: item.images && item.images.length > 1 ? item.images[1].url : (item.images && item.images.length > 0 ? item.images[0].url : item.imageUrl || ''),
+          imageUrl: imageUrl,
         } as FurnitureItem;
       });
       setSelectedFurniture(furnitureWithSelection);
@@ -486,6 +511,106 @@ export function DesignStudio() {
   // Remove furniture item from list
   const handleRemoveFurniture = (id: string) => {
     setSelectedFurniture(prev => prev.filter(item => item.id !== id));
+  };
+
+  // Handle swap furniture item
+  const handleSwapFurniture = async (itemId: string) => {
+    try {
+      setSwappingItemId(itemId);
+      
+      // 获取要替换的家具项
+      const itemToSwap = selectedFurniture.find(item => item.id === itemId);
+      if (!itemToSwap || !roomData) {
+        alert('Cannot swap this item');
+        return;
+      }
+      
+      // 获取同类别的替代产品
+      console.log('Searching for alternative products...');
+      const roomDimensions = getRoomDimensionsFromSize(roomSetup.width, roomSetup.length);
+      const response = await aiApi.getSmartRecommendations({
+        roomType: roomData.roomType || roomSetup.roomType,
+        roomDimensions: roomDimensions,
+        preferences: {
+          selectedCategories: [itemToSwap.category],
+          budget: preferences.budget ? {
+            amount: preferences.budget.max,
+            currency: 'SGD'
+          } : undefined
+        },
+        language: 'en'
+      });
+      
+      // 过滤掉当前产品，获取第一个替代产品
+      const alternativeProductRaw = response.products.find(p => p.id !== itemId);
+      
+      if (!alternativeProductRaw) {
+        alert('No alternative products found');
+        return;
+      }
+      
+      // 类型断言：API 返回的产品可能包含 images 属性
+      const alternativeProduct = alternativeProductRaw as FurnitureItem & {
+        images?: Array<{ url: string; alt: string }>;
+        dimensions?: string | FurnitureDimensions;
+      };
+      
+      // 处理替代产品的 dimensions
+      let dimensionsStr: string;
+      if (typeof alternativeProduct.dimensions === 'string') {
+        dimensionsStr = alternativeProduct.dimensions;
+      } else if (alternativeProduct.dimensions && typeof alternativeProduct.dimensions === 'object') {
+        const dims = alternativeProduct.dimensions as FurnitureDimensions;
+        const unit = dims.unit || 'cm';
+        dimensionsStr = `${dims.width}${unit} W × ${dims.depth}${unit} D × ${dims.height}${unit} H`;
+      } else {
+        dimensionsStr = itemToSwap.dimensions || 'Dimensions not available';
+      }
+      
+      // 处理替代产品的 imageUrl
+      let imageUrl = alternativeProduct.imageUrl || '';
+      if (alternativeProduct.images && alternativeProduct.images.length > 0) {
+        imageUrl = alternativeProduct.images.length > 1 ? alternativeProduct.images[1].url : alternativeProduct.images[0].url;
+      }
+      
+      // 调用替换 API
+      console.log('Replacing furniture...');
+      const replaceResponse = await aiApi.replaceFurniture({
+        imageUrl: roomData.originalImageUrl || roomData.imageUrl,
+        detectedItemId: itemId,
+        replacementProductId: alternativeProduct.id
+      });
+      
+      // 更新房间图片（只更新 imageUrl，不更新 originalImageUrl）
+      if (replaceResponse.success) {
+        setRoomData(prev => prev ? {
+          ...prev,
+          imageUrl: replaceResponse.processedImageUrl
+        } : null);
+        
+        // 更新家具列表
+        setSelectedFurniture(prev => prev.map(item => {
+          if (item.id === itemId) {
+            return {
+              ...alternativeProduct,
+              dimensions: dimensionsStr,
+              imageUrl: imageUrl,
+              isSelected: item.isSelected,
+              reason: `Swapped from ${item.name}. ${alternativeProduct.reason || ''}`
+            } as FurnitureItem;
+          }
+          return item;
+        }));
+        
+        alert(`Successfully swapped to ${alternativeProduct.name}`);
+      }
+      
+    } catch (error) {
+      console.error('Error swapping furniture:', error);
+      alert('Failed to swap furniture. Please try again.');
+    } finally {
+      setSwappingItemId(null);
+    }
   };
 
   // Handle selection step completion
@@ -643,9 +768,12 @@ export function DesignStudio() {
                   )}
                   {step.id === 'selection' && (
                     <SelectionStepContent
+                      roomIntent={roomSetup.intent}
                       selectedFurniture={selectedFurniture}
                       onToggleFurniture={handleToggleFurniture}
                       onRemoveFurniture={handleRemoveFurniture}
+                      onSwapFurniture={handleSwapFurniture}
+                      swappingItemId={swappingItemId}
                       isLoading={isLoadingFurniture}
                       totalCost={totalCost}
                       budget={preferences.budget}
@@ -1056,10 +1184,13 @@ function VisionStepContent({ roomData, preferences, onPreferencesChange, onCompl
 }
 
 // Selection Step Content
-function SelectionStepContent({ selectedFurniture, onToggleFurniture, onRemoveFurniture, isLoading, totalCost, budget, withinBudget, onComplete, isCompleted }: {
+function SelectionStepContent({ roomIntent, selectedFurniture, onToggleFurniture, onRemoveFurniture, onSwapFurniture, swappingItemId, isLoading, totalCost, budget, withinBudget, onComplete, isCompleted }: {
+  roomIntent: RoomIntent;
   selectedFurniture: FurnitureItem[];
   onToggleFurniture: (id: string) => void;
   onRemoveFurniture: (id: string) => void;
+  onSwapFurniture: (id: string) => void;
+  swappingItemId: string | null;
   isLoading: boolean;
   totalCost: number;
   budget: { min: number; max: number };
@@ -1125,9 +1256,35 @@ function SelectionStepContent({ selectedFurniture, onToggleFurniture, onRemoveFu
 
       {/* Furniture Items */}
       <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-        {selectedFurniture.map((item, index) => (
-          <FurnitureCard key={item.id} item={item} index={index} isCompleted={isCompleted} onToggle={onToggleFurniture} onRemove={onRemoveFurniture} />
-        ))}
+        {roomIntent === 'refresh' ? (
+          // Refresh Room: 显示对比卡片（Current vs AI Recommended）
+          selectedFurniture.map((item, index) => (
+            <FurnitureComparisonCard 
+              key={item.id} 
+              item={item} 
+              index={index} 
+              isCompleted={isCompleted} 
+              onToggle={onToggleFurniture}
+              onSwap={onSwapFurniture}
+              isSwapping={swappingItemId === item.id}
+              onRemove={onRemoveFurniture}
+            />
+          ))
+        ) : (
+          // Furnish Room: 显示单列卡片（只有 AI Recommended）
+          selectedFurniture.map((item, index) => (
+            <FurnitureCard 
+              key={item.id} 
+              item={item} 
+              index={index} 
+              isCompleted={isCompleted} 
+              onToggle={onToggleFurniture}
+              onRemove={onRemoveFurniture}
+              onSwap={onSwapFurniture}
+              isSwapping={swappingItemId === item.id}
+            />
+          ))
+        )}
       </div>
 
       {/* Confirm Button */}
@@ -1155,7 +1312,15 @@ function SelectionStepContent({ selectedFurniture, onToggleFurniture, onRemoveFu
 }
 
 // Furniture Card Component
-function FurnitureCard({ item, index, isCompleted, onToggle, onRemove }: { item: FurnitureItem; index: number; isCompleted: boolean; onToggle: (id: string) => void; onRemove?: (id: string) => void }) {
+function FurnitureCard({ item, index, isCompleted, onToggle, onRemove, onSwap, isSwapping }: { 
+  item: FurnitureItem; 
+  index: number; 
+  isCompleted: boolean; 
+  onToggle: (id: string) => void;
+  onRemove?: (id: string) => void;
+  onSwap?: (id: string) => void;
+  isSwapping?: boolean;
+}) {
   return (
     <div className="bg-background border border-border rounded-lg overflow-hidden hover:border-primary/50 transition-all group">
       <div className="flex gap-3 p-3">
@@ -1208,10 +1373,25 @@ function FurnitureCard({ item, index, isCompleted, onToggle, onRemove }: { item:
       {/* Action Buttons */}
       {!isCompleted && (
         <div className="border-t border-border px-3 py-2 flex items-center gap-2">
-          <button className="flex-1 px-3 py-1.5 bg-card border border-border rounded hover:border-primary transition-colors flex items-center justify-center gap-1.5">
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span style={{ fontSize: 'var(--text-small)' }}>Swap Item</span>
-          </button>
+          {onSwap && (
+            <button 
+              onClick={() => onSwap(item.id)}
+              disabled={isSwapping}
+              className="flex-1 px-3 py-1.5 bg-card border border-border rounded hover:border-primary transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSwapping ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span style={{ fontSize: 'var(--text-small)' }}>Swapping...</span>
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span style={{ fontSize: 'var(--text-small)' }}>Swap Item</span>
+                </>
+              )}
+            </button>
+          )}
           <button 
             className="px-3 py-1.5 bg-card border border-border rounded hover:border-destructive hover:text-destructive transition-colors flex items-center justify-center gap-1.5" 
             onClick={() => {
@@ -1339,17 +1519,17 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
     <div className="h-full p-6">
       <div className="h-full grid grid-cols-2 gap-6">
         {/* Left Column - Upload / Original */}
-        <div className="flex flex-col">
-          <div className="mb-3">
+        <div className="flex flex-col h-full">
+          <div className="mb-3 flex-shrink-0">
             <h4 className="mb-1">Original</h4>
             <p className="text-muted-foreground" style={{ fontSize: 'var(--text-caption)' }}>
               Upload your room photo
             </p>
           </div>
           
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 min-h-0 relative">
             {!roomData ? (
-              <div className="flex-1 relative">
+              <div className="absolute inset-0">
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/jpg"
@@ -1393,8 +1573,8 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
                 </label>
               </div>
             ) : (
-              <>
-                <div className="flex-1 rounded-lg overflow-hidden border border-border bg-muted relative">
+              <div className="absolute inset-0 flex flex-col gap-3">
+                <div className="flex-1 min-h-0 rounded-lg overflow-hidden border border-border bg-muted relative">
                   <img src={roomData.originalImageUrl || roomData.imageUrl} alt="Original Room" className="w-full h-full object-cover" />
                   
                   {/* Analyzing Overlay */}
@@ -1421,7 +1601,7 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
                 
                 {/* AI Detected Results - Only show after analysis */}
                 {!isAnalyzing && roomData.furniture.length > 0 && (
-                  <div className="mt-3 bg-card border border-border rounded-lg p-3">
+                  <div className="bg-card border border-border rounded-lg p-3 flex-shrink-0">
                     <div className="flex items-center gap-2 mb-2">
                       <Sparkles className="w-4 h-4 text-primary" />
                       <h5 className="text-sm font-medium">AI Detected</h5>
@@ -1446,23 +1626,23 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
                     </div>
                   </div>
                 )}
-              </>
+              </div>
             )}
           </div>
         </div>
 
         {/* Right Column - AI Visualization / Rendered */}
-        <div className="flex flex-col">
-          <div className="mb-3">
+        <div className="flex flex-col h-full">
+          <div className="mb-3 flex-shrink-0">
             <h4 className="mb-1">Rendered</h4>
             <p className="text-muted-foreground" style={{ fontSize: 'var(--text-caption)' }}>
               {showFinalResult ? 'AI-generated design' : 'Upload a room photo to start'}
             </p>
           </div>
           
-          <div className="flex-1 relative">
+          <div className="flex-1 min-h-0 relative">
             {!roomData ? (
-              <div className="h-full rounded-lg border border-border bg-muted/30 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-lg border border-border bg-muted/30 flex items-center justify-center">
                 <div className="text-center max-w-xs">
                   <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
                     <Eye className="w-8 h-8 text-muted-foreground" />
@@ -1474,7 +1654,7 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
                 </div>
               </div>
             ) : isRendering ? (
-              <div className="h-full rounded-lg border border-border bg-background flex items-center justify-center">
+              <div className="absolute inset-0 rounded-lg border border-border bg-background flex items-center justify-center">
                 <div className="text-center max-w-sm">
                   <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                     <Sparkles className="w-10 h-10 text-primary animate-pulse" />
@@ -1503,7 +1683,7 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
                 </div>
               </div>
             ) : showFinalResult ? (
-              <div className="h-full rounded-lg overflow-hidden border border-border bg-muted relative">
+              <div className="absolute inset-0 rounded-lg overflow-hidden border border-border bg-muted relative">
                 <img src={roomData.renderedImageUrl || roomData.imageUrl} alt="Rendered Room" className="w-full h-full object-cover" />
                 <div className="absolute top-4 left-4 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg flex items-center gap-2 shadow-lg">
                   <Sparkles className="w-4 h-4" />
@@ -1529,7 +1709,7 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
                 </div>
               </div>
             ) : (
-              <div className="h-full rounded-lg border border-border bg-muted/30 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-lg border border-border bg-muted/30 flex items-center justify-center">
                 <div className="text-center max-w-xs">
                   <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
                     <Eye className="w-8 h-8 text-muted-foreground" />

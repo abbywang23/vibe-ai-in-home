@@ -563,6 +563,16 @@ export const aiApi = {
   },
 
   /**
+   * 替换家具
+   */
+  async replaceFurniture(request: ReplacementRequest): Promise<ReplacementResponse> {
+    return fetchAPI<ReplacementResponse>('/api/ai/replace', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+
+  /**
    * 健康检查
    */
   async healthCheck(): Promise<{ status: string; service: string }> {
