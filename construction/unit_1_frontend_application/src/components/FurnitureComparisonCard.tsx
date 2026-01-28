@@ -1,4 +1,4 @@
-import { Check, X, ArrowRight, Ruler, Sparkles } from 'lucide-react';
+import { Check, X, ArrowRight, Ruler, Sparkles, RefreshCw, Loader2 } from 'lucide-react';
 import { FurnitureItem } from './DesignStudio';
 
 interface FurnitureComparisonCardProps {
@@ -6,9 +6,11 @@ interface FurnitureComparisonCardProps {
   index: number;
   isCompleted: boolean;
   onToggle: (id: string) => void;
+  onSwap: (id: string) => void;
+  isSwapping: boolean;
 }
 
-export function FurnitureComparisonCard({ item, index, isCompleted, onToggle }: FurnitureComparisonCardProps) {
+export function FurnitureComparisonCard({ item, index, isCompleted, onToggle, onSwap, isSwapping }: FurnitureComparisonCardProps) {
   const isRefreshMode = !!item.existingItem;
 
   if (!isRefreshMode) {
@@ -186,6 +188,29 @@ export function FurnitureComparisonCard({ item, index, isCompleted, onToggle }: 
           </div>
         )}
       </div>
+
+      {/* Action Buttons */}
+      {!isCompleted && item.isSelected && (
+        <div className="border-t border-border px-3 py-2">
+          <button 
+            onClick={() => onSwap(item.id)}
+            disabled={isSwapping}
+            className="w-full px-3 py-1.5 bg-card border border-border rounded hover:border-primary transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSwapping ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span style={{ fontSize: 'var(--text-small)' }}>Swapping...</span>
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span style={{ fontSize: 'var(--text-small)' }}>Swap Item</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
