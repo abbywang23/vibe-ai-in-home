@@ -278,18 +278,26 @@ export class ImageProcessingService {
     roomDimensions: { length: number; width: number; height: number; unit: string }
   ): Promise<FurnitureDetectionResponse> {
     console.log(`Detecting furniture in image: ${imageUrl}`);
+    console.log(`Room dimensions:`, roomDimensions);
 
     try {
       const aiClient = AIClientFactory.getAvailableClient();
       
       if (aiClient) {
+        console.log('✅ AI client available, calling AI API...');
         return await this.detectFurnitureWithAI(imageUrl, roomDimensions, aiClient);
       } else {
         // Fallback to mock detection
+        console.warn('⚠️ No AI client available, falling back to mock detection');
+        console.warn('⚠️ Check DASHSCOPE_API_KEY environment variable');
         return this.generateMockDetection(imageUrl);
       }
     } catch (error) {
-      console.error('Furniture detection error, falling back to mock:', error);
+      console.error('❌ Furniture detection error, falling back to mock:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return this.generateMockDetection(imageUrl);
     }
   }
@@ -471,6 +479,13 @@ export class ImageProcessingService {
     ];
 
     console.log('Calling Qwen API for furniture detection...');
+    console.log('Image URL for API:', imageDataForAPI.url.substring(0, 100) + '...');
+    console.log('Messages structure:', {
+      systemPromptLength: prompts.system.length,
+      userPromptLength: prompts.user.length,
+      hasImage: true
+    });
+    
     const startTime = Date.now();
     
     const response = await aiClient.chatCompletion({
@@ -481,15 +496,24 @@ export class ImageProcessingService {
     });
     
     const elapsedTime = Date.now() - startTime;
-    console.log(`Qwen API response received in ${elapsedTime}ms`);
+    console.log(`✅ Qwen API response received in ${elapsedTime}ms`);
 
     const aiResponse = response.choices[0]?.message?.content || '';
+    console.log('AI response length:', aiResponse.length);
+    console.log('AI response preview (first 500 chars):', aiResponse.substring(0, 500));
     
     // Parse AI response
     try {
       const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
+        console.log('✅ Found JSON in AI response');
         const result = JSON.parse(jsonMatch[0]);
+        console.log('Parsed result:', {
+          isEmpty: result.isEmpty,
+          detectedItemsCount: result.detectedItems?.length || 0,
+          roomType: result.roomType?.value,
+          hasRoomDimensions: !!result.roomDimensions
+        });
         
         // 验证和过滤家具类型，只保留支持的6种类型
         const validDetectedItems: DetectedFurnitureItem[] = (result.detectedItems || [])
@@ -566,21 +590,44 @@ export class ImageProcessingService {
         }
         
         if (result.roomDimensions) {
-          response.roomDimensions = {
-            length: result.roomDimensions.length,
-            width: result.roomDimensions.width,
-            height: result.roomDimensions.height,
-            unit: result.roomDimensions.unit || 'meters',
-            confidence: result.roomDimensions.confidence || 0,
-          };
+          // 检查所有维度是否都是有效数字（不为 null/undefined）
+          const length = typeof result.roomDimensions.length === 'number' && 
+                        result.roomDimensions.length !== null && 
+                        Number.isFinite(result.roomDimensions.length) 
+                        ? result.roomDimensions.length : null;
+          const width = typeof result.roomDimensions.width === 'number' && 
+                       result.roomDimensions.width !== null && 
+                       Number.isFinite(result.roomDimensions.width) 
+                       ? result.roomDimensions.width : null;
+          const height = typeof result.roomDimensions.height === 'number' && 
+                        result.roomDimensions.height !== null && 
+                        Number.isFinite(result.roomDimensions.height) 
+                        ? result.roomDimensions.height : null;
           
-          // 同时保留原有字段（向后兼容）
-          response.estimatedRoomDimensions = {
-            length: result.roomDimensions.length,
-            width: result.roomDimensions.width,
-            height: result.roomDimensions.height,
-            unit: result.roomDimensions.unit || 'meters',
-          };
+          // 只有当所有维度都有效时才设置 roomDimensions
+          if (length !== null && width !== null && height !== null) {
+            response.roomDimensions = {
+              length,
+              width,
+              height,
+              unit: result.roomDimensions.unit || 'meters',
+              confidence: typeof result.roomDimensions.confidence === 'number' 
+                ? result.roomDimensions.confidence 
+                : 0,
+            };
+            
+            // 同时保留原有字段（向后兼容）
+            response.estimatedRoomDimensions = {
+              length,
+              width,
+              height,
+              unit: result.roomDimensions.unit || 'meters',
+            };
+            
+            console.log(`✅ Room dimensions parsed successfully: ${length} × ${width} × ${height} ${result.roomDimensions.unit || 'meters'}`);
+          } else {
+            console.warn(`⚠️ Room dimensions incomplete from Qwen (length: ${result.roomDimensions.length}, width: ${result.roomDimensions.width}, height: ${result.roomDimensions.height}). Skipping roomDimensions in response.`);
+          }
         }
         
         if (result.roomStyle) {
@@ -611,13 +658,21 @@ export class ImageProcessingService {
         });
         
         return response;
+      } else {
+        console.error('❌ No JSON found in AI response');
+        console.error('Full AI response:', aiResponse);
       }
     } catch (parseError) {
-      console.error('Failed to parse AI detection response:', parseError);
-      console.error('Raw AI response:', aiResponse);
+      console.error('❌ Failed to parse AI detection response:', parseError);
+      console.error('Parse error details:', {
+        message: parseError instanceof Error ? parseError.message : String(parseError),
+        stack: parseError instanceof Error ? parseError.stack : undefined
+      });
+      console.error('Raw AI response (first 1000 chars):', aiResponse.substring(0, 1000));
     }
 
     // Fallback to mock if parsing fails
+    console.warn('⚠️ Falling back to mock detection due to parsing failure');
     return this.generateMockDetection(imageUrl);
   }
 
@@ -1412,15 +1467,24 @@ export class ImageProcessingService {
         decor_items: JSON.stringify(decorItems)
       };
       
-      // Add room dimensions if provided
+      // Add room dimensions if provided and all values are valid
       if (roomDimensions) {
-        requestPayload.room_dimensions = {
-          length: roomDimensions.length,
-          width: roomDimensions.width,
-          height: roomDimensions.height,
-          unit: roomDimensions.unit || 'meters'
-        };
-        console.log(`✅ Added room dimensions: ${roomDimensions.length} × ${roomDimensions.width} × ${roomDimensions.height} ${roomDimensions.unit || 'meters'}`);
+        // Only include room_dimensions if all required dimensions are valid numbers (not null)
+        const hasValidLength = roomDimensions.length !== null && roomDimensions.length !== undefined && typeof roomDimensions.length === 'number';
+        const hasValidWidth = roomDimensions.width !== null && roomDimensions.width !== undefined && typeof roomDimensions.width === 'number';
+        const hasValidHeight = roomDimensions.height !== null && roomDimensions.height !== undefined && typeof roomDimensions.height === 'number';
+        
+        if (hasValidLength && hasValidWidth && hasValidHeight) {
+          requestPayload.room_dimensions = {
+            length: roomDimensions.length,
+            width: roomDimensions.width,
+            height: roomDimensions.height,
+            unit: roomDimensions.unit || 'meters'
+          };
+          console.log(`✅ Added room dimensions: ${roomDimensions.length} × ${roomDimensions.width} × ${roomDimensions.height} ${roomDimensions.unit || 'meters'}`);
+        } else {
+          console.log(`⚠️ Room dimensions provided but incomplete (length: ${roomDimensions.length}, width: ${roomDimensions.width}, height: ${roomDimensions.height}). Decor8 will infer from image.`);
+        }
       } else {
         console.log('⚠️ No room dimensions provided, Decor8 will infer from image');
       }
@@ -1485,9 +1549,11 @@ export class ImageProcessingService {
   }
   private generateMockDetection(imageUrl: string): FurnitureDetectionResponse {
     // Simulate detection based on URL or random
+    console.warn('⚠️ Generating mock detection response (this should not happen in production)');
     const isEmpty = Math.random() > 0.5;
     
     if (isEmpty) {
+      console.warn('⚠️ Mock: Returning empty room detection');
       return {
         success: true,
         detectedItems: [],

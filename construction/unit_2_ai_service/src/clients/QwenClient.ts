@@ -25,8 +25,9 @@ export class QwenClient extends AIClient {
     // Use appropriate model based on content type
     const model = hasImages ? 'qwen3-vl-plus' : (request.model || this.config.defaultModel);
 
-    // Add timeout for fetch requests (60 seconds for multimodal requests, 30 seconds for text)
-    const timeout = hasImages ? 60000 : 30000;
+    // Add timeout for fetch requests (120 seconds for multimodal requests, 30 seconds for text)
+    // Visual models can take longer to process images
+    const timeout = hasImages ? 120000 : 30000;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
     

@@ -1,6 +1,7 @@
-import { fetchAPI, API_BASE_URL } from './api';
-import { RoomDimensions, DetectedFurnitureItem } from '../types/domain';
+import { fetchAPI } from './api';
+import { RoomDimensions, DetectedFurnitureItem, FurnitureDimensions } from '../types/domain';
 import { uploadToCloudinary, validateImageFile } from '../utils/cloudinaryUpload';
+import SparkMD5 from 'spark-md5';
 
 // ============= 类型定义 =============
 
@@ -191,6 +192,206 @@ export interface PlacementResponse {
   };
 }
 
+// 后端返回的 Product 类型
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  detailedDescription?: string;
+  price: number;
+  originalPrice?: number;
+  currency: string;
+  images: Array<{
+    url: string;
+    alt: string;
+  }>;
+  category: string;
+  tags: string[];
+  dimensions: FurnitureDimensions;
+  inStock: boolean;
+  delivery: string;
+  externalUrl: string;
+}
+
+interface ProductDetailResponse {
+  success: boolean;
+  product: Product;
+}
+
+interface ProductSearchResponse {
+  success: boolean;
+  products: Product[];
+  total: number;
+}
+
+// ============= 缓存相关类型和常量 =============
+
+interface CachedDetection {
+  response: DetectionResponse;
+  cachedAt: number;
+}
+
+interface DetectCache {
+  [hash: string]: CachedDetection;
+}
+
+const DETECT_CACHE_KEY = 'ai_detect_cache';
+
+/**
+ * 计算请求参数的 MD5 hash
+ */
+function calculateRequestMD5(request: DetectionRequest): string {
+  const jsonStr = JSON.stringify(request);
+  return SparkMD5.hash(jsonStr);
+}
+
+/**
+ * 从 localStorage 读取缓存的检测结果
+ */
+function getCachedDetect(hash: string): DetectionResponse | null {
+  try {
+    const cacheStr = localStorage.getItem(DETECT_CACHE_KEY);
+    if (!cacheStr) return null;
+
+    const cache: DetectCache = JSON.parse(cacheStr);
+    const cached = cache[hash];
+
+    if (cached) {
+      return cached.response;
+    }
+
+    return null;
+  } catch (error) {
+    // If cache is corrupted, clear it
+    console.warn('Failed to read detect cache, clearing:', error);
+    try {
+      localStorage.removeItem(DETECT_CACHE_KEY);
+    } catch (e) {
+      // Ignore cleanup errors
+    }
+    return null;
+  }
+}
+
+/**
+ * 保存检测结果到缓存
+ */
+function setCachedDetect(hash: string, response: DetectionResponse): void {
+  try {
+    // Check if we need to cleanup before saving
+    ensureDetectCacheSpace();
+
+    const cacheStr = localStorage.getItem(DETECT_CACHE_KEY);
+    const cache: DetectCache = cacheStr ? JSON.parse(cacheStr) : {};
+
+    cache[hash] = {
+      response: response,
+      cachedAt: Date.now(),
+    };
+
+    localStorage.setItem(DETECT_CACHE_KEY, JSON.stringify(cache));
+  } catch (error) {
+    // If storage is full or unavailable, try cleanup and retry once
+    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+      try {
+        cleanupOldestDetectCache();
+        const cacheStr = localStorage.getItem(DETECT_CACHE_KEY);
+        const cache: DetectCache = cacheStr ? JSON.parse(cacheStr) : {};
+        cache[hash] = {
+          response: response,
+          cachedAt: Date.now(),
+        };
+        localStorage.setItem(DETECT_CACHE_KEY, JSON.stringify(cache));
+      } catch (retryError) {
+        // If still fails, just skip caching
+        console.warn('Failed to save detect cache:', retryError);
+      }
+    } else {
+      console.warn('Failed to save detect cache:', error);
+    }
+  }
+}
+
+/**
+ * 确保缓存空间足够
+ */
+function ensureDetectCacheSpace(): void {
+  try {
+    const cacheStr = localStorage.getItem(DETECT_CACHE_KEY);
+    if (!cacheStr) return;
+
+    // Try to estimate size (rough calculation)
+    const estimatedSize = new Blob([cacheStr]).size;
+    const threshold = 1024 * 1024; // 1MB threshold
+
+    if (estimatedSize > threshold) {
+      cleanupOldestDetectCache();
+    }
+  } catch (error) {
+    // Ignore errors during space check
+  }
+}
+
+/**
+ * 清理最旧的缓存条目
+ */
+function cleanupOldestDetectCache(): void {
+  try {
+    const cacheStr = localStorage.getItem(DETECT_CACHE_KEY);
+    if (!cacheStr) return;
+
+    const cache: DetectCache = JSON.parse(cacheStr);
+    const entries = Object.entries(cache);
+
+    if (entries.length === 0) return;
+
+    // Sort by cachedAt (oldest first)
+    entries.sort((a, b) => a[1].cachedAt - b[1].cachedAt);
+
+    // Remove oldest 50% of entries
+    const removeCount = Math.max(1, Math.floor(entries.length / 2));
+    const newCache: DetectCache = {};
+
+    // Keep the newer half
+    for (let i = removeCount; i < entries.length; i++) {
+      newCache[entries[i][0]] = entries[i][1];
+    }
+
+    localStorage.setItem(DETECT_CACHE_KEY, JSON.stringify(newCache));
+  } catch (error) {
+    // If cleanup fails, clear entire cache
+    console.warn('Failed to cleanup detect cache, clearing all:', error);
+    try {
+      localStorage.removeItem(DETECT_CACHE_KEY);
+    } catch (e) {
+      // Ignore
+    }
+  }
+}
+
+// ============= 转换函数 =============
+
+/**
+ * 将后端的 Product 转换为前端的 FurnitureItem
+ */
+function convertProductToFurnitureItem(product: Product, reason?: string): FurnitureItem {
+  // 处理 dimensions：将 FurnitureDimensions 对象转换为字符串
+  const dims = product.dimensions;
+  const unit = dims.unit || 'cm';
+  const dimensionsStr = `${dims.width}${unit} W × ${dims.depth}${unit} D × ${dims.height}${unit} H`;
+  
+  return {
+    id: product.id,
+    name: product.name,
+    category: product.category,
+    price: product.price,
+    imageUrl: product.images && product.images.length > 1 ? product.images[1].url : (product.images && product.images.length > 0 ? product.images[0].url : ''),
+    reason: reason || product.description || '',
+    dimensions: dimensionsStr,
+    isSelected: false,
+  };
+}
+
 // ============= API 服务 =============
 
 export const aiApi = {
@@ -239,10 +440,55 @@ export const aiApi = {
    * 检测房间（使用 DetectionRequest/DetectionResponse）
    */
   async detectRoom(request: DetectionRequest): Promise<DetectionResponse> {
-    return fetchAPI<DetectionResponse>('/api/ai/detect', {
+    // 计算请求参数的 MD5 hash 并检查缓存
+    let requestHash: string | undefined;
+    try {
+      requestHash = calculateRequestMD5(request);
+      const cached = getCachedDetect(requestHash);
+      if (cached) {
+        console.log('Using cached detection result:', {
+          hash: requestHash?.substring(0, 8),
+          detectedItemsCount: cached.detectedItems?.length || 0,
+          roomType: cached.roomType?.value,
+          isEmpty: cached.isEmpty
+        });
+        return cached;
+      }
+    } catch (hashError) {
+      // If hash calculation fails, continue with normal API call
+      console.warn('Failed to calculate request hash, skipping cache:', hashError);
+    }
+
+    // 调用 API
+    console.log('Calling detect API with request:', {
+      imageUrl: request.imageUrl.substring(0, 50) + '...',
+      roomDimensions: request.roomDimensions
+    });
+    
+    const response = await fetchAPI<DetectionResponse>('/api/ai/detect', {
       method: 'POST',
       body: JSON.stringify(request),
     });
+
+    console.log('Detect API response received:', {
+      success: response.success,
+      detectedItemsCount: response.detectedItems?.length || 0,
+      roomType: response.roomType?.value,
+      isEmpty: response.isEmpty
+    });
+
+    // 保存到缓存（如果 hash 计算成功）
+    if (requestHash) {
+      try {
+        setCachedDetect(requestHash, response);
+        console.log('Cached detection result:', requestHash.substring(0, 8));
+      } catch (cacheError) {
+        // Ignore cache errors, API call was successful
+        console.warn('Failed to cache detect result:', cacheError);
+      }
+    }
+
+    return response;
   },
 
   /**
@@ -269,11 +515,14 @@ export const aiApi = {
    * 获取产品详情
    */
   async getProductById(id: string): Promise<FurnitureItem> {
-    return fetchAPI<FurnitureItem>(`/api/ai/products/${id}`);
+    const response = await fetchAPI<ProductDetailResponse>(`/api/ai/products/${id}`);
+    return convertProductToFurnitureItem(response.product);
   },
 
   /**
    * 搜索产品
+   * 注意：后端只支持 q, category, maxPrice, limit 参数
+   * style, minPrice, roomType 参数会被忽略
    */
   async searchProducts(params: {
     category?: string;
@@ -281,16 +530,36 @@ export const aiApi = {
     minPrice?: number;
     maxPrice?: number;
     roomType?: string;
+    q?: string; // 查询关键词
+    limit?: number; // 限制数量
   }): Promise<{ products: FurnitureItem[] }> {
-    const queryString = new URLSearchParams(
-      Object.entries(params)
-        .filter(([_, v]) => v !== undefined && v !== null)
-        .map(([k, v]) => [k, String(v)])
-    ).toString();
-
-    return fetchAPI<{ products: FurnitureItem[] }>(
-      `/api/ai/products/search?${queryString}`
+    // 只使用后端支持的参数
+    const backendParams: Record<string, string> = {};
+    
+    if (params.q) {
+      backendParams.q = params.q;
+    }
+    if (params.category) {
+      backendParams.category = params.category;
+    }
+    if (params.maxPrice !== undefined && params.maxPrice !== null) {
+      backendParams.maxPrice = String(params.maxPrice);
+    }
+    if (params.limit !== undefined && params.limit !== null) {
+      backendParams.limit = String(params.limit);
+    }
+    
+    // 忽略不支持的参数：style, minPrice, roomType
+    
+    const queryString = new URLSearchParams(backendParams).toString();
+    const response = await fetchAPI<ProductSearchResponse>(
+      `/api/ai/products/search${queryString ? `?${queryString}` : ''}`
     );
+    
+    // 转换 Product[] 为 FurnitureItem[]
+    return {
+      products: response.products.map(product => convertProductToFurnitureItem(product)),
+    };
   },
 
   /**

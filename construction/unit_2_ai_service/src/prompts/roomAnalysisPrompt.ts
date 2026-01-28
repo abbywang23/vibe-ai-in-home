@@ -61,8 +61,12 @@ export const ROOM_ANALYSIS_SYSTEM_PROMPT = `你是一个专业的室内设计师
 1. 参考标准物体：门高约2米，窗户宽度约1-1.5米，标准沙发长度约2-3米
 2. 使用透视原理：根据图片中的透视关系估算实际尺寸
 3. 家具比例：根据已知家具尺寸推算房间大小
-4. 如果无法准确估计，提供合理范围（如：长度 3-5米）
-5. 高度通常为 2.4-3.0米（标准层高）
+4. **重要**：即使无法准确估计，也必须提供估算值（不要返回 null）：
+   - 如果无法准确估计长度，使用合理估算值（如：4米）
+   - 如果无法准确估计宽度，使用合理估算值（如：3.5米）
+   - 如果完全无法判断，使用常见房间尺寸（如：长度4米，宽度3.5米）
+5. 高度通常为 2.4-3.0米（标准层高），如果无法判断，使用 2.8米（常见层高）
+6. **必须要求**：roomDimensions 中的 length、width、height 必须是数字，不能为 null 或 undefined
 
 **置信度评估标准：**
 - 90-100：非常确定，特征非常明显
@@ -74,6 +78,9 @@ export const ROOM_ANALYSIS_SYSTEM_PROMPT = `你是一个专业的室内设计师
 **输出要求：**
 - 必须返回有效的JSON格式
 - 所有字段都必须存在
+- **重要**：roomDimensions 中的 length、width、height 必须是数字（不能为 null、undefined 或字符串）
+  - 即使无法准确估计，也必须提供合理的估算值（如：4米、3.5米、2.8米）
+  - 如果完全无法判断，使用常见房间尺寸：长度4米，宽度3.5米，高度2.8米
 - 置信度为0-100的整数
 - 家具bounding box坐标为0-100的百分比
 - 尺寸单位统一（米或英尺）
@@ -140,6 +147,9 @@ export function getRoomAnalysisUserPrompt(options?: RoomAnalysisPromptOptions): 
    - 注意：只识别上述6种家具类型，忽略装饰品、植物、灯具、地毯等其他物品
    - 对每个 detectedItems[]，请额外输出以下“已有家具特征”（无法判断可填 null，但必须给出字段，保证 JSON 可解析）：\n     - style：从 Modern/Nordic/Classic/Minimalist/Industrial/Contemporary/Traditional/Bohemian 中选最接近的（可为 null）\n     - material：主要材质（如 fabric/leather/wood/metal/glass…，可为 null）\n     - color：主色/主配色（1-2 个词即可，如 warm_gray / walnut / black，可为 null）\n     - sizeBucket：small/medium/large（基于占地与房间比例，可为 null）\n     - estimatedDimensions：估算尺寸（meters），包含 width/depth/height 以及 confidence(0-100)；无法估算则整体为 null\n     - notes：一句话补充特征（如 “L-shape sectional”, “round table”, “with drawers”，可为 null）
 3. **房间尺寸**：估计房间的长、宽、高（单位：米或英尺）
+   - **重要**：length、width、height 必须是数字，不能为 null
+   - 即使无法准确估计，也必须提供合理的估算值（如：长度4米，宽度3.5米，高度2.8米）
+   - 如果完全无法判断，使用常见房间尺寸：长度4米，宽度3.5米，高度2.8米
 4. **房间风格**：识别装饰风格（Modern, Nordic, Classic, Minimalist, Industrial, Contemporary, Traditional, Bohemian等）
 5. **是否为空**：判断房间是否为空房间
 6. **家具数量**：统计检测到的家具总数（仅统计上述6种类型的家具）

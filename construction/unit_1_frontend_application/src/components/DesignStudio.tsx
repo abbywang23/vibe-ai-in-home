@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { FurnitureComparisonCard } from './FurnitureComparisonCard';
 import { aiApi } from '../services/aiApi';
-import { RoomDimensions, FurnitureDimensions, DetectedFurnitureItem } from '../types/domain';
+import { RoomDimensions, FurnitureDimensions, DetectedFurnitureItem, DimensionUnit } from '../types/domain';
 
 type StepId = 'upload' | 'vision' | 'selection' | 'confirmation';
 type StepStatus = 'pending' | 'active' | 'completed' | 'locked';
@@ -41,12 +41,15 @@ interface RoomSetup {
 
 interface RoomData {
   imageUrl: string;
+  originalImageUrl: string; // 用户最初上传的原始图片URL，永远不变
+  renderedImageUrl?: string; // multi-render成功后生成的渲染图片URL
   roomType: string;
   dimensions: string;
   furniture: string[];
   style: string;
   confidence: number;
   detectedItems?: DetectedFurnitureItem[]; // 保存完整的检测结果（含特征）
+  roomDimensions?: RoomDimensions; // 保存 detect 返回的 roomDimensions（用于传递给 multi-render）
 }
 
 interface DesignPreferences {
@@ -105,7 +108,7 @@ export function DesignStudio() {
   const [preferences, setPreferences] = useState<DesignPreferences>({
     intent: 'refresh',
     style: 'Modern Minimalist',
-    budget: { min: 2000, max: 5000 }
+    budget: { min: 2000, max: 50000 }
   });
   const [selectedFurniture, setSelectedFurniture] = useState<FurnitureItem[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -171,7 +174,7 @@ export function DesignStudio() {
       length: Math.round(lengthMeters * 10) / 10,
       width: Math.round(widthMeters * 10) / 10,
       height: 2.8,
-      unit: 'meters'
+      unit: DimensionUnit.METERS
     };
   };
 
@@ -186,9 +189,10 @@ export function DesignStudio() {
       const uploadResponse = await aiApi.uploadImage(file);
       console.log('Upload response:', uploadResponse);
       
-      // 3. 设置图片 URL，让用户看到上传的图片（loading 继续显示）
+      // 3. 立即设置图片 URL 并关闭 analyzing 状态，让用户看到图片
       setRoomData({
         imageUrl: uploadResponse.imageUrl,
+        originalImageUrl: uploadResponse.imageUrl, // 保存原始图片URL
         roomType: roomSetup.roomType,
         dimensions: `${roomSetup.width}' × ${roomSetup.length}'`,
         furniture: [],
@@ -196,41 +200,95 @@ export function DesignStudio() {
         confidence: 0
       });
       
+      // 图片已获取，立即关闭 analyzing 状态，让图片可以显示
+      setIsAnalyzing(false);
+      
+      // 4. 在后台进行检测，完成后更新数据（不阻塞UI）
       console.log('Detecting furniture...');
       const roomDimensions = getRoomDimensionsFromSize(roomSetup.width, roomSetup.length);
-      const detectResponse = await aiApi.detectRoom({
+      
+      // 异步检测，不阻塞UI
+      aiApi.detectRoom({
         imageUrl: uploadResponse.imageUrl,
         roomDimensions: roomDimensions
+      }).then((detectResponse) => {
+        console.log('Detect response:', detectResponse);
+        
+        // 安全检查：确保响应格式正确
+        if (!detectResponse) {
+          console.error('Detect response is null or undefined');
+          return;
+        }
+        
+        // 更新状态 - 适配新的响应格式
+        const detectedRoomType = detectResponse.roomType?.value || roomSetup.roomType;
+        const detectedDimensions = detectResponse.roomDimensions 
+          ? `${detectResponse.roomDimensions.length}×${detectResponse.roomDimensions.width}m`
+          : `${roomDimensions.length}×${roomDimensions.width}m`;
+        
+        // 安全检查：确保 detectedItems 存在且是数组
+        const detectedFurniture = (detectResponse.detectedItems && Array.isArray(detectResponse.detectedItems))
+          ? detectResponse.detectedItems.map(item => item.furnitureType)
+          : [];
+        
+        const detectedStyle = detectResponse.roomStyle?.value || 'Modern';
+        const confidence = detectResponse.roomType?.confidence || detectResponse.roomStyle?.confidence || 85;
+        
+        // 转换 detect 返回的 roomDimensions 格式（RoomDimensionsAnalysis -> RoomDimensions）
+        let savedRoomDimensions: RoomDimensions | undefined;
+        if (detectResponse.roomDimensions) {
+          const unit = detectResponse.roomDimensions.unit === 'meters' 
+            ? DimensionUnit.METERS 
+            : detectResponse.roomDimensions.unit === 'feet' 
+            ? DimensionUnit.FEET 
+            : DimensionUnit.METERS; // 默认使用 meters
+          savedRoomDimensions = {
+            length: detectResponse.roomDimensions.length,
+            width: detectResponse.roomDimensions.width,
+            height: detectResponse.roomDimensions.height,
+            unit: unit
+          };
+        }
+        
+        const data: RoomData = {
+          imageUrl: uploadResponse.imageUrl,
+          originalImageUrl: uploadResponse.imageUrl, // 保存原始图片URL
+          roomType: detectedRoomType,
+          dimensions: detectedDimensions,
+          furniture: detectedFurniture,
+          style: detectedStyle,
+          confidence: confidence,
+          detectedItems: detectResponse.detectedItems || [], // 保存完整的检测结果（含特征）
+          roomDimensions: savedRoomDimensions // 保存 detect 返回的 roomDimensions
+        };
+        
+        console.log('Updating roomData with detection results:', {
+          roomType: data.roomType,
+          dimensions: data.dimensions,
+          furnitureCount: data.furniture.length,
+          style: data.style,
+          detectedItemsCount: data.detectedItems?.length || 0
+        });
+        
+        setRoomData(data);
+        setPreferences(prev => ({ ...prev, style: data.style }));
+      }).catch((error) => {
+        console.error('Error detecting room:', error);
+        console.error('Error details:', {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        });
+        // 检测失败不影响图片显示，只记录错误
       });
-      console.log('Detect response:', detectResponse);
-      
-      // 3. 更新状态 - 适配新的响应格式
-      const detectedRoomType = detectResponse.roomType?.value || roomSetup.roomType;
-      const detectedDimensions = detectResponse.roomDimensions 
-        ? `${detectResponse.roomDimensions.length}×${detectResponse.roomDimensions.width}m`
-        : `${roomDimensions.length}×${roomDimensions.width}m`;
-      const detectedFurniture = detectResponse.detectedItems.map(item => item.furnitureType);
-      const detectedStyle = detectResponse.roomStyle?.value || 'Modern';
-      const confidence = detectResponse.roomType?.confidence || detectResponse.roomStyle?.confidence || 85;
-      
-      const data: RoomData = {
-        imageUrl: uploadResponse.imageUrl,
-        roomType: detectedRoomType,
-        dimensions: detectedDimensions,
-        furniture: detectedFurniture,
-        style: detectedStyle,
-        confidence: confidence,
-        detectedItems: detectResponse.detectedItems // 保存完整的检测结果（含特征）
-      };
-      
-      setRoomData(data);
-      setPreferences(prev => ({ ...prev, style: data.style }));
       
     } catch (error) {
-      console.error('Error uploading/analyzing image:', error);
+      console.error('Error uploading image:', error);
+      setIsAnalyzing(false);
       // 降级到模拟数据
+      const fallbackImageUrl = 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&q=80';
       const data: RoomData = {
-        imageUrl: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&q=80',
+        imageUrl: fallbackImageUrl,
+        originalImageUrl: fallbackImageUrl, // 保存原始图片URL
         roomType: 'Living Room',
         dimensions: "12' × 15'",
         furniture: ['Sofa', 'Coffee Table', 'Armchair'],
@@ -239,9 +297,7 @@ export function DesignStudio() {
       };
       setRoomData(data);
       setPreferences(prev => ({ ...prev, style: data.style }));
-      alert('Failed to analyze image. Using demo data.');
-    } finally {
-      setIsAnalyzing(false);
+      alert('Failed to upload image. Using demo data.');
     }
   };
 
@@ -357,8 +413,8 @@ export function DesignStudio() {
           dimensions: dimensionsStr,
           isSelected: true,
           reason: typeof productReason === 'string' ? productReason : String(productReason || 'AI recommended'),
-          // 确保 imageUrl 存在（使用第一个图片）
-          imageUrl: item.images && item.images.length > 0 ? item.images[0].url : item.imageUrl || '',
+          // 确保 imageUrl 存在（优先使用第二个图片，否则使用第一个）
+          imageUrl: item.images && item.images.length > 1 ? item.images[1].url : (item.images && item.images.length > 0 ? item.images[0].url : item.imageUrl || ''),
         } as FurnitureItem;
       });
       setSelectedFurniture(furnitureWithSelection);
@@ -427,6 +483,11 @@ export function DesignStudio() {
     ));
   };
 
+  // Remove furniture item from list
+  const handleRemoveFurniture = (id: string) => {
+    setSelectedFurniture(prev => prev.filter(item => item.id !== id));
+  };
+
   // Handle selection step completion
   const handleSelectionComplete = () => {
     completeStep('selection');
@@ -436,6 +497,7 @@ export function DesignStudio() {
   const handleGenerateRender = async () => {
     setIsRendering(true);
     setRenderProgress(0);
+    setShowFinalResult(false); // 重置最终结果状态，以便重新显示渲染进度
     
     try {
       const selectedItems = selectedFurniture.filter(item => item.isSelected);
@@ -453,9 +515,20 @@ export function DesignStudio() {
       
       // 调用渲染 API
       console.log('Generating multi-render...');
-      const roomDimensions = getRoomDimensionsFromSize(roomSetup.size);
+      // 优先使用 detect 返回的 roomDimensions，如果没有则使用 roomSetup 的值
+      let roomDimensions: RoomDimensions | undefined;
+      if (roomData?.roomDimensions) {
+        // 使用 detect 返回的 roomDimensions（已经是 meters 单位）
+        roomDimensions = roomData.roomDimensions;
+        console.log('Using detected room dimensions:', roomDimensions);
+      } else {
+        // 使用 roomSetup 的值转换为 meters
+        roomDimensions = getRoomDimensionsFromSize(roomSetup.width, roomSetup.length);
+        console.log('Using roomSetup dimensions:', roomDimensions);
+      }
+      
       const response = await aiApi.generateMultiRender({
-        imageUrl: roomData?.imageUrl || '',
+        imageUrl: roomData?.originalImageUrl || roomData?.imageUrl || '', // 使用原始图片URL进行渲染
         selectedFurniture: selectedItems.map(item => ({
           id: item.id,
           name: item.name,
@@ -469,12 +542,12 @@ export function DesignStudio() {
       clearInterval(progressInterval);
       setRenderProgress(100);
       
-      // 更新房间图片为渲染结果 - 适配新的响应格式
+      // 保存渲染结果到renderedImageUrl，不更新originalImageUrl和imageUrl
       const renderedImage = response.processedImageUrl || response.renderedImageUrl;
       if (renderedImage) {
         setRoomData(prev => prev ? {
           ...prev,
-          imageUrl: renderedImage
+          renderedImageUrl: renderedImage // 只更新渲染结果，保持originalImageUrl不变
         } : null);
       }
       
@@ -572,6 +645,7 @@ export function DesignStudio() {
                     <SelectionStepContent
                       selectedFurniture={selectedFurniture}
                       onToggleFurniture={handleToggleFurniture}
+                      onRemoveFurniture={handleRemoveFurniture}
                       isLoading={isLoadingFurniture}
                       totalCost={totalCost}
                       budget={preferences.budget}
@@ -926,10 +1000,18 @@ function VisionStepContent({ roomData, preferences, onPreferencesChange, onCompl
             <input
               type="range"
               min="1000"
-              max="10000"
+              max={Math.min(50000, preferences.budget.max)} // min的最大值不能超过max
               step="500"
               value={preferences.budget.min}
-              onChange={(e) => onPreferencesChange({ ...preferences, budget: { ...preferences.budget, min: Number(e.target.value) } })}
+              onChange={(e) => {
+                const newMin = Number(e.target.value);
+                // 如果新的min大于max，则同时更新max为newMin
+                const newMax = newMin > preferences.budget.max ? newMin : preferences.budget.max;
+                onPreferencesChange({ 
+                  ...preferences, 
+                  budget: { min: newMin, max: newMax } 
+                });
+              }}
               disabled={isCompleted}
               className="w-full accent-primary disabled:opacity-60"
             />
@@ -941,11 +1023,19 @@ function VisionStepContent({ roomData, preferences, onPreferencesChange, onCompl
             </div>
             <input
               type="range"
-              min="1000"
-              max="10000"
+              min={Math.max(1000, preferences.budget.min)} // max的最小值不能小于min
+              max="50000"
               step="500"
               value={preferences.budget.max}
-              onChange={(e) => onPreferencesChange({ ...preferences, budget: { ...preferences.budget, max: Number(e.target.value) } })}
+              onChange={(e) => {
+                const newMax = Number(e.target.value);
+                // 如果新的max小于min，则同时更新min为newMax
+                const newMin = newMax < preferences.budget.min ? newMax : preferences.budget.min;
+                onPreferencesChange({ 
+                  ...preferences, 
+                  budget: { min: newMin, max: newMax } 
+                });
+              }}
               disabled={isCompleted}
               className="w-full accent-primary disabled:opacity-60"
             />
@@ -966,9 +1056,10 @@ function VisionStepContent({ roomData, preferences, onPreferencesChange, onCompl
 }
 
 // Selection Step Content
-function SelectionStepContent({ selectedFurniture, onToggleFurniture, isLoading, totalCost, budget, withinBudget, onComplete, isCompleted }: {
+function SelectionStepContent({ selectedFurniture, onToggleFurniture, onRemoveFurniture, isLoading, totalCost, budget, withinBudget, onComplete, isCompleted }: {
   selectedFurniture: FurnitureItem[];
   onToggleFurniture: (id: string) => void;
+  onRemoveFurniture: (id: string) => void;
   isLoading: boolean;
   totalCost: number;
   budget: { min: number; max: number };
@@ -1035,7 +1126,7 @@ function SelectionStepContent({ selectedFurniture, onToggleFurniture, isLoading,
       {/* Furniture Items */}
       <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
         {selectedFurniture.map((item, index) => (
-          <FurnitureCard key={item.id} item={item} index={index} isCompleted={isCompleted} onToggle={onToggleFurniture} />
+          <FurnitureCard key={item.id} item={item} index={index} isCompleted={isCompleted} onToggle={onToggleFurniture} onRemove={onRemoveFurniture} />
         ))}
       </div>
 
@@ -1064,7 +1155,7 @@ function SelectionStepContent({ selectedFurniture, onToggleFurniture, isLoading,
 }
 
 // Furniture Card Component
-function FurnitureCard({ item, index, isCompleted, onToggle }: { item: FurnitureItem; index: number; isCompleted: boolean; onToggle: (id: string) => void }) {
+function FurnitureCard({ item, index, isCompleted, onToggle, onRemove }: { item: FurnitureItem; index: number; isCompleted: boolean; onToggle: (id: string) => void; onRemove?: (id: string) => void }) {
   return (
     <div className="bg-background border border-border rounded-lg overflow-hidden hover:border-primary/50 transition-all group">
       <div className="flex gap-3 p-3">
@@ -1121,7 +1212,17 @@ function FurnitureCard({ item, index, isCompleted, onToggle }: { item: Furniture
             <RefreshCw className="w-3.5 h-3.5" />
             <span style={{ fontSize: 'var(--text-small)' }}>Swap Item</span>
           </button>
-          <button className="px-3 py-1.5 bg-card border border-border rounded hover:border-destructive hover:text-destructive transition-colors flex items-center justify-center gap-1.5" onClick={() => onToggle(item.id)}>
+          <button 
+            className="px-3 py-1.5 bg-card border border-border rounded hover:border-destructive hover:text-destructive transition-colors flex items-center justify-center gap-1.5" 
+            onClick={() => {
+              if (onRemove) {
+                onRemove(item.id);
+              } else {
+                onToggle(item.id);
+              }
+            }}
+          >
+            <X className="w-3.5 h-3.5" />
             <span style={{ fontSize: 'var(--text-small)' }}>Remove</span>
           </button>
         </div>
@@ -1188,8 +1289,12 @@ function ConfirmationStepContent({ onGenerate, isRendering, showFinalResult, tot
           </button>
 
           <div className="grid grid-cols-3 gap-2">
-            <button className="px-3 py-2 bg-card border border-border rounded-lg hover:border-primary transition-colors flex flex-col items-center gap-1">
-              <RefreshCw className="w-4 h-4" />
+            <button 
+              onClick={onGenerate}
+              disabled={isRendering}
+              className="px-3 py-2 bg-card border border-border rounded-lg hover:border-primary transition-colors flex flex-col items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRendering ? 'animate-spin' : ''}`} />
               <span style={{ fontSize: 'var(--text-small)' }}>Re-generate</span>
             </button>
             <button className="px-3 py-2 bg-card border border-border rounded-lg hover:border-primary transition-colors flex flex-col items-center gap-1">
@@ -1290,7 +1395,7 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
             ) : (
               <>
                 <div className="flex-1 rounded-lg overflow-hidden border border-border bg-muted relative">
-                  <img src={roomData.imageUrl} alt="Original Room" className="w-full h-full object-cover" />
+                  <img src={roomData.originalImageUrl || roomData.imageUrl} alt="Original Room" className="w-full h-full object-cover" />
                   
                   {/* Analyzing Overlay */}
                   {isAnalyzing && (
@@ -1399,7 +1504,7 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
               </div>
             ) : showFinalResult ? (
               <div className="h-full rounded-lg overflow-hidden border border-border bg-muted relative">
-                <img src={roomData.imageUrl} alt="Rendered Room" className="w-full h-full object-cover" />
+                <img src={roomData.renderedImageUrl || roomData.imageUrl} alt="Rendered Room" className="w-full h-full object-cover" />
                 <div className="absolute top-4 left-4 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg flex items-center gap-2 shadow-lg">
                   <Sparkles className="w-4 h-4" />
                   <span style={{ fontSize: 'var(--text-small)' }}>AI Rendered</span>
