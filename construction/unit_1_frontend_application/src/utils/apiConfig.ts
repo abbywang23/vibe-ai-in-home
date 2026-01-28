@@ -26,8 +26,20 @@ export function getApiBaseUrl(): string {
     }
   }
   
-  // Fallback to environment variable or default localhost
-  return import.meta.env.VITE_AI_SERVICE_URL || `http://localhost:${DEFAULT_API_PORT}${API_PATH}`;
+  // Fallback to environment variable
+  if (import.meta.env.VITE_AI_SERVICE_URL) {
+    return import.meta.env.VITE_AI_SERVICE_URL;
+  }
+  
+  // Last resort: try to infer from current location
+  if (typeof window !== 'undefined') {
+    const currentHost = window.location.hostname;
+    const currentPort = window.location.port || DEFAULT_API_PORT;
+    return `http://${currentHost}:${currentPort}${API_PATH}`;
+  }
+  
+  // Final fallback (should not happen in browser)
+  return `http://localhost:${DEFAULT_API_PORT}${API_PATH}`;
 }
 
 /**

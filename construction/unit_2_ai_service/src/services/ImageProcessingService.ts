@@ -1,6 +1,8 @@
 import { AIClientFactory } from '../clients/AIClientFactory';
 import { ChatMessage } from '../clients/AIClient';
 import { ProductServiceClient } from '../clients/ProductServiceClient';
+import { Request } from 'express';
+import { getBaseUrl } from '../utils/urlHelper';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -158,7 +160,7 @@ export class ImageProcessingService {
   /**
    * Upload and process image
    */
-  async uploadImage(imageBuffer: Buffer, filename: string): Promise<ImageUploadResponse> {
+  async uploadImage(imageBuffer: Buffer, filename: string, req?: Request): Promise<ImageUploadResponse> {
     try {
       // Generate unique filename to avoid conflicts
       const timestamp = Date.now();
@@ -170,8 +172,8 @@ export class ImageProcessingService {
       const filePath = path.join(this.uploadsDir, uniqueFilename);
       fs.writeFileSync(filePath, imageBuffer);
       
-      // Return local server URL
-      const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
+      // Return local server URL using request-based base URL
+      const baseUrl = getBaseUrl(req);
       const imageUrl = `${baseUrl}/uploads/${uniqueFilename}`;
       
       console.log(`Image uploaded: ${filename} -> ${imageUrl}`);
@@ -346,6 +348,51 @@ export class ImageProcessingService {
 如果房间是空的，isEmpty设为true，detectedItems为空数组。
 如果房间有家具，isEmpty设为false，列出所有检测到的家具。`;
 
+    // Upload to Cloudinary if it's a local URL (localhost, 127.0.0.1, or local network IP)
+    // Qwen API can't access local network URLs, so we need to upload to Cloudinary
+    let imageDataForAPI: { url: string } | { url: string; detail?: string };
+    
+    const serverBaseUrl = getBaseUrl();
+    const isLocalUrl = imageUrl.startsWith('http://localhost') || 
+                      imageUrl.startsWith('http://127.0.0.1') ||
+                      imageUrl.startsWith(serverBaseUrl) ||
+                      /^https?:\/\/10\.\d+\.\d+\.\d+/.test(imageUrl) ||
+                      /^https?:\/\/192\.168\.\d+\.\d+/.test(imageUrl) ||
+                      /^https?:\/\/172\.(1[6-9]|2\d|3[01])\.\d+\.\d+/.test(imageUrl);
+    
+    if (isLocalUrl) {
+      // For local URLs, upload to Cloudinary
+      console.log(`Uploading local image to Cloudinary for Qwen API access...`);
+      try {
+        const cloudinaryUrl = await this.uploadToCloudinary(imageUrl, 'detect');
+        imageDataForAPI = { url: cloudinaryUrl };
+        console.log(`✅ Image uploaded to Cloudinary: ${cloudinaryUrl}`);
+      } catch (uploadError) {
+        console.error('Failed to upload to Cloudinary, falling back to base64:', uploadError);
+        // Fallback to base64 if Cloudinary upload fails
+        try {
+          const imagePath = imageUrl.replace(/^https?:\/\/[^\/]+/, '');
+          const fullPath = path.join(process.cwd(), imagePath.replace('/uploads/', 'uploads/'));
+          
+          if (fs.existsSync(fullPath)) {
+            const imageBuffer = fs.readFileSync(fullPath);
+            const base64Image = imageBuffer.toString('base64');
+            const mimeType = imagePath.endsWith('.png') ? 'image/png' : 'image/jpeg';
+            imageDataForAPI = { url: `data:${mimeType};base64,${base64Image}` };
+            console.log(`Converted local image to base64 as fallback`);
+          } else {
+            throw new Error('Local file not found and Cloudinary upload failed');
+          }
+        } catch (error) {
+          console.error('All fallback methods failed, using original URL:', error);
+          imageDataForAPI = { url: imageUrl };
+        }
+      }
+    } else {
+      // For remote URLs (public HTTPS), use directly
+      imageDataForAPI = { url: imageUrl };
+    }
+
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
       { 
@@ -353,7 +400,7 @@ export class ImageProcessingService {
         content: [
           {
             type: 'image_url',
-            image_url: { url: imageUrl }
+            image_url: imageDataForAPI
           },
           {
             type: 'text',
@@ -363,12 +410,18 @@ export class ImageProcessingService {
       }
     ];
 
+    console.log('Calling Qwen API for furniture detection...');
+    const startTime = Date.now();
+    
     const response = await aiClient.chatCompletion({
       model: 'qwen3-vl-plus', // 使用Qwen-VL模型
       messages,
       temperature: 0.3,
       max_tokens: 1000,
     });
+    
+    const elapsedTime = Date.now() - startTime;
+    console.log(`Qwen API response received in ${elapsedTime}ms`);
 
     const aiResponse = response.choices[0]?.message?.content || '';
     
@@ -405,7 +458,13 @@ export class ImageProcessingService {
       // Convert image URL to base64 for Qwen API
       let imageData: string;
       
-      if (imageUrl.startsWith('http://localhost') || imageUrl.startsWith('http://127.0.0.1')) {
+      // Check if this is a local server URL (localhost, 127.0.0.1, or same host as BASE_URL)
+      const baseUrl = getBaseUrl();
+      const isLocalUrl = imageUrl.startsWith('http://localhost') || 
+                        imageUrl.startsWith('http://127.0.0.1') ||
+                        imageUrl.startsWith(baseUrl);
+      
+      if (isLocalUrl) {
         // For local URLs, read the file directly
         const imagePath = imageUrl.replace(/^https?:\/\/[^\/]+/, '');
         const fullPath = path.join(process.cwd(), imagePath.replace('/uploads/', 'uploads/'));
@@ -495,7 +554,7 @@ export class ImageProcessingService {
           
           fs.writeFileSync(localPath, Buffer.from(imageBuffer));
           
-          const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
+          const baseUrl = getBaseUrl();
           const processedImageUrl = `${baseUrl}/uploads/${filename}`;
 
           console.log(`Successfully generated replacement image using wan2.6-image: ${filename}`);
@@ -525,7 +584,13 @@ export class ImageProcessingService {
       try {
         let sourceImageBuffer: Buffer;
         
-        if (imageUrl.startsWith('http://localhost') || imageUrl.startsWith('http://127.0.0.1')) {
+        // Check if this is a local server URL
+        const serverBaseUrl = getBaseUrl();
+        const isLocalUrl = imageUrl.startsWith('http://localhost') || 
+                          imageUrl.startsWith('http://127.0.0.1') ||
+                          imageUrl.startsWith(serverBaseUrl);
+        
+        if (isLocalUrl) {
           const imagePath = imageUrl.replace(/^https?:\/\/[^\/]+/, '');
           const fullPath = path.join(process.cwd(), imagePath.replace('/uploads/', 'uploads/'));
           
@@ -545,8 +610,7 @@ export class ImageProcessingService {
         
         fs.writeFileSync(localPath, sourceImageBuffer);
         
-        const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
-        const processedImageUrl = `${baseUrl}/uploads/${filename}`;
+        const processedImageUrl = `${serverBaseUrl}/uploads/${filename}`;
 
         console.log(`Created fallback replacement image: ${filename}`);
 
@@ -600,7 +664,13 @@ export class ImageProcessingService {
       // Convert image URL to base64 for Qwen API
       let imageData: string;
       
-      if (imageUrl.startsWith('http://localhost') || imageUrl.startsWith('http://127.0.0.1')) {
+      // Check if this is a local server URL (localhost, 127.0.0.1, or same host as BASE_URL)
+      const baseUrl = getBaseUrl();
+      const isLocalUrl = imageUrl.startsWith('http://localhost') || 
+                        imageUrl.startsWith('http://127.0.0.1') ||
+                        imageUrl.startsWith(baseUrl);
+      
+      if (isLocalUrl) {
         // For local URLs, read the file directly
         const imagePath = imageUrl.replace(/^https?:\/\/[^\/]+/, '');
         const fullPath = path.join(process.cwd(), imagePath.replace('/uploads/', 'uploads/'));
@@ -690,7 +760,7 @@ export class ImageProcessingService {
           
           fs.writeFileSync(localPath, Buffer.from(imageBuffer));
           
-          const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
+          const baseUrl = getBaseUrl();
           const processedImageUrl = `${baseUrl}/uploads/${filename}`;
 
           console.log(`Successfully generated placement image using wan2.6-image: ${filename}`);
@@ -723,7 +793,13 @@ export class ImageProcessingService {
       try {
         let sourceImageBuffer: Buffer;
         
-        if (imageUrl.startsWith('http://localhost') || imageUrl.startsWith('http://127.0.0.1')) {
+        // Check if this is a local server URL
+        const serverBaseUrl = getBaseUrl();
+        const isLocalUrl = imageUrl.startsWith('http://localhost') || 
+                          imageUrl.startsWith('http://127.0.0.1') ||
+                          imageUrl.startsWith(serverBaseUrl);
+        
+        if (isLocalUrl) {
           const imagePath = imageUrl.replace(/^https?:\/\/[^\/]+/, '');
           const fullPath = path.join(process.cwd(), imagePath.replace('/uploads/', 'uploads/'));
           
@@ -743,8 +819,7 @@ export class ImageProcessingService {
         
         fs.writeFileSync(localPath, sourceImageBuffer);
         
-        const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
-        const processedImageUrl = `${baseUrl}/uploads/${filename}`;
+        const processedImageUrl = `${serverBaseUrl}/uploads/${filename}`;
 
         console.log(`Created fallback placement image: ${filename}`);
 
@@ -807,7 +882,13 @@ export class ImageProcessingService {
       let imageBuffer: Buffer;
       let fileExtension = '.jpg'; // Default extension
       
-      if (imageUrl.startsWith('http://localhost') || imageUrl.startsWith('http://127.0.0.1')) {
+      // Check if this is a local server URL (localhost, 127.0.0.1, or same host as BASE_URL)
+      const serverBaseUrl = getBaseUrl();
+      const isLocalUrl = imageUrl.startsWith('http://localhost') || 
+                        imageUrl.startsWith('http://127.0.0.1') ||
+                        imageUrl.startsWith(serverBaseUrl);
+      
+      if (isLocalUrl) {
         // For local URLs, read the file directly
         const imagePath = imageUrl.replace(/^https?:\/\/[^\/]+/, '');
         const fullPath = path.join(process.cwd(), imagePath.replace('/uploads/', 'uploads/'));
@@ -853,7 +934,10 @@ export class ImageProcessingService {
       const signatureString = `public_id=${publicId}&timestamp=${timestamp}${cloudinaryConfig.apiSecret}`;
       const signature = crypto.createHash('sha1').update(signatureString).digest('hex');
 
-      // Create form data for upload (matching script format)
+      console.log(`Cloudinary upload params: api_key=${cloudinaryConfig.apiKey}, timestamp=${timestamp}, signature=${signature.substring(0, 8)}..., public_id=${publicId}`);
+
+      // Use axios for better form-data support in Node.js
+      const axios = require('axios');
       const FormData = require('form-data');
       const formData = new FormData();
       
@@ -867,20 +951,19 @@ export class ImageProcessingService {
       formData.append('signature', signature);
       formData.append('public_id', publicId);
 
-      // Upload to Cloudinary
-      // Note: Don't set Content-Type header manually when using FormData - let it set the boundary automatically
-      const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`, {
-        method: 'POST',
-        body: formData,
-        headers: formData.getHeaders() // This sets the correct Content-Type with boundary
-      });
+      // Upload to Cloudinary using axios (better form-data support)
+      const uploadResponse = await axios.post(
+        `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`,
+        formData,
+        {
+          headers: formData.getHeaders(),
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity
+        }
+      );
 
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
-        throw new Error(`Cloudinary upload failed: ${uploadResponse.status} - ${errorText}`);
-      }
-
-      const uploadResult: unknown = await uploadResponse.json();
+      // axios returns data directly, not a Response object
+      const uploadResult = uploadResponse.data;
 
       // Extract URL (matching script logic: prefer secure_url, fallback to url)
       const secureUrl = getStringAtPath(uploadResult, ['secure_url']);
@@ -1134,7 +1217,8 @@ export class ImageProcessingService {
       
       fs.writeFileSync(localPath, Buffer.from(imageBuffer));
       
-      const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
+      // Use request-based base URL if available, otherwise fallback to env or localhost
+      const baseUrl = getBaseUrl();
       const processedImageUrl = `${baseUrl}/uploads/${filename}`;
 
       console.log(`✅ Multi-furniture render completed successfully: ${filename}`);

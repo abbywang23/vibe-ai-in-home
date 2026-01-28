@@ -42,7 +42,8 @@ export class ImageController {
 
       const result = await this.imageService.uploadImage(
         req.file.buffer,
-        req.file.originalname
+        req.file.originalname,
+        req
       );
 
       if (result.success) {
