@@ -50,6 +50,10 @@ export function setupRoutes(): Router {
     recommendationController.recommend(req, res, next)
   );
 
+  router.post('/api/ai/recommend-from-detected', (req, res, next) =>
+    recommendationController.recommendFromDetected(req, res, next)
+  );
+
   router.post('/api/ai/chat', (req, res, next) =>
     chatController.chat(req, res, next)
   );
