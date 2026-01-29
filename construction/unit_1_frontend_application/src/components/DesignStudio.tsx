@@ -724,6 +724,57 @@ export function DesignStudio() {
 
   const activeStep = steps.find(s => s.status === 'active');
 
+  // 下载图片功能
+  const handleDownloadImage = async () => {
+    try {
+      // 获取要下载的图片URL（优先使用渲染后的图片）
+      const imageUrl = roomData?.renderedImageUrl || roomData?.imageUrl;
+      
+      if (!imageUrl) {
+        alert('No image available to download');
+        return;
+      }
+
+      // 创建一个临时的 a 标签来触发下载
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      
+      // 生成文件名
+      const timestamp = new Date().getTime();
+      const fileName = `room-design-${timestamp}.jpg`;
+      link.download = fileName;
+      
+      // 如果是跨域图片，需要先转换为 blob
+      if (imageUrl.startsWith('http')) {
+        try {
+          const response = await fetch(imageUrl);
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          link.href = blobUrl;
+          
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          // 清理 blob URL
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+        } catch (error) {
+          console.error('Failed to download image via blob:', error);
+          // 降级：直接打开图片
+          window.open(imageUrl, '_blank');
+        }
+      } else {
+        // 本地图片可以直接下载
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (error) {
+      console.error('Error downloading image:', error);
+      alert('Failed to download image. Please try again.');
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
@@ -807,6 +858,7 @@ export function DesignStudio() {
                   {step.id === 'confirmation' && (
                     <ConfirmationStepContent
                       onGenerate={handleGenerateRender}
+                      onDownload={handleDownloadImage}
                       isRendering={isRendering}
                       showFinalResult={showFinalResult}
                       totalCost={totalCost}
@@ -832,6 +884,8 @@ export function DesignStudio() {
               selectedFurniture={selectedFurniture}
               totalCost={totalCost}
               onUpload={handleImageUpload}
+              onGenerate={handleGenerateRender}
+              onDownload={handleDownloadImage}
             />
           </div>
 
@@ -1434,8 +1488,9 @@ function FurnitureCard({ item, index, isCompleted, onToggle, onRemove, onSwap, i
 }
 
 // Confirmation Step Content
-function ConfirmationStepContent({ onGenerate, isRendering, showFinalResult, totalCost }: {
+function ConfirmationStepContent({ onGenerate, onDownload, isRendering, showFinalResult, totalCost }: {
   onGenerate: () => void;
+  onDownload: () => void;
   isRendering: boolean;
   showFinalResult: boolean;
   totalCost: number;
@@ -1499,7 +1554,10 @@ function ConfirmationStepContent({ onGenerate, isRendering, showFinalResult, tot
               <RefreshCw className={`w-4 h-4 ${isRendering ? 'animate-spin' : ''}`} />
               <span style={{ fontSize: 'var(--text-small)' }}>Re-generate</span>
             </button>
-            <button className="px-3 py-2 bg-card border border-border rounded-lg hover:border-primary transition-colors flex flex-col items-center gap-1">
+            <button 
+              onClick={onDownload}
+              className="px-3 py-2 bg-card border border-border rounded-lg hover:border-primary transition-colors flex flex-col items-center gap-1"
+            >
               <Download className="w-4 h-4" />
               <span style={{ fontSize: 'var(--text-small)' }}>Download</span>
             </button>
@@ -1515,7 +1573,7 @@ function ConfirmationStepContent({ onGenerate, isRendering, showFinalResult, tot
 }
 
 // Rendering Canvas - 新的两栏布局（Upload | Visualization）
-function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, showFinalResult, preferences, selectedFurniture, totalCost, onUpload }: {
+function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, showFinalResult, preferences, selectedFurniture, totalCost, onUpload, onGenerate, onDownload }: {
   roomData: RoomData | null;
   isAnalyzing: boolean;
   isRendering: boolean;
@@ -1525,6 +1583,8 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
   selectedFurniture: FurnitureItem[];
   totalCost: number;
   onUpload: (file: File) => void;
+  onGenerate: () => void;
+  onDownload: () => void;
 }) {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     console.log('File input changed!', event.target.files);
@@ -1676,57 +1736,96 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
                 </div>
               </div>
             ) : isRendering ? (
-              <div className="absolute inset-0 rounded-lg border border-border bg-background flex items-center justify-center">
-                <div className="text-center max-w-sm">
-                  <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                    <Sparkles className="w-10 h-10 text-primary animate-pulse" />
-                  </div>
-                  <h5 className="mb-2">Generating Your Design</h5>
-                  <p className="text-muted-foreground mb-6" style={{ fontSize: 'var(--text-caption)' }}>
-                    AI is placing furniture with photorealistic rendering
-                  </p>
-                  <div className="mb-4">
-                    <div className="w-full bg-muted rounded-full h-2.5 mb-2">
-                      <div
-                        className="bg-primary h-2.5 rounded-full transition-all duration-500"
-                        style={{ width: `${renderProgress}%` }}
-                      />
+              <div className="absolute inset-0 flex flex-col gap-3">
+                {/* Rendering progress area - matching Original's flex structure */}
+                <div className="flex-1 min-h-0 rounded-lg border border-border bg-background flex items-center justify-center">
+                  <div className="text-center max-w-sm">
+                    <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                      <Sparkles className="w-10 h-10 text-primary animate-pulse" />
                     </div>
-                    <p className="text-muted-foreground" style={{ fontSize: 'var(--text-caption)' }}>
-                      {renderProgress}% complete
+                    <h5 className="mb-2">Generating Your Design</h5>
+                    <p className="text-muted-foreground mb-6" style={{ fontSize: 'var(--text-caption)' }}>
+                      AI is placing furniture with photorealistic rendering
                     </p>
+                    <div className="mb-4">
+                      <div className="w-full bg-muted rounded-full h-2.5 mb-2">
+                        <div
+                          className="bg-primary h-2.5 rounded-full transition-all duration-500"
+                          style={{ width: `${renderProgress}%` }}
+                        />
+                      </div>
+                      <p className="text-muted-foreground" style={{ fontSize: 'var(--text-caption)' }}>
+                        {renderProgress}% complete
+                      </p>
+                    </div>
+                    <div className="space-y-2 text-left">
+                      <AIStatusItem label="Placing furniture" status={renderProgress > 20 ? "complete" : "processing"} />
+                      <AIStatusItem label="Adjusting lighting" status={renderProgress > 50 ? "complete" : renderProgress > 20 ? "processing" : "pending"} />
+                      <AIStatusItem label="Adding details" status={renderProgress > 80 ? "complete" : renderProgress > 50 ? "processing" : "pending"} />
+                      <AIStatusItem label="Finalizing" status={renderProgress === 100 ? "complete" : renderProgress > 80 ? "processing" : "pending"} />
+                    </div>
                   </div>
-                  <div className="space-y-2 text-left">
-                    <AIStatusItem label="Placing furniture" status={renderProgress > 20 ? "complete" : "processing"} />
-                    <AIStatusItem label="Adjusting lighting" status={renderProgress > 50 ? "complete" : renderProgress > 20 ? "processing" : "pending"} />
-                    <AIStatusItem label="Adding details" status={renderProgress > 80 ? "complete" : renderProgress > 50 ? "processing" : "pending"} />
-                    <AIStatusItem label="Finalizing" status={renderProgress === 100 ? "complete" : renderProgress > 80 ? "processing" : "pending"} />
-                  </div>
+                </div>
+                {/* Placeholder for info card to maintain height consistency */}
+                <div className="flex-shrink-0 flex gap-2">
+                  <div className="flex-1 h-[88px]"></div>
+                  <div className="w-[40px]"></div>
                 </div>
               </div>
             ) : showFinalResult ? (
-              <div className="absolute inset-0 rounded-lg overflow-hidden border border-border bg-muted relative">
-                <img src={roomData.renderedImageUrl || roomData.imageUrl} alt="Rendered Room" className="w-full h-full object-cover" />
-                <div className="absolute top-4 left-4 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg flex items-center gap-2 shadow-lg">
-                  <Sparkles className="w-4 h-4" />
-                  <span style={{ fontSize: 'var(--text-small)' }}>AI Rendered</span>
+              <div className="absolute inset-0 flex flex-col gap-3">
+                {/* Image with fixed height matching Original */}
+                <div className="flex-1 min-h-0 rounded-lg overflow-hidden border border-border bg-muted relative">
+                  <img src={roomData.renderedImageUrl || roomData.imageUrl} alt="Rendered Room" className="w-full h-full object-cover" />
+                  {/* AI Rendered Badge - stays on image */}
+                  <div className="absolute top-4 left-4 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg flex items-center gap-2 shadow-lg">
+                    <Sparkles className="w-4 h-4" />
+                    <span style={{ fontSize: 'var(--text-small)' }}>AI Rendered</span>
+                  </div>
                 </div>
-                <div className="absolute bottom-4 left-4 right-4 bg-card/95 backdrop-blur-sm border border-border rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h5 className="mb-0.5">{roomData.roomType}</h5>
-                      <p className="text-muted-foreground" style={{ fontSize: 'var(--text-small)' }}>
-                        {preferences.style} • {selectedFurniture.filter(f => f.isSelected).length} items • ${totalCost.toLocaleString()}
-                      </p>
+                
+                {/* Info and buttons section - moved below image */}
+                <div className="flex-shrink-0 flex gap-2">
+                  <div className="flex-1 bg-card border border-border rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      <h5 className="text-sm font-medium">AI Generated</h5>
                     </div>
-                    <div className="flex gap-2">
-                      <button className="p-2 border border-border rounded-lg hover:border-primary transition-colors bg-background">
-                        <RefreshCw className="w-4 h-4" />
-                      </button>
-                      <button className="p-2 border border-border rounded-lg hover:border-primary transition-colors bg-background">
-                        <Download className="w-4 h-4" />
-                      </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex items-center gap-2">
+                        <Palette className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-muted-foreground" style={{ fontSize: 'var(--text-small)' }}>{preferences.style}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Sofa className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-muted-foreground" style={{ fontSize: 'var(--text-small)' }}>{selectedFurniture.filter(f => f.isSelected).length} items</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-muted-foreground" style={{ fontSize: 'var(--text-small)' }}>${totalCost.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Home className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-muted-foreground" style={{ fontSize: 'var(--text-small)' }}>{roomData.roomType}</span>
+                      </div>
                     </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <button 
+                      onClick={onGenerate}
+                      disabled={isRendering}
+                      className="p-2 border border-border rounded-lg hover:border-primary transition-colors bg-background disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Re-generate"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${isRendering ? 'animate-spin' : ''}`} />
+                    </button>
+                    <button 
+                      onClick={onDownload}
+                      className="p-2 border border-border rounded-lg hover:border-primary transition-colors bg-background"
+                      title="Download"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </div>
