@@ -63,7 +63,8 @@ interface FurnitureItem {
   name: string;
   category: string;
   price: number;
-  imageUrl: string;
+  imageUrl: string; // 用于前端展示（第一张图片）
+  renderImageUrl?: string; // 用于渲染（第二张图片，如果存在）
   reason?: string;
   dimensions?: string;
   existingItem?: {
@@ -426,11 +427,20 @@ export function DesignStudio() {
         // 提取该产品的 reasoning
         const productReason = parseReasoningForProduct(response.reasoning, item.id, item.name, item.category);
         
-        // 处理 imageUrl：优先使用 images 数组，否则使用 imageUrl
-        let imageUrl = item.imageUrl || '';
+        // 处理图片URL：展示用第一张，渲染用第二张（如果存在）
+        let displayImageUrl = item.imageUrl || '';
+        let renderImageUrl: string | undefined;
+        
         if (productWithImages.images && productWithImages.images.length > 0) {
-          // 优先使用第二个图片，否则使用第一个
-          imageUrl = productWithImages.images.length > 1 ? productWithImages.images[1].url : productWithImages.images[0].url;
+          // 展示用第一张图片
+          displayImageUrl = productWithImages.images[0].url;
+          // 渲染用第二张图片（如果存在），否则也用第一张
+          renderImageUrl = productWithImages.images.length > 1 
+            ? productWithImages.images[1].url 
+            : productWithImages.images[0].url;
+        } else {
+          // 如果没有 images 数组，两个都用 imageUrl
+          renderImageUrl = displayImageUrl;
         }
         
         return {
@@ -438,7 +448,8 @@ export function DesignStudio() {
           dimensions: dimensionsStr,
           isSelected: true,
           reason: typeof productReason === 'string' ? productReason : String(productReason || 'AI recommended'),
-          imageUrl: imageUrl,
+          imageUrl: displayImageUrl, // 用于前端展示
+          renderImageUrl: renderImageUrl, // 用于渲染
         } as FurnitureItem;
       });
       setSelectedFurniture(furnitureWithSelection);
@@ -566,10 +577,20 @@ export function DesignStudio() {
         dimensionsStr = itemToSwap.dimensions || 'Dimensions not available';
       }
       
-      // 处理替代产品的 imageUrl
-      let imageUrl = alternativeProduct.imageUrl || '';
+      // 处理替代产品的图片URL：展示用第一张，渲染用第二张（如果存在）
+      let displayImageUrl = alternativeProduct.imageUrl || '';
+      let renderImageUrl: string | undefined;
+      
       if (alternativeProduct.images && alternativeProduct.images.length > 0) {
-        imageUrl = alternativeProduct.images.length > 1 ? alternativeProduct.images[1].url : alternativeProduct.images[0].url;
+        // 展示用第一张图片
+        displayImageUrl = alternativeProduct.images[0].url;
+        // 渲染用第二张图片（如果存在），否则也用第一张
+        renderImageUrl = alternativeProduct.images.length > 1 
+          ? alternativeProduct.images[1].url 
+          : alternativeProduct.images[0].url;
+      } else {
+        // 如果没有 images 数组，两个都用 imageUrl
+        renderImageUrl = displayImageUrl;
       }
       
       // 调用替换 API
@@ -593,7 +614,8 @@ export function DesignStudio() {
             return {
               ...alternativeProduct,
               dimensions: dimensionsStr,
-              imageUrl: imageUrl,
+              imageUrl: displayImageUrl, // 用于前端展示
+              renderImageUrl: renderImageUrl, // 用于渲染
               isSelected: item.isSelected,
               reason: `Swapped from ${item.name}. ${alternativeProduct.reason || ''}`
             } as FurnitureItem;
@@ -656,7 +678,7 @@ export function DesignStudio() {
         selectedFurniture: selectedItems.map(item => ({
           id: item.id,
           name: item.name,
-          imageUrl: item.imageUrl
+          imageUrl: item.renderImageUrl || item.imageUrl // 优先使用renderImageUrl（第二张），否则使用imageUrl（第一张）
         })),
         roomType: roomData?.roomType || roomSetup.roomType,
         roomDimensions: roomDimensions // Pass room dimensions to Decor8

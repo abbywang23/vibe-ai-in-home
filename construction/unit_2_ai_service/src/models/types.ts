@@ -98,6 +98,10 @@ export interface RecommendationResponse {
   totalPrice: number;
   budgetExceeded: boolean;
   exceededAmount?: number;
+  metadata?: {
+    detectedCategories?: string[];
+    matchedCategories?: string[];
+  };
 }
 
 export interface ChatRequest {
@@ -114,6 +118,8 @@ export interface ChatResponse {
   reply: string;
   updatedRecommendations?: Recommendation[];
   actions: any[];
+  // Mock 标识：当返回 mock 数据时设置为 true，用于快速判断是否为 mock 数据
+  mock?: boolean;
 }
 
 export interface ProductSearchParams {

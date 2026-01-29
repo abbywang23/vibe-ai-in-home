@@ -1,63 +1,59 @@
-# Room Type to Furniture Categories Mapping
 room_type_categories:
   living_room:
-    - id: sofa
-      name: Sofa
-      priority: 1
-    - id: table
-      name: Table
-      priority: 2
-    - id: chair
-      name: Chair
-      priority: 3
-    - id: storage
-      name: Storage
-      priority: 4
+  - id: sofa
+    name: Sofa
+    priority: 1
+  - id: table
+    name: Table
+    priority: 2
+  - id: chair
+    name: Chair
+    priority: 3
+  - id: storage
+    name: Storage
+    priority: 4
   bedroom:
-    - id: bed
-      name: Bed
-      priority: 1
-    - id: storage
-      name: Storage
-      priority: 2
-    - id: chair
-      name: Chair
-      priority: 3
-    - id: table
-      name: Table
-      priority: 4
+  - id: bed
+    name: Bed
+    priority: 1
+  - id: storage
+    name: Storage
+    priority: 2
+  - id: chair
+    name: Chair
+    priority: 3
+  - id: table
+    name: Table
+    priority: 4
   dining_room:
-    - id: table
-      name: Table
-      priority: 1
-    - id: chair
-      name: Chair
-      priority: 2
-    - id: storage
-      name: Storage
-      priority: 3
+  - id: table
+    name: Table
+    priority: 1
+  - id: chair
+    name: Chair
+    priority: 2
+  - id: storage
+    name: Storage
+    priority: 3
   home_office:
-    - id: desk
-      name: Desk
-      priority: 1
-    - id: chair
-      name: Chair
-      priority: 2
-    - id: storage
-      name: Storage
-      priority: 3
-
-# Available Collections
+  - id: desk
+    name: Desk
+    priority: 1
+  - id: chair
+    name: Chair
+    priority: 2
+  - id: storage
+    name: Storage
+    priority: 3
 collections:
-  - id: sideboard
-    name: Sideboard
-  - id: dining_room_sets
-    name: Dining Room Sets
-  - id: dining_tables
-    name: Dining Tables
-  - id: desks
-    name: Desks
-
+- id: sideboard
+  name: Sideboard
+- id: dining_room_sets
+  name: Dining Room Sets
+- id: dining_tables
+  name: Dining Tables
+- id: desks
+  name: Desks
 categories:
 - name: Sofas
   url: https://www.castlery.com/sg/sofas/all-sofas
@@ -116,99 +112,6 @@ categories:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1692348020/crusader/variants/AS-000407-PG4001/Mori-Ottoman-Alpine-Det_1-1692348018.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1691396577/crusader/variants/AS-000406-PG4001/Arden-Swivel-Armchair-Alpine-Square-Det_1-1691396574.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1691396565/crusader/variants/AS-000406-PG4001/Mori-Left-Facing-Chaise-Sectional-Sofa-Alpine-Angle-1691396563.jpg
-  - name: Mori Performance Fabric Chaise Sectional Sofa
-    url: https://www.castlery.com/sg/products/mori-performance-fabric-chaise-sectional-sofa?orientation=left_facing&material=performance_alpine&color_option=natural_oak&table=no_side_table&frame_cover=removable
-    price: $3,268
-    original_price: null
-    description: ''
-    category: Sofas
-    collection: sideboard
-    tag: ''
-    delivery: Leaves warehouse by Feb 3
-    options:
-    - type: model
-      values:
-      - Chaise
-    - type: material
-      values:
-      - Performance alpine
-    - type: colour
-      values:
-      - Natural
-    - type: orientation
-      values:
-      - Left facing
-    - type: table
-      values:
-      - No side table
-    - type: frame cover
-      values:
-      - Removable
-    - type: finish
-      values:
-      - 'Legs: water based in natural finish'
-    - type: leg
-      values:
-      - engineered wood with oak veneer
-    - type: height
-      values:
-      - 52cm (floor to arm)
-    - type: width
-      values:
-      - 269cm
-    - type: depth
-      values:
-      - 70/130cm (without pillow)
-    images:
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1692006015/crusader/variants/AS-000406-PG4001/Mori-Left-Facing-Chaise-Sectional-Sofa-Square-Set_4-1692006012.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1691396565/crusader/variants/AS-000406-PG4001/Mori-Left-Facing-Chaise-Sectional-Sofa-Alpine-Front-1691396563.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1692006015/crusader/variants/AS-000406-PG4001/Mori-Left-Facing-Chaise-Sectional-Sofa-With-Side-Table-With-Armchair-Alpine-Square-Set_2-1692006013.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1692006015/crusader/variants/AS-000406-PG4001/Mori-Left-Facing-Chaise-Sectional-Sofa-Square-Set_5-1692006013.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1716799279/crusader/variants/AS-000407-PG4001/Sofa-Armrest-Table-Natural-Square-Set_4-1716799279.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1692005925/crusader/variants/AS-000407-PG4001/Mori-L-Shape-Sofa-Alpine-Square-Det_2-1692005922.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1692005925/crusader/variants/AS-000407-PG4001/Mori-Left-Facing-Chaise-Sectional-Sofa-Alpine-Square-Det_2-1692005922.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1692348020/crusader/variants/AS-000407-PG4001/Mori-Ottoman-Alpine-Det_1-1692348018.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1691396577/crusader/variants/AS-000406-PG4001/Arden-Swivel-Armchair-Alpine-Square-Det_1-1691396574.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1691396565/crusader/variants/AS-000406-PG4001/Mori-Left-Facing-Chaise-Sectional-Sofa-Alpine-Angle-1691396563.jpg
-  - name: Madison Chaise Sectional Sofa
-    url: https://www.castlery.com/sg/products/madison-chaise-sectional-sofa?orientation=left_facing&material=bisque
-    price: $1,799
-    original_price: null
-    description: ''
-    category: Sofas
-    collection: sideboard
-    tag: ''
-    delivery: Leaves warehouse by Feb 3
-    options:
-    - type: model
-      values:
-      - Fabric
-    - type: material
-      values:
-      - Bisque
-    - type: orientation
-      values:
-      - Left facing
-    - type: height
-      values:
-      - 17cm
-    - type: width
-      values:
-      - 231cm
-    - type: depth
-      values:
-      - 61/135cm
-    images:
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1645672869/crusader/variants/50440748-AM4001/Madison-Chaise-Sectional-Sofa-Bisque-Square-Set_4.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1645672842/crusader/variants/50440748-AM4001/Madison-Left-Chaise-Sectional-Sofa-Bisque-Front.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1724728002/crusader/variants/50440748-AM4001/Madison-Chaise-Sectional-Sofa-Bisque-Square-Set_1-1724728000.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1716791092/crusader/variants/50440748-AM4001/Owen-Sofa-Headrest-Opal-Beige-Square-Det_10-1716791092.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1645672898/crusader/variants/50440748-AM4001/Madison-Sectional-Sofa-Bisque-Det_4.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1645672938/crusader/variants/50440748-AM4001/Madison-3-Seater-Sofa-Bisque-Square-Det_2.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1645672938/crusader/variants/50440748-AM4001/Madison-3-Seater-Sofa-Bisque-Square-Det_5.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1645672938/crusader/variants/50440748-AM4001/Madison-3-Seater-Sofa-Bisque-Square-Det_3.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1645672842/crusader/variants/50440748-AM4001/Madison-Left-Chaise-Sectional-Sofa-Bisque-Angle.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1645672842/crusader/variants/50440748-AM4001/Madison-Left-Chaise-Sectional-Sofa-Bisque-Side.jpg
   - name: Madison Chaise Sectional Sofa
     url: https://www.castlery.com/sg/products/madison-chaise-sectional-sofa?orientation=left_facing&material=bisque
     price: $1,799
@@ -464,84 +367,9 @@ categories:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1677489611/crusader/variants/T50441118/Emmerson-Adjustable-Standing-Desk-Det_1-1677489605.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1677489516/crusader/variants/T50441118/Emmerson-Adjustable-Standing-Desk-Front-120cm_1-1677489514.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1677489516/crusader/variants/T50441118/Emmerson-Adjustable-Standing-Desk-Side-120cm_2-1677489514.jpg
-  - name: Emmerson Adjustable Standing Desk
-    url: https://www.castlery.com/sg/products/emmerson-adjustable-standing-desk?length=1_2m&wood=chinese_walnut
-    price: $899
-    original_price: null
-    description: ''
-    category: Tables
-    collection: Desks
-    tag: ''
-    delivery: Leaves warehouse by Feb 3
-    options:
-    - type: material
-      values:
-      - 'Table Top: solid walnut; Leg: metal'
-    - type: length
-      values:
-      - 120cm
-    - type: finish
-      values:
-      - Walnut stain on wood
-    - type: leg
-      values:
-      - metal
-    - type: wood
-      values:
-      - Chinese walnut
-    - type: height
-      values:
-      - 58-123cm
-    images:
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1678353385/crusader/variants/T50441118/Emmerson-Adjustable-Standing-Desk-Walnut-3-Stage-Leg-Square-Set_4-1678353382.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1677489516/crusader/variants/T50441118/Emmerson-Adjustable-Standing-Desk-Angle-120cm_1-1677489514.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1678353470/crusader/variants/T50441119/Emmerson-Adjustable-Standing-Desk-Walnut-3-Stage-Leg-Square-Set_1-1678353468.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1678353791/crusader/variants/T50441119/Emmerson-Adjustable-Standing-Desk-Walnut-3-Stage-Leg-Square-Det_2-1678353789.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1679372098/crusader/variants/T50441119/Emmerson-Adjustable-Standing-Desk-Copy-1679372093.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1679384250/crusader/variants/T50441119/Emmerson-Adjustable-Standing-Desk-Square-Det_2-1679384248.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1677489656/crusader/variants/T50441118/Emmerson-Adjustable-Standing-Desk-Square-Det_4-1677489653.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1677489611/crusader/variants/T50441118/Emmerson-Adjustable-Standing-Desk-Det_1-1677489605.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1677489516/crusader/variants/T50441118/Emmerson-Adjustable-Standing-Desk-Front-120cm_1-1677489514.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1677489516/crusader/variants/T50441118/Emmerson-Adjustable-Standing-Desk-Side-120cm_2-1677489514.jpg
 - name: Chairs
   url: https://www.castlery.com/sg/chairs/all-chairs
   products:
-  - name: Avery Performance Bouclé Swivel Armchair
-    url: https://www.castlery.com/sg/products/avery-performance-boucle-swivel-armchair?quantity=single&material=performance_white_quartz_boucle_new
-    price: $599
-    original_price: null
-    description: ''
-    category: Chairs
-    collection: 'Add-on Bundles:'
-    tag: ''
-    delivery: Leaves warehouse by Feb 3
-    options:
-    - type: model
-      values:
-      - Armchair
-    - type: material
-      values:
-      - Performance white quartz bouclé
-    - type: height
-      values:
-      - 61cm
-    - type: width
-      values:
-      - 65cm
-    - type: depth
-      values:
-      - 57cm
-    images:
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1760175924/crusader/variants/50441021-IN4002/Avery-Swivel-Armchair-set-of-2_-White-Quartz-Square-Set_1-1760175924.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1760175397/crusader/variants/50441021-IN4002/Avery-Swivel-Armchair-Performance-Infinity-Boucle-White-Quartz-Angle-1760175397.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1760175924/crusader/variants/50441021-IN4002/Avery-Swivel-Armchair-with-Ottoman_-White-Quartz-Square-Set_1-1760175924.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1754893902/crusader/variants/PB-001826-IN4002/Avery-Swivel-Armchair-White-Quartz-Living-Room-Square-Set_11-1754893899.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1754894298/crusader/variants/PB-001826-IN4002/Agnes-Slipcover-Storage-2-Seater-Sofa-Sadie-Ivory-With-2-Avery-Swivel-Armchair-White-Quartz-With-Mori-Coffee-Table-Living-Room-Campaign-Square-Set_1-1754894295.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1760175924/crusader/variants/50441021-IN4002/Avery-Swivel-Armchair-White-Quartz-Square-Det_1-1760175924.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1762931261/crusader/variants/50441020-IN4002/Avery-Swivel-Armchair-Performance-Infinity-Boucle-White-Quartz-Usp-Det_1-1762931261.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1760175397/crusader/variants/50441021-IN4002/Avery-Swivel-Armchair-Performance-Infinity-Boucle-White-Quartz-Front-1760175397.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1760175397/crusader/variants/50441021-IN4002/Avery-Swivel-Armchair-Performance-Infinity-Boucle-White-Quartz-Side-1760175397.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1760175398/crusader/variants/50441021-IN4002/Avery-Swivel-Armchair-Performance-Infinity-Boucle-White-Quartz-Back-1760175397.jpg
   - name: Avery Performance Bouclé Swivel Armchair
     url: https://www.castlery.com/sg/products/avery-performance-boucle-swivel-armchair?quantity=single&material=performance_white_quartz_boucle_new
     price: $599
@@ -743,84 +571,6 @@ categories:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1766715410/crusader/variants/40550352-PT4001/Seb-Super-Single-Bed-Performance-Twill-Creamy-White-Side-1766715408.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1766715410/crusader/variants/40550352-PT4001/Seb-Super-Single-Bed-Performance-Twill-Creamy-White-Angle_1-1766715408.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1766715410/crusader/variants/40550352-PT4001/Seb-Super-Single-Bed-Performance-Twill-Creamy-White-Side_1-1766715408.jpg
-  - name: Seb Bed
-    url: https://www.castlery.com/sg/products/seb-bed?material=twill_performance_creamy_white&bed_frame_size=super_single
-    price: $849
-    original_price: null
-    description: ''
-    category: Beds
-    collection: a mirror
-    tag: ''
-    delivery: Leaves warehouse by Feb 3
-    options:
-    - type: model
-      values:
-      - Bed
-    - type: material
-      values:
-      - Performance creamy white
-    - type: size
-      values:
-      - Super single
-    - type: finish
-      values:
-      - Muted honey tone and wire brush distressed finish
-    - type: height
-      values:
-      - 96cm
-    images:
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1755569657/crusader/variants/40550352-PT4001/Seb-Super-Single-Bed-Creamy-White-Square-Set_1-1755569654.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1766715410/crusader/variants/40550352-PT4001/Seb-Super-Single-Bed-Performance-Twill-Creamy-White-Front-1766715408.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1755513017/crusader/variants/40550353-PT4001/Seb-Super-Single-Bed-Creamy-White-Square-Det_1-1755513015.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1755513006/crusader/variants/40550353-PT4001/Seb-Queen-Size-Bed-Square-Set_2-1755513003.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1755682464/crusader/variants/40550352-PT4003/Performance-White-Quartz-Boucle-Det_18-1755682462.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1755569195/crusader/variants/40550352-PT4001/Seb-Texture-1755569193.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1766715410/crusader/variants/40550352-PT4001/Seb-Super-Single-Bed-Performance-Twill-Creamy-White-Angle-1766715408.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1766715410/crusader/variants/40550352-PT4001/Seb-Super-Single-Bed-Performance-Twill-Creamy-White-Side-1766715408.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1766715410/crusader/variants/40550352-PT4001/Seb-Super-Single-Bed-Performance-Twill-Creamy-White-Angle_1-1766715408.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1766715410/crusader/variants/40550352-PT4001/Seb-Super-Single-Bed-Performance-Twill-Creamy-White-Side_1-1766715408.jpg
-  - name: Madison Bed
-    url: https://www.castlery.com/sg/products/madison-bed?material=bisque&bed_frame_size=queen
-    price: $799
-    original_price: null
-    description: ''
-    category: Beds
-    collection: a mirror
-    tag: ''
-    delivery: Leaves warehouse by Feb 3
-    options:
-    - type: model
-      values:
-      - Bed
-    - type: material
-      values:
-      - Bisque
-    - type: table
-      values:
-      - 'top: 50kg, drawer: 10kg'
-    - type: size
-      values:
-      - Queen
-    - type: finish
-      values:
-      - Walnut stain on wood
-    - type: leg
-      values:
-      - solid rubber wood
-    - type: height
-      values:
-      - 17.5cm
-    images:
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1651229361/crusader/variants/50440770-AM4001/Madison-Bed-Bisque-Square-Set_4.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1651229290/crusader/variants/50440770-AM4001/Madison-Queen-Bed-Bisque-Front.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1655968429/crusader/variants/50440771-AM4001/Madison-Bed-Bisque-Set_1-1655968427.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1655973233/crusader/variants/50440771-AM4001/Madison-Bed-Bisque-Set_2-1655973231.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1648091829/crusader/variants/50440770-AM4001/Madison-Bed-Bisque-Square-Set_3.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1648091876/crusader/variants/50440770-AM4001/Madison-Bed-Bisque-Det_1.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1648091876/crusader/variants/50440770-AM4001/Madison-Bed-Bisque-Det_2.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1648091875/crusader/variants/50440770-AM4001/Madison-Bed-Bisque-Det_6.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1648091874/crusader/variants/50440770-AM4001/Madison-Bed-Bisque-Det_4.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1651229290/crusader/variants/50440770-AM4001/Madison-Queen-Bed-Bisque-Angle.jpg
   - name: Madison Bed
     url: https://www.castlery.com/sg/products/madison-bed?material=bisque&bed_frame_size=queen
     price: $799
@@ -911,8 +661,7 @@ categories:
       - Tv console
     - type: material
       values:
-      - 'Body: engineered wood with oak veneer; Leg: engineered wood with melamine;
-        Handle: steel'
+      - 'Body: engineered wood with oak veneer; Leg: engineered wood with melamine; Handle: steel'
     - type: length
       values:
       - 150cm
@@ -972,51 +721,6 @@ categories:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1756279218/crusader/variants/40550368/Posey-TV-Console-150cm-Front_1-1756279215.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1756279217/crusader/variants/40550368/Posey-TV-Console-150cm-Side-1756279215.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,c_fit/v1760176559/crusader/variants/40550369/Posey-TV-Console-150cm-Square-Set_1-1760176559.jpg
-  - name: Harper TV Console
-    url: https://www.castlery.com/sg/products/harper-tv-console?color_option=chestnut_oak&length=1_5m&leg_color=gold&variant=curved_oval
-    price: $999
-    original_price: null
-    description: ''
-    category: Storage
-    collection: TV Consoles
-    tag: ''
-    delivery: Leaves warehouse by Feb 3
-    options:
-    - type: model
-      values:
-      - Tv console
-    - type: material
-      values:
-      - Engineered wood with oak veneer frame, metal handle and leg
-    - type: colour
-      values:
-      - Chestnut
-    - type: variant
-      values:
-      - Curved oval
-    - type: length
-      values:
-      - 150cm
-    - type: finish
-      values:
-      - Waterbase wood
-    - type: leg
-      values:
-      - Brass
-    - type: height
-      values:
-      - 17cm
-    images:
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1711942386/crusader/variants/40550227/Harper-Curved-TV-Console-Square-Set-1711942383.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1756453887/crusader/variants/40550347/Harper-TV-Console-150cm-Chestnut-Front_1-1756453885.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1711942385/crusader/variants/40550227/Harper-Curved-TV-Console-Square-Det_1-1711942383.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1701937506/crusader/variants/40550227/Harper-Curved-TV-Console-Det_3-1701937503.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1701922143/crusader/variants/40550227/Harper-Curved-TV-Console-Det_4-1701922140.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1756453887/crusader/variants/40550347/Harper-TV-Console-150cm-Chestnut-Front-1756453885.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1756453887/crusader/variants/40550347/Harper-TV-Console-150cm-Chestnut-Angle-1756453885.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1756453886/crusader/variants/40550347/Harper-TV-Console-150cm-Chestnut-Side-1756453884.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1756453887/crusader/variants/40550347/Harper-TV-Console-150cm-Chestnut-Back-1756453885.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,c_fit/v1711942386/crusader/variants/40550227/Harper-Curved-TV-Console-Square-Set-1711942383.jpg
   - name: Harper TV Console
     url: https://www.castlery.com/sg/products/harper-tv-console?color_option=chestnut_oak&length=1_5m&leg_color=gold&variant=curved_oval
     price: $999
@@ -1482,45 +1186,6 @@ categories:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1678333754/crusader/variants/40670012/Rio-Outdoor-Teak-Dining-Bench-130cm-Angle_1-1678333754.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1678333754/crusader/variants/40670012/Rio-Outdoor-Teak-Dining-Bench-130cm-Front-1678333754.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1678333754/crusader/variants/40670012/Rio-Outdoor-Teak-Dining-Bench-130cm-Side-1678333753.jpg
-  - name: Rio Outdoor Dining Bench
-    url: https://www.castlery.com/sg/products/rio-outdoor-dining-bench?cover=no_cover&material=natural_beige&length=1_3m&frame=teak
-    price: $659
-    original_price: null
-    description: ''
-    category: Outdoor
-    collection: Outdoor Chairs & Bar Stools
-    tag: ''
-    delivery: Leaves warehouse by Feb 3
-    options:
-    - type: material
-      values:
-      - Natural beige
-    - type: length
-      values:
-      - 130cm
-    - type: finish
-      values:
-      - Finely sanded, no coating *refer to care
-    - type: height
-      values:
-      - 45cm
-    - type: width
-      values:
-      - 130cm
-    - type: depth
-      values:
-      - 38cm
-    images:
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1651033202/crusader/variants/40670008/Rio-Dining-Bench-Square-Set_1.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1678333754/crusader/variants/40670012/Rio-Outdoor-Teak-Dining-Bench-130cm-Angle-1678333754.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1649856258/crusader/variants/40670008/Rio-Dining-Table-2.4m-Collection-Square-Set_5.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1651033259/crusader/variants/40670008/Rio-Dining-Table-2m-Collection-Square-Set_2.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1679991360/crusader/variants/T50441017/Rio-Dining-Chair-Copy_2_-1679991360.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1651033359/crusader/variants/40670008/Rio-Dining-Bench-Square-Det_5.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1652429611/crusader/variants/T50441017/Rio-Dining-Table-Texture-1652429611.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1678333754/crusader/variants/40670012/Rio-Outdoor-Teak-Dining-Bench-130cm-Angle_1-1678333754.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1678333754/crusader/variants/40670012/Rio-Outdoor-Teak-Dining-Bench-130cm-Front-1678333754.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1678333754/crusader/variants/40670012/Rio-Outdoor-Teak-Dining-Bench-130cm-Side-1678333753.jpg
 - name: Accessories
   url: https://www.castlery.com/sg/accessories/all-accessories
   products:
@@ -1557,72 +1222,6 @@ categories:
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1716287796/crusader/variants/44230028/Cora-Rug-Collection-Square-Det_6-1716287793.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1714037128/crusader/variants/44230034/Rug-sketch-map-5__x_8_-1714037126.jpg
     - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,c_fit/v1717669002/crusader/variants/44230028/Cora-Area-Rug-Caramel-Square-Set_1-1717669002.jpg
-  - name: Cora Wool Area Rug
-    url: https://www.castlery.com/sg/products/cora-wool-area-rug?size=153x244cm&color_option=caramel
-    price: $449
-    original_price: null
-    description: ''
-    category: Accessories
-    collection: Rugs
-    tag: ''
-    delivery: Leaves warehouse by Feb 3
-    options:
-    - type: material
-      values:
-      - 100% Wool blend
-    - type: colour
-      values:
-      - Caramel
-    - type: size
-      values:
-      - 153 x 244cm
-    - type: height
-      values:
-      - 1.2-1.3cm
-    images:
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1717669002/crusader/variants/44230028/Cora-Area-Rug-Caramel-Square-Set_1-1717669002.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1713855881/crusader/variants/44230028/Cora-Area-Rug-5__x_8_-Caramel-1713855879.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1745915665/crusader/variants/44230028/Hugg-Nesting-Square-Coffee-Table-Performance-Basalt-Natural-Square-Set_4-1745915663.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1716975934/crusader/variants/44230028/Winslow-Bentwood-Dining-Arm-Chair-Performance-Chalk-Boucle-Square-Set_1-1716975934.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1716975971/crusader/variants/44230028/Elliot-Dining-Arm-Chair-Performance-Brilliant-White-Fawn-Square-Set_3-1716975971.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1713855882/crusader/variants/44230028/Cora-Area-Rug-Caramel-Square-Det_3-1713855879.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1713855881/crusader/variants/44230028/Cora-Area-Rug-Caramel-Square-Det_5-1713855878.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1716287796/crusader/variants/44230028/Cora-Rug-Collection-Square-Det_6-1716287793.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1714037128/crusader/variants/44230034/Rug-sketch-map-5__x_8_-1714037126.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,c_fit/v1717669002/crusader/variants/44230028/Cora-Area-Rug-Caramel-Square-Set_1-1717669002.jpg
-  - name: Talia Wool Area Rug
-    url: https://www.castlery.com/sg/products/talia-wool-area-rug?size=153x244cm&color_option=talia_sand
-    price: $399
-    original_price: null
-    description: ''
-    category: Accessories
-    collection: Rugs
-    tag: ''
-    delivery: Leaves warehouse by Feb 3
-    options:
-    - type: material
-      values:
-      - 100% Wool with Cotton backing
-    - type: colour
-      values:
-      - Sand
-    - type: size
-      values:
-      - 153 x 244cm
-    - type: height
-      values:
-      - 0.5cm
-    images:
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1713853085/crusader/variants/44230007/Talia-Area-Rug-5_-x-8_-Sand-1713853082.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1716974271/crusader/variants/44230009/Winslow-Dining-Chair-With-Armchair-Square-Set_1-1716974271.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1717474260/crusader/variants/44230009/Winslow-Dining-Armchair-Square-Set_1-1717474260.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1713853084/crusader/variants/44230007/Talia-Area-Rug-5_-x-8_-Sand-Det_1-1713853081.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1713853084/crusader/variants/44230007/Talia-Area-Rug-5_-x-8_-Sand-Det_3-1713853081.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1713853084/crusader/variants/44230007/Talia-Area-Rug-5_-x-8_-Sand-Det_2-1713853081.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,b_rgb:F3F3F3,c_fit/v1714037128/crusader/variants/44230034/Rug-sketch-map-5__x_8_-1714037126.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,c_fit/v1713853085/crusader/variants/44230007/Talia-Area-Rug-5_-x-8_-Sand-1713853082.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,c_fit/v1716974271/crusader/variants/44230009/Winslow-Dining-Chair-With-Armchair-Square-Set_1-1716974271.jpg
-    - url: https://res.cloudinary.com/castlery/image/private/w_1995,f_auto,q_auto,c_fit/v1717474260/crusader/variants/44230009/Winslow-Dining-Armchair-Square-Set_1-1717474260.jpg
   - name: Talia Wool Area Rug
     url: https://www.castlery.com/sg/products/talia-wool-area-rug?size=153x244cm&color_option=talia_sand
     price: $399
