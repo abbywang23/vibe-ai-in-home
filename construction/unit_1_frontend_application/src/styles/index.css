@@ -1,3 +1,32 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 2px !important;
+  height: 2px !important;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(132, 64, 37, 0.3) !important;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(132, 64, 37, 0.5) !important;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: rgba(132, 64, 37, 0.7) !important;
+}
+
+* {
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(132, 64, 37, 0.3) transparent !important;
+}

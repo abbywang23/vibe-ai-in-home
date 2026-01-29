@@ -800,7 +800,7 @@ export function DesignStudio() {
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
       <header className="border-b border-border bg-primary flex-shrink-0 z-20">
-        <div className="max-w-[2000px] mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-[1200px] mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <h3 className="text-primary-foreground mb-1">AI Interior Design Studio</h3>
             <p className="text-primary-foreground/80" style={{ fontSize: 'var(--text-caption)' }}>
@@ -818,8 +818,9 @@ export function DesignStudio() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden min-h-0">
+      {/* Main Content - Centered with max width */}
+      <div className="flex-1 flex justify-center overflow-hidden min-h-0 bg-background">
+        <div className="w-full max-w-[1200px] flex overflow-hidden">
         {/* Left Panel - Vertical Stepper */}
         <div className="w-[480px] border-r border-border bg-card overflow-y-auto">
           <div className="p-6">
@@ -895,7 +896,7 @@ export function DesignStudio() {
         <div className="flex-1 bg-background overflow-y-auto">
           <div className="flex flex-col">
             {/* Rendering Canvas - Fixed height for proper display */}
-            <div style={{ height: '600px' }}>
+            <div style={{ height: '550px' }}>
               <RenderingCanvas
                 roomData={roomData}
                 isAnalyzing={isAnalyzing}
@@ -921,6 +922,7 @@ export function DesignStudio() {
               />
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
@@ -1760,9 +1762,9 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
               </div>
             ) : isRendering ? (
               <div className="absolute inset-0 flex flex-col gap-3">
-                {/* Rendering progress area - matching Original's flex structure */}
-                <div className="flex-1 min-h-0 rounded-lg border border-border bg-background flex items-center justify-center">
-                  <div className="text-center max-w-sm">
+                {/* Rendering progress area - takes full height without placeholder */}
+                <div className="flex-1 min-h-0 rounded-lg border border-border bg-background flex items-center justify-center p-6">
+                  <div className="text-center max-w-sm w-full">
                     <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                       <Sparkles className="w-10 h-10 text-primary animate-pulse" />
                     </div>
@@ -1788,11 +1790,6 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
                       <AIStatusItem label="Finalizing" status={renderProgress === 100 ? "complete" : renderProgress > 80 ? "processing" : "pending"} />
                     </div>
                   </div>
-                </div>
-                {/* Placeholder for info card to maintain height consistency */}
-                <div className="flex-shrink-0 flex gap-2">
-                  <div className="flex-1 h-[88px]"></div>
-                  <div className="w-[40px]"></div>
                 </div>
               </div>
             ) : showFinalResult ? (
@@ -1862,7 +1859,7 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
                   <p className="text-muted-foreground mb-4" style={{ fontSize: 'var(--text-caption)' }}>
                     Complete the design steps to generate your AI rendering
                   </p>
-                  <div className="bg-card border border-border rounded-lg p-3">
+                  <div className="bg-card border border-border rounded-lg p-3 max-w-[280px] mx-auto">
                     <h5 className="mb-2 text-sm">Detection Results</h5>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="text-left">
