@@ -802,7 +802,7 @@ export function DesignStudio() {
 
   // 清除 detect 缓存
   const handleClearDetectCache = () => {
-    if (confirm('确定要清除 detect 的缓存吗？这将清除所有已缓存的检测结果。')) {
+    if (confirm('Are you sure you want to clear the detect cache? This will clear all cached detection results.')) {
       aiApi.clearDetectCache();
       alert('缓存已清除');
     }
@@ -833,7 +833,7 @@ export function DesignStudio() {
               title="清除 detect 缓存"
             >
               <X className="w-4 h-4" />
-              清除缓存
+              Clear cache
             </button>
           </div>
         </div>
