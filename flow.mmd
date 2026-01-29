@@ -1,0 +1,39 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryBackground': '#ffffff', 'secondaryBackground': '#ffffff', 'tertiaryBackground': '#ffffff' }}}%%
+flowchart LR
+    subgraph "Business Flow"
+        direction TB
+        Step1[Step 1 User input<br/>Room type, dimensions, budget]
+        Step2[Step 2 Upload room image]
+        Step3[Step 3 AI image analysis]
+        Step4[Step 4 Smart recommendation]
+        Step5[Step 5 Render image]
+        
+        Step1 --> Step2 --> Step3 --> Step4 --> Step5
+    end
+
+    subgraph "Technical Stack"
+        direction TB
+        
+        subgraph "Storage Layer"
+            Cloudinary[Cloudinary CDN<br/>Image cloud storage & CDN]
+        end
+        
+        subgraph "AI Services"
+            QwenVision[Qwen Visual Recognition<br/>Vision & furniture detection]
+            QwenLLM[Qwen LLM<br/>Recommendation & matching]
+        end
+        
+        subgraph "Data Service"
+            ProductService[Product Service<br/>Product query & matching]
+        end
+        
+        subgraph "Multimodal Rendering Service"
+            Decor8AI[Decor8AI API<br/>Multi-furniture scene render]
+        end
+    end
+
+    Step2 -.->|Image upload| Cloudinary
+    Step3 -.->|Call| QwenVision
+    Step4 -.->|Data query| ProductService
+    Step4 -.->|Analysis| QwenLLM
+    Step5 -.->|Render request| Decor8AI
