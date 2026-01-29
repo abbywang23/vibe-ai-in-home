@@ -32,6 +32,7 @@ export class ChatService {
           success: true,
           reply,
           actions: [],
+          mock: true,
         };
       }
     } catch (error) {
@@ -42,6 +43,7 @@ export class ChatService {
         success: true,
         reply,
         actions: [],
+        mock: true,
       };
     }
   }

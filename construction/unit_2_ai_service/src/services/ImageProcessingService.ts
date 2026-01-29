@@ -162,6 +162,9 @@ export interface FurnitureDetectionResponse {
     height: number;
     unit: string;
   };
+  
+  // Mock 标识：当返回 mock 数据时设置为 true，用于快速判断是否为 mock 数据
+  mock?: boolean;
 }
 
 export interface FurnitureReplacementResponse {
@@ -173,6 +176,8 @@ export interface FurnitureReplacementResponse {
     replacementProductName: string;
     appliedAt: string;
   };
+  // Mock 标识：当返回 mock 数据时设置为 true，用于快速判断是否为 mock 数据
+  mock?: boolean;
 }
 
 export interface FurniturePlacementResponse {
@@ -187,6 +192,8 @@ export interface FurniturePlacementResponse {
     rotation: number;
     appliedAt: string;
   };
+  // Mock 标识：当返回 mock 数据时设置为 true，用于快速判断是否为 mock 数据
+  mock?: boolean;
 }
 
 export class ImageProcessingService {
@@ -1563,7 +1570,8 @@ export class ImageProcessingService {
           width: 4,
           height: 3,
           unit: 'meters'
-        }
+        },
+        mock: true
       };
     }
 
@@ -1592,7 +1600,8 @@ export class ImageProcessingService {
         width: 4,
         height: 3,
         unit: 'meters'
-      }
+      },
+      mock: true
     };
   }
 
@@ -1619,7 +1628,8 @@ export class ImageProcessingService {
         replacementProductId: product.id,
         replacementProductName: product.name,
         appliedAt: new Date().toISOString(),
-      }
+      },
+      mock: true
     };
   }
 
@@ -1651,7 +1661,8 @@ export class ImageProcessingService {
         scale,
         rotation,
         appliedAt: new Date().toISOString(),
-      }
+      },
+      mock: true
     };
   }
 }
