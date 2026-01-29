@@ -426,4 +426,40 @@ export class ProductServiceClient {
   async getCollections(): Promise<Array<{ id: string; name: string }>> {
     return [...this.collections];
   }
+
+  /**
+   * Get next product in category (for Swap Item feature)
+   * Returns the next product in the same category, cycling back to the first if at the end
+   */
+  async getNextProductInCategory(category: string, productName: string): Promise<Product | null> {
+    // Normalize category name
+    const normalizedCategory = this.normalizeCategoryName(category).toLowerCase().trim();
+    
+    // Filter products by category (maintain original order from productsArray)
+    const categoryProducts = this.productsArray.filter(p => 
+      p.category.toLowerCase().trim() === normalizedCategory
+    );
+    
+    if (categoryProducts.length === 0) {
+      return null;
+    }
+    
+    // Find the current product by name (case-insensitive)
+    const currentIndex = categoryProducts.findIndex(p => 
+      p.name.toLowerCase().trim() === productName.toLowerCase().trim()
+    );
+    
+    if (currentIndex === -1) {
+      // Product not found in category, return null
+      return null;
+    }
+    
+    // If it's the last product, return the first one (cycle)
+    if (currentIndex === categoryProducts.length - 1) {
+      return categoryProducts[0];
+    }
+    
+    // Return the next product
+    return categoryProducts[currentIndex + 1];
+  }
 }

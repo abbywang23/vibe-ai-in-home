@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Upload, 
   Sparkles, 
@@ -73,7 +73,7 @@ interface FurnitureItem {
     estimatedValue: number;
   };
   isSelected?: boolean;
-  // 临时支持 API 返回的 Product 类型中的 images 属性
+  // 支持 API 返回的 Product 类型中的 images 属性（用于 Swap Item 功能）
   images?: Array<{
     url: string;
     alt: string;
@@ -123,6 +123,8 @@ export function DesignStudio() {
   const [renderProgress, setRenderProgress] = useState(0);
   const [showFinalResult, setShowFinalResult] = useState(false);
   const [swappingItemId, setSwappingItemId] = useState<string | null>(null);
+  const isSwappingRef = useRef<boolean>(false); // 使用 ref 来立即防止重复点击
+  const swappingItemIdRef = useRef<string | null>(null); // 使用 ref 来跟踪正在交换的商品ID
 
   // Update step status helper
   const updateStepStatus = (stepId: StepId, status: StepStatus) => {
@@ -547,111 +549,89 @@ export function DesignStudio() {
 
   // Handle swap furniture item
   const handleSwapFurniture = async (itemId: string) => {
+    // 防止重复点击：使用 ref 立即检查，避免状态更新的延迟
+    if (isSwappingRef.current) {
+      console.log('Swap operation already in progress, ignoring click');
+      return;
+    }
+    
+    // 防止重复点击：如果已经有正在处理的交换操作，直接返回
+    if (swappingItemId !== null || swappingItemIdRef.current !== null) {
+      console.log('Swap operation already in progress, ignoring click');
+      return;
+    }
+    
     try {
+      isSwappingRef.current = true;
+      swappingItemIdRef.current = itemId;
       setSwappingItemId(itemId);
       
       // 获取要替换的家具项
       const itemToSwap = selectedFurniture.find(item => item.id === itemId);
-      if (!itemToSwap || !roomData) {
+      if (!itemToSwap) {
+        isSwappingRef.current = false;
+        swappingItemIdRef.current = null;
+        setSwappingItemId(null);
         alert('Cannot swap this item');
         return;
       }
       
-      // 获取同类别的替代产品
-      console.log('Searching for alternative products...');
-      const roomDimensions = getRoomDimensionsFromSize(roomSetup.width, roomSetup.length);
-      const response = await aiApi.getSmartRecommendations({
-        roomType: roomData.roomType || roomSetup.roomType,
-        roomDimensions: roomDimensions,
-        preferences: {
-          selectedCategories: [itemToSwap.category],
-          budget: preferences.budget ? {
-            amount: preferences.budget.max,
-            currency: 'SGD'
-          } : undefined
-        },
-        language: 'en'
-      });
+      // 调用新接口获取下一个商品
+      console.log('Getting next product in category...');
+      const nextProductRaw = await aiApi.getNextProductForSwap(itemToSwap.category, itemToSwap.name);
       
-      // 过滤掉当前产品，获取第一个替代产品
-      const alternativeProductRaw = response.products.find(p => p.id !== itemId);
-      
-      if (!alternativeProductRaw) {
-        alert('No alternative products found');
-        return;
-      }
-      
-      // 类型断言：API 返回的产品可能包含 images 属性
-      const alternativeProduct = alternativeProductRaw as FurnitureItem & {
+      // 类型断言：确保包含 images 属性
+      type ProductWithImages = FurnitureItem & {
         images?: Array<{ url: string; alt: string }>;
-        dimensions?: string | FurnitureDimensions;
       };
+      const nextProduct = nextProductRaw as ProductWithImages;
       
-      // 处理替代产品的 dimensions
-      let dimensionsStr: string;
-      if (typeof alternativeProduct.dimensions === 'string') {
-        dimensionsStr = alternativeProduct.dimensions;
-      } else if (alternativeProduct.dimensions && typeof alternativeProduct.dimensions === 'object') {
-        const dims = alternativeProduct.dimensions as FurnitureDimensions;
-        const unit = dims.unit || 'cm';
-        dimensionsStr = `${dims.width}${unit} W × ${dims.depth}${unit} D × ${dims.height}${unit} H`;
-      } else {
-        dimensionsStr = itemToSwap.dimensions || 'Dimensions not available';
-      }
+      // 处理替代产品的 dimensions（如果返回的是字符串则直接使用，否则使用原商品的）
+      const dimensionsStr = nextProduct.dimensions || itemToSwap.dimensions || 'Dimensions not available';
       
       // 处理替代产品的图片URL：展示用第一张，渲染用第二张（如果存在）
-      let displayImageUrl = alternativeProduct.imageUrl || '';
+      let displayImageUrl = nextProduct.imageUrl || '';
       let renderImageUrl: string | undefined;
       
-      if (alternativeProduct.images && alternativeProduct.images.length > 0) {
+      // 如果新商品有 images 属性，使用它
+      const productImages = (nextProduct as ProductWithImages).images;
+      if (productImages && productImages.length > 0) {
         // 展示用第一张图片
-        displayImageUrl = alternativeProduct.images[0].url;
+        displayImageUrl = productImages[0].url;
         // 渲染用第二张图片（如果存在），否则也用第一张
-        renderImageUrl = alternativeProduct.images.length > 1 
-          ? alternativeProduct.images[1].url 
-          : alternativeProduct.images[0].url;
+        renderImageUrl = productImages.length > 1 
+          ? productImages[1].url 
+          : productImages[0].url;
       } else {
         // 如果没有 images 数组，两个都用 imageUrl
         renderImageUrl = displayImageUrl;
       }
       
-      // 调用替换 API
-      console.log('Replacing furniture...');
-      const replaceResponse = await aiApi.replaceFurniture({
-        imageUrl: roomData.originalImageUrl || roomData.imageUrl,
-        detectedItemId: itemId,
-        replacementProductId: alternativeProduct.id
-      });
+      // 只更新商品列表，不调用 replace API，不更新房间图片
+      // 最终渲染会在确认步骤统一生成
+      setSelectedFurniture(prev => prev.map(item => {
+        if (item.id === itemId) {
+          return {
+            ...nextProduct,
+            dimensions: dimensionsStr,
+            imageUrl: displayImageUrl, // 用于前端展示
+            renderImageUrl: renderImageUrl, // 用于渲染
+            isSelected: item.isSelected,
+            reason: `Swapped from ${item.name}. ${nextProduct.reason || ''}`
+          } as FurnitureItem;
+        }
+        return item;
+      }));
       
-      // 更新房间图片（只更新 imageUrl，不更新 originalImageUrl）
-      if (replaceResponse.success) {
-        setRoomData(prev => prev ? {
-          ...prev,
-          imageUrl: replaceResponse.processedImageUrl
-        } : null);
-        
-        // 更新家具列表
-        setSelectedFurniture(prev => prev.map(item => {
-          if (item.id === itemId) {
-            return {
-              ...alternativeProduct,
-              dimensions: dimensionsStr,
-              imageUrl: displayImageUrl, // 用于前端展示
-              renderImageUrl: renderImageUrl, // 用于渲染
-              isSelected: item.isSelected,
-              reason: `Swapped from ${item.name}. ${alternativeProduct.reason || ''}`
-            } as FurnitureItem;
-          }
-          return item;
-        }));
-        
-        alert(`Successfully swapped to ${alternativeProduct.name}`);
-      }
+      console.log(`Successfully swapped to ${nextProduct.name}`);
       
     } catch (error) {
       console.error('Error swapping furniture:', error);
-      alert('Failed to swap furniture. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to swap furniture. Please try again.';
+      alert(errorMessage);
     } finally {
+      isSwappingRef.current = false;
+      swappingItemIdRef.current = null;
       setSwappingItemId(null);
     }
   };
@@ -1309,7 +1289,7 @@ function SelectionStepContent({ roomIntent, selectedFurniture, onToggleFurniture
               isCompleted={isCompleted} 
               onToggle={onToggleFurniture}
               onSwap={onSwapFurniture}
-              isSwapping={swappingItemId === item.id}
+              isSwapping={swappingItemId !== null}
               onRemove={onRemoveFurniture}
             />
           ))
@@ -1324,7 +1304,7 @@ function SelectionStepContent({ roomIntent, selectedFurniture, onToggleFurniture
               onToggle={onToggleFurniture}
               onRemove={onRemoveFurniture}
               onSwap={onSwapFurniture}
-              isSwapping={swappingItemId === item.id}
+              isSwapping={swappingItemId !== null}
             />
           ))
         )}
