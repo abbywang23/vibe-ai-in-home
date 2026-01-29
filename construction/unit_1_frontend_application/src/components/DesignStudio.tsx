@@ -336,73 +336,54 @@ export function DesignStudio() {
       });
       console.log('Recommendations response:', response);
       
-      // 更新家具列表 - 适配新的响应格式
-      // 解析 reasoning 文本，提取每个产品的解释
-      const parseReasoningForProduct = (reasoningText: string | undefined, productId: string, productName: string, category: string): string => {
-        if (!reasoningText || typeof reasoningText !== 'string') {
-          return `AI selected this ${category} based on your room size, style preferences, and budget.`;
-        }
+      // 生成客户友好的推荐理由
+      const generateFriendlyReason = (category: string, roomType: string): string => {
+        const reasons: Record<string, string[]> = {
+          'sofa': [
+            'Comfortable seating that fits your space perfectly',
+            'Modern design that complements your room style',
+            'Perfect size for your living area'
+          ],
+          'table': [
+            'Ideal dimensions for your dining space',
+            'Versatile design that matches your style',
+            'Perfect for family gatherings and daily use'
+          ],
+          'chair': [
+            'Ergonomic design for maximum comfort',
+            'Stylish addition that complements your furniture',
+            'Perfect height and size for your space'
+          ],
+          'bed': [
+            'Comfortable and spacious for restful sleep',
+            'Elegant design that enhances your bedroom',
+            'Perfect fit for your room dimensions'
+          ],
+          'desk': [
+            'Functional workspace that fits your room',
+            'Modern design with ample storage',
+            'Perfect for productivity and comfort'
+          ],
+          'storage': [
+            'Maximizes your storage space efficiently',
+            'Sleek design that organizes your belongings',
+            'Perfect solution for your storage needs'
+          ]
+        };
         
-        // 如果 reasoning 是 JSON 字符串，尝试解析
-        let reasoning: string = reasoningText;
-        try {
-          const parsed = JSON.parse(reasoningText);
-          if (parsed.reasoning && typeof parsed.reasoning === 'string') {
-            reasoning = parsed.reasoning;
-          } else if (typeof parsed === 'string') {
-            reasoning = parsed;
-          } else {
-            // 如果是对象但不是字符串，转换为字符串
-            reasoning = JSON.stringify(parsed);
-          }
-        } catch {
-          // 不是 JSON，直接使用原文本
-        }
+        // 标准化类别名称
+        const normalizedCategory = category.toLowerCase();
         
-        // 确保 reasoning 是字符串
-        if (typeof reasoning !== 'string') {
-          return `AI selected this ${category} based on your room size, style preferences, and budget.`;
-        }
-        
-        // 尝试从长文本中提取该产品的解释
-        // 查找包含产品ID或产品名称的部分
-        const productIdPattern = new RegExp(`product-\\d+|${productId}`, 'i');
-        const productNamePattern = new RegExp(productName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-        
-        // 尝试找到该产品的解释段落
-        const lines = reasoning.split('\n');
-        let productReason = '';
-        
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i];
-          if (productIdPattern.test(line) || productNamePattern.test(line)) {
-            // 提取该产品相关的解释（当前行和后续几行）
-            const explanationLines: string[] = [line];
-            for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
-              if (lines[j].trim() && !lines[j].match(/^\d+\./)) {
-                explanationLines.push(lines[j]);
-              } else if (lines[j].match(/^\d+\./)) {
-                break; // 遇到下一个产品编号，停止
-              }
-            }
-            productReason = explanationLines.join(' ').trim();
-            break;
+        // 查找匹配的类别
+        for (const [key, messages] of Object.entries(reasons)) {
+          if (normalizedCategory.includes(key) || key.includes(normalizedCategory)) {
+            // 随机选择一个理由
+            return messages[Math.floor(Math.random() * messages.length)];
           }
         }
         
-        // 如果找到了特定产品的解释，使用它；否则使用通用解释
-        if (productReason) {
-          // 清理 Markdown 格式
-          return productReason
-            .replace(/\*\*(.*?)\*\*/g, '$1') // 移除粗体
-            .replace(/\n\n/g, ' ') // 替换双换行
-            .replace(/\n/g, ' ') // 替换单换行
-            .replace(/product-\d+/gi, '') // 移除产品ID引用
-            .trim();
-        }
-        
-        // 如果没有找到特定解释，返回通用文本
-        return `AI selected this ${category} based on your room size, style preferences, and budget.`;
+        // 默认理由
+        return 'Perfect fit for your room size and style preferences';
       };
       
       const furnitureWithSelection = response.products.map((item) => {
@@ -424,8 +405,8 @@ export function DesignStudio() {
           dimensionsStr = 'Dimensions not available';
         }
         
-        // 提取该产品的 reasoning
-        const productReason = parseReasoningForProduct(response.reasoning, item.id, item.name, item.category);
+        // 提取该产品的 reasoning - 使用客户友好的文案
+        const productReason = generateFriendlyReason(item.category, roomData?.roomType || roomSetup.roomType);
         
         // 处理图片URL：展示用第一张，渲染用第二张（如果存在）
         let displayImageUrl = item.imageUrl || '';
@@ -441,6 +422,47 @@ export function DesignStudio() {
         } else {
           // 如果没有 images 数组，两个都用 imageUrl
           renderImageUrl = displayImageUrl;
+        }
+        
+        // 🔍 在 "refresh" 模式下，匹配检测到的家具并填充 existingItem
+        let existingItem: FurnitureItem['existingItem'] = undefined;
+        if (roomSetup.intent === 'refresh' && roomData?.detectedItems) {
+          // 尝试根据类别匹配检测到的家具
+          // 将产品类别标准化为小写，并尝试匹配
+          const normalizedCategory = item.category.toLowerCase();
+          const matchedDetectedItem = roomData.detectedItems.find(detected => {
+            const detectedType = detected.furnitureType.toLowerCase();
+            // 尝试多种匹配方式
+            return (
+              detectedType === normalizedCategory ||
+              detectedType.includes(normalizedCategory) ||
+              normalizedCategory.includes(detectedType)
+            );
+          });
+          
+          if (matchedDetectedItem) {
+            // 生成检测到的家具的显示名称
+            const detectedName = matchedDetectedItem.furnitureType.charAt(0).toUpperCase() + 
+                                 matchedDetectedItem.furnitureType.slice(1).replace(/_/g, ' ');
+            
+            // 估算价值（基于产品价格的 40-60%）
+            const estimatedValue = Math.round(item.price * (0.4 + Math.random() * 0.2));
+            
+            // 使用房间图片作为检测到的家具的图片（因为我们没有单独的家具图片）
+            const detectedImageUrl = roomData.imageUrl;
+            
+            existingItem = {
+              name: detectedName,
+              imageUrl: detectedImageUrl,
+              estimatedValue: estimatedValue
+            };
+            
+            console.log(`Matched detected item for ${item.name}:`, {
+              detectedType: matchedDetectedItem.furnitureType,
+              productCategory: item.category,
+              estimatedValue
+            });
+          }
         }
         
         return {
@@ -1484,9 +1506,9 @@ function ConfirmationStepContent({ onGenerate, isRendering, showFinalResult, tot
             </p>
           </div>
 
-          <button className="w-full px-6 py-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
+          <button className="w-full px-6 py-3 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors flex items-center justify-center gap-2 font-medium">
             <ShoppingCart className="w-5 h-5" />
-            Purchase All (${totalCost.toLocaleString()})
+            <span style={{ fontSize: 'var(--text-base)' }}>Purchase All (${totalCost.toLocaleString()})</span>
           </button>
 
           <div className="grid grid-cols-3 gap-2">
