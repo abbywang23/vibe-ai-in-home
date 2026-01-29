@@ -13,6 +13,9 @@ import { DimensionUnit } from '../types/domain';
 export function IframeRenderPage() {
   const { furnitureData, sendStatus } = useIframeMessage();
   
+  console.log('=== IFRAME RENDER PAGE ===');
+  console.log('Current furnitureData:', furnitureData);
+  
   const [status, setStatus] = useState<RenderStatus>('idle');
   const [uploadProgress, setUploadProgress] = useState(0);
   const [originalImageUrl, setOriginalImageUrl] = useState<string>();
