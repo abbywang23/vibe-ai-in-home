@@ -168,11 +168,11 @@ export function IframeRenderPage() {
             </p>
           </div>
 
-          {/* 家具图片展示 - 只显示第一个 */}
+          {/* 家具图片展示 - 只显示第一个，使用 renderImageUrl */}
           {furnitureData?.furniture && furnitureData.furniture.length > 0 && (
             <div className="w-32 h-32 rounded-lg overflow-hidden" style={{ backgroundColor: 'transparent' }}>
               <img
-                src={furnitureData.furniture[0].imageUrl}
+                src={furnitureData.furniture[0].renderImageUrl || furnitureData.furniture[0].imageUrl}
                 alt={furnitureData.furniture[0].name}
                 className="w-full h-full object-contain"
                 title={furnitureData.furniture[0].name}
