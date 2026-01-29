@@ -430,8 +430,13 @@ export class ProductServiceClient {
   /**
    * Get next product in category (for Swap Item feature)
    * Returns the next product in the same category, cycling back to the first if at the end
+   * Excludes products in the excludeProductIds list
    */
-  async getNextProductInCategory(category: string, productName: string): Promise<Product | null> {
+  async getNextProductInCategory(
+    category: string, 
+    productName: string, 
+    excludeProductIds?: string[]
+  ): Promise<Product | null> {
     // Normalize category name
     const normalizedCategory = this.normalizeCategoryName(category).toLowerCase().trim();
     
@@ -444,7 +449,18 @@ export class ProductServiceClient {
       return null;
     }
     
-    // Find the current product by name (case-insensitive)
+    // Filter out excluded products
+    const excludeIds = excludeProductIds || [];
+    const availableProducts = categoryProducts.filter(p => 
+      !excludeIds.includes(p.id)
+    );
+    
+    if (availableProducts.length === 0) {
+      // All products are excluded, return null
+      return null;
+    }
+    
+    // Find the current product by name (case-insensitive) in the full category list
     const currentIndex = categoryProducts.findIndex(p => 
       p.name.toLowerCase().trim() === productName.toLowerCase().trim()
     );
@@ -454,12 +470,30 @@ export class ProductServiceClient {
       return null;
     }
     
-    // If it's the last product, return the first one (cycle)
-    if (currentIndex === categoryProducts.length - 1) {
-      return categoryProducts[0];
+    // Find the next available product starting from the next position
+    // Start searching from the next product after currentIndex
+    let searchIndex = currentIndex + 1;
+    let cycles = 0;
+    const maxCycles = categoryProducts.length; // Prevent infinite loop
+    
+    while (cycles < maxCycles) {
+      // Wrap around if we've reached the end
+      if (searchIndex >= categoryProducts.length) {
+        searchIndex = 0;
+      }
+      
+      const candidateProduct = categoryProducts[searchIndex];
+      
+      // Check if this product is not in the exclude list
+      if (!excludeIds.includes(candidateProduct.id)) {
+        return candidateProduct;
+      }
+      
+      searchIndex++;
+      cycles++;
     }
     
-    // Return the next product
-    return categoryProducts[currentIndex + 1];
+    // Should not reach here, but return null as fallback
+    return null;
   }
 }

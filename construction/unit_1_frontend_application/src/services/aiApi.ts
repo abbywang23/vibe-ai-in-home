@@ -447,25 +447,24 @@ export const aiApi = {
    * 检测房间（使用 DetectionRequest/DetectionResponse）
    */
   async detectRoom(request: DetectionRequest): Promise<DetectionResponse> {
-    // 缓存功能已暂时禁用，但保留实现代码以便将来重新启用
     // 计算请求参数的 MD5 hash 并检查缓存
-    // let requestHash: string | undefined;
-    // try {
-    //   requestHash = calculateRequestMD5(request);
-    //   const cached = getCachedDetect(requestHash);
-    //   if (cached) {
-    //     console.log('Using cached detection result:', {
-    //       hash: requestHash?.substring(0, 8),
-    //       detectedItemsCount: cached.detectedItems?.length || 0,
-    //       roomType: cached.roomType?.value,
-    //       isEmpty: cached.isEmpty
-    //     });
-    //     return cached;
-    //   }
-    // } catch (hashError) {
-    //   // If hash calculation fails, continue with normal API call
-    //   console.warn('Failed to calculate request hash, skipping cache:', hashError);
-    // }
+    let requestHash: string | undefined;
+    try {
+      requestHash = calculateRequestMD5(request);
+      const cached = getCachedDetect(requestHash);
+      if (cached) {
+        console.log('Using cached detection result:', {
+          hash: requestHash?.substring(0, 8),
+          detectedItemsCount: cached.detectedItems?.length || 0,
+          roomType: cached.roomType?.value,
+          isEmpty: cached.isEmpty
+        });
+        return cached;
+      }
+    } catch (hashError) {
+      // If hash calculation fails, continue with normal API call
+      console.warn('Failed to calculate request hash, skipping cache:', hashError);
+    }
 
     // 调用 API
     console.log('Calling detect API with request:', {
@@ -485,17 +484,16 @@ export const aiApi = {
       isEmpty: response.isEmpty
     });
 
-    // 缓存功能已暂时禁用，但保留实现代码以便将来重新启用
     // 保存到缓存（如果 hash 计算成功）
-    // if (requestHash) {
-    //   try {
-    //     setCachedDetect(requestHash, response);
-    //     console.log('Cached detection result:', requestHash.substring(0, 8));
-    //   } catch (cacheError) {
-    //     // Ignore cache errors, API call was successful
-    //     console.warn('Failed to cache detect result:', cacheError);
-    //   }
-    // }
+    if (requestHash) {
+      try {
+        setCachedDetect(requestHash, response);
+        console.log('Cached detection result:', requestHash.substring(0, 8));
+      } catch (cacheError) {
+        // Ignore cache errors, API call was successful
+        console.warn('Failed to cache detect result:', cacheError);
+      }
+    }
 
     return response;
   },
@@ -584,10 +582,14 @@ export const aiApi = {
   /**
    * 获取下一个商品（用于 Swap Item）
    */
-  async getNextProductForSwap(category: string, productName: string): Promise<FurnitureItem> {
+  async getNextProductForSwap(category: string, productName: string, excludeProductIds?: string[]): Promise<FurnitureItem> {
     const response = await fetchAPI<{ success: boolean; product: Product }>('/api/ai/products/swap-next', {
       method: 'POST',
-      body: JSON.stringify({ category, productName }),
+      body: JSON.stringify({ 
+        category, 
+        productName,
+        excludeProductIds: excludeProductIds || []
+      }),
     });
 
     if (!response.success || !response.product) {
@@ -602,5 +604,17 @@ export const aiApi = {
    */
   async healthCheck(): Promise<{ status: string; service: string }> {
     return fetchAPI<{ status: string; service: string }>('/health');
+  },
+
+  /**
+   * 清除 detect 的 localStorage 缓存
+   */
+  clearDetectCache(): void {
+    try {
+      localStorage.removeItem(DETECT_CACHE_KEY);
+      console.log('Detect cache cleared successfully');
+    } catch (error) {
+      console.warn('Failed to clear detect cache:', error);
+    }
   },
 };

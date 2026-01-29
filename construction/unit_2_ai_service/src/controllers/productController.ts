@@ -200,7 +200,7 @@ export class ProductController {
    */
   async getNextProductForSwap(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { category, productName } = req.body;
+      const { category, productName, excludeProductIds } = req.body;
 
       if (!category || !productName) {
         res.status(400).json({
@@ -213,7 +213,14 @@ export class ProductController {
         return;
       }
 
-      const nextProduct = await this.productClient.getNextProductInCategory(category, productName);
+      // excludeProductIds 是可选的，如果没有提供则使用空数组
+      const excludeIds = Array.isArray(excludeProductIds) ? excludeProductIds : [];
+
+      const nextProduct = await this.productClient.getNextProductInCategory(
+        category, 
+        productName,
+        excludeIds
+      );
 
       if (!nextProduct) {
         res.status(404).json({

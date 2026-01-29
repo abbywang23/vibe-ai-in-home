@@ -576,9 +576,21 @@ export function DesignStudio() {
         return;
       }
       
-      // 调用新接口获取下一个商品
-      console.log('Getting next product in category...');
-      const nextProductRaw = await aiApi.getNextProductForSwap(itemToSwap.category, itemToSwap.name);
+      // 收集当前品类中所有商品的ID（用于排除）
+      const categoryProductIds = selectedFurniture
+        .filter(item => item.category.toLowerCase().trim() === itemToSwap.category.toLowerCase().trim())
+        .map(item => item.id);
+      
+      // 调用新接口获取下一个商品（排除已选商品）
+      console.log('Getting next product in category...', { 
+        category: itemToSwap.category, 
+        excludeCount: categoryProductIds.length 
+      });
+      const nextProductRaw = await aiApi.getNextProductForSwap(
+        itemToSwap.category, 
+        itemToSwap.name,
+        categoryProductIds
+      );
       
       // 类型断言：确保包含 images 属性
       type ProductWithImages = FurnitureItem & {
@@ -609,19 +621,31 @@ export function DesignStudio() {
       
       // 只更新商品列表，不调用 replace API，不更新房间图片
       // 最终渲染会在确认步骤统一生成
-      setSelectedFurniture(prev => prev.map(item => {
-        if (item.id === itemId) {
-          return {
-            ...nextProduct,
-            dimensions: dimensionsStr,
-            imageUrl: displayImageUrl, // 用于前端展示
-            renderImageUrl: renderImageUrl, // 用于渲染
-            isSelected: item.isSelected,
-            reason: `Swapped from ${item.name}. ${nextProduct.reason || ''}`
-          } as FurnitureItem;
+      // 如果新商品已在列表中，不做移动（保持原位置）
+      setSelectedFurniture(prev => {
+        const existingIndex = prev.findIndex(item => item.id === nextProduct.id);
+        
+        if (existingIndex !== -1) {
+          // 新商品已在列表中，不做任何操作（不移动）
+          console.log('Product already in list, skipping swap');
+          return prev;
         }
-        return item;
-      }));
+        
+        // 新商品不在列表中，正常替换
+        return prev.map(item => {
+          if (item.id === itemId) {
+            return {
+              ...nextProduct,
+              dimensions: dimensionsStr,
+              imageUrl: displayImageUrl, // 用于前端展示
+              renderImageUrl: renderImageUrl, // 用于渲染
+              isSelected: item.isSelected,
+              reason: `Swapped from ${item.name}. ${nextProduct.reason || ''}`
+            } as FurnitureItem;
+          }
+          return item;
+        });
+      });
       
       console.log(`Successfully swapped to ${nextProduct.name}`);
       
@@ -776,6 +800,14 @@ export function DesignStudio() {
     }
   };
 
+  // 清除 detect 缓存
+  const handleClearDetectCache = () => {
+    if (confirm('确定要清除 detect 的缓存吗？这将清除所有已缓存的检测结果。')) {
+      aiApi.clearDetectCache();
+      alert('缓存已清除');
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
@@ -793,6 +825,15 @@ export function DesignStudio() {
             </button>
             <button className="px-4 py-2 text-primary-foreground/90 hover:text-primary-foreground transition-colors" style={{ fontSize: 'var(--text-base)' }}>
               Help
+            </button>
+            <button 
+              onClick={handleClearDetectCache}
+              className="px-4 py-2 text-primary-foreground/90 hover:text-primary-foreground transition-colors flex items-center gap-2" 
+              style={{ fontSize: 'var(--text-base)' }}
+              title="清除 detect 缓存"
+            >
+              <X className="w-4 h-4" />
+              清除缓存
             </button>
           </div>
         </div>
