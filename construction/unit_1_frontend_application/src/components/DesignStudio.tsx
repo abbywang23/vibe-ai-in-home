@@ -952,9 +952,9 @@ export function DesignStudio() {
         </div>
 
         {/* Right Panel - Visualization Area */}
-        <div className="flex-1 bg-background overflow-hidden flex flex-col">
+        <div className="flex-1 bg-background overflow-y-auto flex flex-col">
           {/* Rendering Canvas - Takes remaining space */}
-          <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="flex-shrink-0">
             <RenderingCanvas
               roomData={roomData}
               isAnalyzing={isAnalyzing}
@@ -1700,7 +1700,7 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
           
           <div className="flex-1 min-h-0 relative">
             {!roomData ? (
-              <div className="absolute inset-0">
+              <div className="h-full min-h-[400px]">
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/jpg"
@@ -1711,7 +1711,7 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
                 />
                 <label
                   htmlFor="room-image-upload-canvas"
-                  className={`absolute inset-0 border-2 border-dashed border-border rounded-lg hover:border-primary transition-colors flex flex-col items-center justify-center gap-3 bg-background group ${
+                  className={`h-full border-2 border-dashed border-border rounded-lg hover:border-primary transition-colors flex flex-col items-center justify-center gap-3 bg-background group ${
                     isAnalyzing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                   }`}
                 >
@@ -1744,9 +1744,9 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
                 </label>
               </div>
             ) : (
-              <div className="absolute inset-0 flex flex-col gap-3">
-                <div className="flex-1 min-h-0 rounded-lg overflow-hidden border border-border bg-muted relative">
-                  <img src={roomData.originalImageUrl || roomData.imageUrl} alt="Original Room" className="w-full h-full object-cover" />
+              <div className="flex flex-col gap-3">
+                <div className="rounded-lg overflow-hidden border border-border bg-muted relative">
+                  <img src={roomData.originalImageUrl || roomData.imageUrl} alt="Original Room" className="w-full h-auto" />
                   
                   {/* Analyzing Overlay - 30% opacity */}
                   {isAnalyzing && (
@@ -1825,9 +1825,9 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
                 </div>
               </div>
             ) : isRendering ? (
-              <div className="absolute inset-0 flex flex-col gap-3">
-                {/* Rendering progress area - takes full height without placeholder */}
-                <div className="flex-1 min-h-0 rounded-lg border border-border bg-background flex items-center justify-center p-6">
+              <div className="flex flex-col gap-3 h-full">
+                {/* Rendering progress area - matches left column height */}
+                <div className="flex-1 rounded-lg border border-border bg-background flex items-center justify-center p-6">
                   <div className="text-center max-w-sm w-full">
                     <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                       <Sparkles className="w-10 h-10 text-primary animate-pulse" />
@@ -1857,10 +1857,10 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
                 </div>
               </div>
             ) : showFinalResult ? (
-              <div className="absolute inset-0 flex flex-col gap-3">
-                {/* Image with fixed height matching Original */}
-                <div className="flex-1 min-h-0 rounded-lg overflow-hidden border border-border bg-muted relative">
-                  <img src={roomData.renderedImageUrl || roomData.imageUrl} alt="Rendered Room" className="w-full h-full object-cover" />
+              <div className="flex flex-col gap-3">
+                {/* Image with height adapting to image aspect ratio */}
+                <div className="rounded-lg overflow-hidden border border-border bg-muted relative">
+                  <img src={roomData.renderedImageUrl || roomData.imageUrl} alt="Rendered Room" className="w-full h-auto" />
                   {/* AI Rendered Badge - stays on image */}
                   <div className="absolute top-4 left-4 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg flex items-center gap-2 shadow-lg">
                     <Sparkles className="w-4 h-4" />
