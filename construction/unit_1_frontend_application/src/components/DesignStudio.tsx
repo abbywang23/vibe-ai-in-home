@@ -776,9 +776,9 @@ export function DesignStudio() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-primary sticky top-0 z-20">
+      <header className="border-b border-border bg-primary flex-shrink-0 z-20">
         <div className="max-w-[2000px] mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <h3 className="text-primary-foreground mb-1">AI Interior Design Studio</h3>
@@ -798,7 +798,7 @@ export function DesignStudio() {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Left Panel - Vertical Stepper */}
         <div className="w-[480px] border-r border-border bg-card overflow-y-auto">
           <div className="p-6">
@@ -871,32 +871,34 @@ export function DesignStudio() {
         </div>
 
         {/* Right Panel - Visualization Area */}
-        <div className="flex-1 flex flex-col bg-background">
-          {/* Rendering Canvas - 80% of viewport height minus header */}
-          <div className="overflow-y-auto" style={{ height: 'calc(80vh - 73px)' }}>
-            <RenderingCanvas
-              roomData={roomData}
-              isAnalyzing={isAnalyzing}
-              isRendering={isRendering}
-              renderProgress={renderProgress}
-              showFinalResult={showFinalResult}
-              preferences={preferences}
-              selectedFurniture={selectedFurniture}
-              totalCost={totalCost}
-              onUpload={handleImageUpload}
-              onGenerate={handleGenerateRender}
-              onDownload={handleDownloadImage}
-            />
-          </div>
+        <div className="flex-1 bg-background overflow-y-auto">
+          <div className="flex flex-col">
+            {/* Rendering Canvas - Fixed height for proper display */}
+            <div style={{ height: '600px' }}>
+              <RenderingCanvas
+                roomData={roomData}
+                isAnalyzing={isAnalyzing}
+                isRendering={isRendering}
+                renderProgress={renderProgress}
+                showFinalResult={showFinalResult}
+                preferences={preferences}
+                selectedFurniture={selectedFurniture}
+                totalCost={totalCost}
+                onUpload={handleImageUpload}
+                onGenerate={handleGenerateRender}
+                onDownload={handleDownloadImage}
+              />
+            </div>
 
-          {/* Furniture List Panel - Remaining height (auto) */}
-          <div className="flex-1 border-t border-border bg-card overflow-y-auto">
-            <FurnitureListPanel
-              selectedFurniture={selectedFurniture}
-              isLoading={isLoadingFurniture}
-              totalCost={totalCost}
-              showFinalResult={showFinalResult}
-            />
+            {/* Furniture List Panel */}
+            <div className="border-t border-border bg-card">
+              <FurnitureListPanel
+                selectedFurniture={selectedFurniture}
+                isLoading={isLoadingFurniture}
+                totalCost={totalCost}
+                showFinalResult={showFinalResult}
+              />
+            </div>
           </div>
         </div>
       </div>
