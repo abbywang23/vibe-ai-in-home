@@ -55,6 +55,327 @@ export class RecommendationService {
   }
 
   /**
+   * Generate recommendations based on detected furniture categories
+   * This method is specifically for replacing existing furniture
+   */
+  async generateRecommendationsFromDetectedCategories(
+    request: RecommendationRequest,
+    detectedCategories: string[]
+  ): Promise<Recommendation[]> {
+    console.log('Generating recommendations for detected categories:', detectedCategories);
+
+    if (detectedCategories.length === 0) {
+      console.warn('No detected categories provided');
+      return [];
+    }
+
+    // 1. Get room type categories to understand priorities
+    const roomCategories = await this.productClient.getCategoriesByRoomType(
+      request.roomType.toLowerCase().replace('_', ' ')
+    );
+
+    // 2. For each detected category, find matching products
+    const recommendations: Recommendation[] = [];
+    let totalCost = 0;
+    const maxBudget = request.budget?.amount;
+
+    for (const detectedCategory of detectedCategories) {
+      // Normalize the detected category
+      const normalizedCategory = this.normalizeCategory(detectedCategory);
+      
+      // Find priority for this category
+      const categoryInfo = roomCategories.find(
+        cat => cat.id.toLowerCase() === normalizedCategory.toLowerCase()
+      );
+      const priority = categoryInfo?.priority || 999;
+
+      console.log(`Processing category: ${detectedCategory} (normalized: ${normalizedCategory}, priority: ${priority})`);
+
+      // Search for products in this category
+      const categoryProducts = await this.productClient.searchProducts({
+        categories: [normalizedCategory],
+        collections: request.preferences?.selectedCollections,
+        maxPrice: maxBudget ? maxBudget - totalCost : undefined,
+        limit: 5, // Get top 5 products per category
+      });
+
+      if (categoryProducts.length === 0) {
+        console.warn(`No products found for category: ${normalizedCategory}`);
+        continue;
+      }
+
+      // Select the best product from this category
+      const selectedProduct = this.selectBestProduct(
+        categoryProducts,
+        request,
+        maxBudget ? maxBudget - totalCost : undefined
+      );
+
+      if (selectedProduct) {
+        // Generate placement for this product
+        const placement = this.generatePlacementForProduct(
+          selectedProduct,
+          recommendations.length,
+          request.dimensions,
+          normalizedCategory
+        );
+
+        recommendations.push(placement);
+        totalCost += selectedProduct.price;
+
+        console.log(`Selected ${selectedProduct.name} for ${normalizedCategory} (${selectedProduct.currency} ${selectedProduct.price})`);
+
+        // Check if we've exceeded budget
+        if (maxBudget && totalCost >= maxBudget) {
+          console.log('Budget limit reached');
+          break;
+        }
+      }
+    }
+
+    console.log(`Generated ${recommendations.length} recommendations from detected categories`);
+    console.log(`Total cost: ${totalCost}`);
+
+    return recommendations;
+  }
+
+  /**
+   * Normalize category names to match our internal categories
+   */
+  private normalizeCategory(category: string): string {
+    const lowerCategory = category.toLowerCase().trim();
+    
+    // Map common variations to our standard categories
+    const categoryMap: Record<string, string> = {
+      'sofa': 'sofa',
+      'sofas': 'sofa',
+      'couch': 'sofa',
+      'sectional': 'sofa',
+      'chair': 'chair',
+      'chairs': 'chair',
+      'armchair': 'chair',
+      'armchairs': 'chair',
+      'seat': 'chair',
+      'seating': 'chair',
+      'table': 'table',
+      'tables': 'table',
+      'coffee table': 'table',
+      'dining table': 'table',
+      'desk': 'table',
+      'desks': 'table',
+      'bed': 'bed',
+      'beds': 'bed',
+      'storage': 'storage',
+      'cabinet': 'storage',
+      'cabinets': 'storage',
+      'shelf': 'storage',
+      'shelves': 'storage',
+      'shelving': 'storage',
+    };
+
+    return categoryMap[lowerCategory] || lowerCategory;
+  }
+
+  /**
+   * Select the best product from a list based on various criteria
+   */
+  private selectBestProduct(
+    products: Product[],
+    request: RecommendationRequest,
+    remainingBudget?: number
+  ): Product | null {
+    if (products.length === 0) return null;
+
+    // Filter by budget if specified
+    let affordableProducts = remainingBudget
+      ? products.filter(p => p.price <= remainingBudget)
+      : products;
+
+    if (affordableProducts.length === 0) {
+      console.warn('No affordable products found in this category');
+      return null;
+    }
+
+    // Scoring criteria:
+    // 1. Price (prefer mid-range, not too cheap or expensive)
+    // 2. Dimensions (must fit in room)
+    // 3. Collection match (if user has preferences)
+    
+    const scoredProducts = affordableProducts.map(product => {
+      let score = 0;
+
+      // Price score: prefer products around 60-80% of remaining budget
+      if (remainingBudget) {
+        const priceRatio = product.price / remainingBudget;
+        if (priceRatio >= 0.6 && priceRatio <= 0.8) {
+          score += 30;
+        } else if (priceRatio >= 0.4 && priceRatio <= 0.9) {
+          score += 20;
+        } else {
+          score += 10;
+        }
+      } else {
+        score += 20; // Default score if no budget
+      }
+
+      // Dimension score: prefer products that fit well in the room
+      const roomArea = request.dimensions.length * request.dimensions.width;
+      const productArea = product.dimensions.width * product.dimensions.depth;
+      const areaRatio = productArea / roomArea;
+      
+      if (areaRatio <= 0.15) { // Product takes up <= 15% of room
+        score += 30;
+      } else if (areaRatio <= 0.25) {
+        score += 20;
+      } else {
+        score += 10;
+      }
+
+      // Collection match score
+      if (request.preferences?.selectedCollections) {
+        const hasMatchingCollection = product.tags.some(tag =>
+          request.preferences!.selectedCollections!.some(col =>
+            tag.toLowerCase().includes(col.toLowerCase()) ||
+            col.toLowerCase().includes(tag.toLowerCase())
+          )
+        );
+        if (hasMatchingCollection) {
+          score += 40;
+        }
+      }
+
+      return { product, score };
+    });
+
+    // Sort by score (descending) and return the best one
+    scoredProducts.sort((a, b) => b.score - a.score);
+    
+    console.log(`Best product score: ${scoredProducts[0].score} for ${scoredProducts[0].product.name}`);
+    
+    return scoredProducts[0].product;
+  }
+
+  /**
+   * Generate placement for a specific product
+   */
+  private generatePlacementForProduct(
+    product: Product,
+    index: number,
+    dimensions: { length: number; width: number; height: number },
+    category: string
+  ): Recommendation {
+    const roomLength = dimensions.length;
+    const roomWidth = dimensions.width;
+    const furnitureWidth = product.dimensions.width;
+    const furnitureDepth = product.dimensions.depth;
+
+    let position: Position3D;
+    let rotation: number;
+    let reasoning: string;
+
+    // Category-specific placement logic
+    switch (category.toLowerCase()) {
+      case 'sofa':
+        // Sofas typically go against the main wall
+        position = {
+          x: roomLength / 2,
+          y: 0,
+          z: 0.5, // 0.5m from back wall
+        };
+        rotation = 0;
+        reasoning = `Placed ${product.name} against the main wall as the focal point of the seating area`;
+        break;
+
+      case 'table':
+        // Tables go in the center or in front of sofa
+        if (index === 0) {
+          // First table: center of room
+          position = {
+            x: roomLength / 2,
+            y: 0,
+            z: roomWidth / 2,
+          };
+          rotation = 0;
+          reasoning = `Placed ${product.name} in the center of the room for easy access`;
+        } else {
+          // Additional table: in front of sofa
+          position = {
+            x: roomLength / 2,
+            y: 0,
+            z: roomWidth / 3,
+          };
+          rotation = 0;
+          reasoning = `Placed ${product.name} in front of the seating area as a coffee table`;
+        }
+        break;
+
+      case 'chair':
+        // Chairs go on the sides or opposite the sofa
+        if (index % 2 === 0) {
+          // Left side
+          position = {
+            x: 0.5 + furnitureWidth / 2,
+            y: 0,
+            z: roomWidth / 2,
+          };
+          rotation = 90;
+          reasoning = `Placed ${product.name} on the left side to create a conversation area`;
+        } else {
+          // Right side
+          position = {
+            x: roomLength - 0.5 - furnitureWidth / 2,
+            y: 0,
+            z: roomWidth / 2,
+          };
+          rotation = 270;
+          reasoning = `Placed ${product.name} on the right side for balance`;
+        }
+        break;
+
+      case 'storage':
+        // Storage goes against walls
+        position = {
+          x: 0.5 + furnitureWidth / 2,
+          y: 0,
+          z: 0.5 + furnitureDepth / 2,
+        };
+        rotation = 0;
+        reasoning = `Placed ${product.name} against the wall for easy access and space efficiency`;
+        break;
+
+      case 'bed':
+        // Beds go against the main wall, centered
+        position = {
+          x: roomLength / 2,
+          y: 0,
+          z: 0.5 + furnitureDepth / 2,
+        };
+        rotation = 0;
+        reasoning = `Placed ${product.name} against the main wall as the bedroom focal point`;
+        break;
+
+      default:
+        // Default placement
+        position = {
+          x: roomLength / 2,
+          y: 0,
+          z: roomWidth / 2,
+        };
+        rotation = 0;
+        reasoning = `Placed ${product.name} in a central location`;
+    }
+
+    return {
+      productId: product.id,
+      productName: product.name,
+      position,
+      rotation,
+      reasoning,
+      price: product.price,
+    };
+  }
+
+  /**
    * Generate AI-powered recommendations
    */
   private async generateAIRecommendations(
