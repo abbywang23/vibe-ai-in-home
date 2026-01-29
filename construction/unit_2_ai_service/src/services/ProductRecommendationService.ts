@@ -35,6 +35,25 @@ export class ProductRecommendationService {
     return text.slice(0, maxLen);
   }
 
+  /**
+   * Deduplicate products by product name
+   * Keeps the first occurrence of each product name
+   */
+  private deduplicateProductsByName(products: Product[]): Product[] {
+    const seenNames = new Set<string>();
+    const uniqueProducts: Product[] = [];
+    
+    for (const product of products) {
+      const normalizedName = product.name?.trim().toLowerCase() || '';
+      if (normalizedName && !seenNames.has(normalizedName)) {
+        seenNames.add(normalizedName);
+        uniqueProducts.push(product);
+      }
+    }
+    
+    return uniqueProducts;
+  }
+
   private buildExistingFurnitureSection(lang: string, existingFurniture?: DetectedFurnitureItem[]): string {
     const items = Array.isArray(existingFurniture) ? existingFurniture : [];
     if (items.length === 0) {
@@ -209,8 +228,12 @@ export class ProductRecommendationService {
     candidateProducts: Product[],
     aiClient: any
   ): Promise<SmartRecommendationResponse> {
+    // Deduplicate candidate products by name before sending to AI
+    const uniqueCandidateProducts = this.deduplicateProductsByName(candidateProducts);
+    console.log(`Deduplicated candidate products: ${candidateProducts.length} -> ${uniqueCandidateProducts.length}`);
+    
     const systemPrompt = this.buildSystemPrompt(request.language || 'en', request.roomType);
-    const userPrompt = this.buildUserPrompt(request, candidateProducts);
+    const userPrompt = this.buildUserPrompt(request, uniqueCandidateProducts);
 
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
@@ -218,7 +241,7 @@ export class ProductRecommendationService {
     ];
 
     const response = await aiClient.chatCompletion({
-      model: 'qwen-turbo',
+      model: 'qwen-flash',
       messages,
       temperature: 0.3, // Lower temperature for more consistent recommendations
       max_tokens: 2000,
@@ -226,20 +249,25 @@ export class ProductRecommendationService {
 
     const aiResponse = response.choices[0]?.message?.content || '';
     
-    // Parse AI response to extract product IDs
-    const recommendedIds = this.parseAIResponse(aiResponse, candidateProducts);
+    // Parse AI response to extract product IDs (use deduplicated candidates)
+    const recommendedIds = this.parseAIResponse(aiResponse, uniqueCandidateProducts);
     
     // Ensure no duplicates in recommended IDs (extra safety check)
     const uniqueRecommendedIds = Array.from(new Set(recommendedIds));
     
-    // Get recommended products (filter will naturally deduplicate by product ID)
-    const recommendedProducts = candidateProducts.filter(p => uniqueRecommendedIds.includes(p.id));
+    // Get recommended products from deduplicated candidates
+    let recommendedProducts = uniqueCandidateProducts.filter(p => uniqueRecommendedIds.includes(p.id));
+    
+    // Deduplicate by product name before returning to frontend
+    recommendedProducts = this.deduplicateProductsByName(recommendedProducts);
+    console.log(`Deduplicated recommended products before returning: ${uniqueRecommendedIds.length} IDs -> ${recommendedProducts.length} products`);
 
     console.log('generateAIRecommendations - Returning:', {
       success: true,
       recommendedProductIds: uniqueRecommendedIds.length,
       products: recommendedProducts.length,
       productIds: recommendedProducts.map(p => p.id),
+      productNames: recommendedProducts.map(p => p.name),
     });
 
     return {
@@ -480,8 +508,12 @@ Available Products (${candidateProducts.length} items):
     candidateProducts: Product[],
     request: SmartRecommendationRequest
   ): SmartRecommendationResponse {
+    // Deduplicate by product name first
+    const uniqueProducts = this.deduplicateProductsByName(candidateProducts);
+    console.log(`Rule-based: Deduplicated products: ${candidateProducts.length} -> ${uniqueProducts.length}`);
+    
     // Simple rule: select first 5-8 products that match criteria
-    const selected = candidateProducts.slice(0, 8);
+    const selected = uniqueProducts.slice(0, 8);
     
     return {
       success: true,

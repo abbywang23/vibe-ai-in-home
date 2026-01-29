@@ -1407,8 +1407,9 @@ export class ImageProcessingService {
             }
           }
           
-          // Add instruction to extract furniture from product image with constraints
-          optimizedName += ' - Extract ONLY this furniture piece from the product image and place it in the room. Keep all other room elements unchanged: preserve walls, floors, windows, doors, existing furniture, decorations, lighting, and overall room layout. Only modify/add this specific furniture item.';
+          // Simplified name - detailed instructions are now in the main prompt parameter
+          // Keep name descriptive but concise since main control is via prompt
+          optimizedName += ' - Extract this furniture piece from the product image and place it in the room.';
           
           const decorItem: any = {
             url: furniture.imageUrl,
@@ -1462,16 +1463,47 @@ export class ImageProcessingService {
       const decor8RoomType = roomTypeMap[roomType.toLowerCase()] || 'livingroom';
       console.log(`Mapped room type: "${roomType}" -> "${decor8RoomType}"`);
 
-      // Step 5: Call Decor8AI API
-      console.log('Step 4: Calling Decor8AI generate_designs_for_room API...');
+      // Step 5: Build custom prompt with explicit preservation instructions
+      console.log('Step 5: Building custom prompt with preservation instructions...');
+      const designStyle = 'minimalist'; // Default to minimalist, can be made configurable
+      const furnitureNames = selectedFurniture.map(f => f.name).join(', ');
+      
+      // Build detailed prompt that explicitly requires preserving items on furniture
+      const customPrompt = `Transform this ${decor8RoomType} room with ${designStyle} design style. 
+Replace the following furniture items with the provided decor items: ${furnitureNames}.
+
+CRITICAL REQUIREMENTS:
+1. PRESERVE ALL ITEMS ON FURNITURE SURFACES: When replacing furniture, you MUST keep all items that are ON or ATTACHED to the original furniture pieces exactly as they are. This includes:
+   - Lamps, lights, and lighting fixtures on tables, desks, or bedside tables
+   - Vases, decorative objects, books, and accessories on surfaces
+   - Blankets, throws, pillows, and textiles on beds or sofas
+   - Any other decorative items, plants, or personal belongings on furniture surfaces
+   - These items must remain in their exact positions and appearances
+
+2. ONLY REPLACE THE SPECIFIED FURNITURE: Extract ONLY the furniture pieces from the provided decor items and place them in the room. Do not modify or remove any other elements.
+
+3. PRESERVE ROOM ELEMENTS: Keep all other room elements completely unchanged:
+   - Walls, floors, ceilings, windows, doors
+   - Existing furniture that is not being replaced
+   - Room layout, lighting, and overall atmosphere
+   - Architectural features and built-in elements
+
+4. MAINTAIN REALISM: Ensure the replaced furniture integrates naturally with the preserved items and room environment, maintaining realistic lighting, shadows, and perspective.
+
+Generate a photorealistic interior design image that shows the new furniture seamlessly integrated while preserving all items on furniture surfaces.`;
+
+      console.log('Custom prompt created with preservation requirements');
+
+      // Step 6: Call Decor8AI API
+      console.log('Step 6: Calling Decor8AI generate_designs_for_room API...');
       
       const requestPayload: any = {
         input_image_url: roomImageCloudinaryUrl,
-        room_type: decor8RoomType,
-        design_style: 'minimalist', // Default to minimalist, can be made configurable
+        prompt: customPrompt, // Using custom prompt - this will override room_type and design_style
         num_images: 1,
         scale_factor: 2, // Max 1536 pixels, no additional charge
-        decor_items: JSON.stringify(decorItems)
+        decor_items: JSON.stringify(decorItems),
+        guidance_scale: 18 // Higher value (18/20) to ensure prompt is followed more strictly
       };
       
       // Add room dimensions if provided and all values are valid
