@@ -195,100 +195,99 @@ export function DesignStudio() {
       const uploadResponse = await aiApi.uploadImage(file);
       console.log('Upload response:', uploadResponse);
       
-      // 3. 立即设置图片 URL 并关闭 analyzing 状态，让用户看到图片
+      // 3. 上传成功后，立即设置图片数据（让图片显示出来）
       setRoomData({
         imageUrl: uploadResponse.imageUrl,
-        originalImageUrl: uploadResponse.imageUrl, // 保存原始图片URL
+        originalImageUrl: uploadResponse.imageUrl,
         roomType: roomSetup.roomType,
         dimensions: `${roomSetup.width}' × ${roomSetup.length}'`,
         furniture: [],
-        style: 'Modern',
+        style: 'Analyzing...',
         confidence: 0
       });
       
-      // 图片已获取，立即关闭 analyzing 状态，让图片可以显示
-      setIsAnalyzing(false);
-      
-      // 4. 在后台进行检测，完成后更新数据（不阻塞UI）
+      // 4. 继续保持 analyzing 状态，进行检测（图片已显示，loading 蒙层覆盖在上面）
       console.log('Detecting furniture...');
       const roomDimensions = getRoomDimensionsFromSize(roomSetup.width, roomSetup.length);
       
-      // 异步检测，不阻塞UI
-      aiApi.detectRoom({
+      // 调用 detect API
+      const detectResponse = await aiApi.detectRoom({
         imageUrl: uploadResponse.imageUrl,
         roomDimensions: roomDimensions
-      }).then((detectResponse) => {
-        console.log('Detect response:', detectResponse);
-        
-        // 安全检查：确保响应格式正确
-        if (!detectResponse) {
-          console.error('Detect response is null or undefined');
-          return;
-        }
-        
-        // 更新状态 - 适配新的响应格式
-        const detectedRoomType = detectResponse.roomType?.value || roomSetup.roomType;
-        const detectedDimensions = detectResponse.roomDimensions 
-          ? `${detectResponse.roomDimensions.length}×${detectResponse.roomDimensions.width}m`
-          : `${roomDimensions.length}×${roomDimensions.width}m`;
-        
-        // 安全检查：确保 detectedItems 存在且是数组
-        const detectedFurniture = (detectResponse.detectedItems && Array.isArray(detectResponse.detectedItems))
-          ? detectResponse.detectedItems.map(item => item.furnitureType)
-          : [];
-        
-        const detectedStyle = detectResponse.roomStyle?.value || 'Modern';
-        const confidence = detectResponse.roomType?.confidence || detectResponse.roomStyle?.confidence || 85;
-        
-        // 转换 detect 返回的 roomDimensions 格式（RoomDimensionsAnalysis -> RoomDimensions）
-        let savedRoomDimensions: RoomDimensions | undefined;
-        if (detectResponse.roomDimensions) {
-          const unit = detectResponse.roomDimensions.unit === 'meters' 
-            ? DimensionUnit.METERS 
-            : detectResponse.roomDimensions.unit === 'feet' 
-            ? DimensionUnit.FEET 
-            : DimensionUnit.METERS; // 默认使用 meters
-          savedRoomDimensions = {
-            length: detectResponse.roomDimensions.length,
-            width: detectResponse.roomDimensions.width,
-            height: detectResponse.roomDimensions.height,
-            unit: unit
-          };
-        }
-        
-        const data: RoomData = {
-          imageUrl: uploadResponse.imageUrl,
-          originalImageUrl: uploadResponse.imageUrl, // 保存原始图片URL
-          roomType: detectedRoomType,
-          dimensions: detectedDimensions,
-          furniture: detectedFurniture,
-          style: detectedStyle,
-          confidence: confidence,
-          detectedItems: detectResponse.detectedItems || [], // 保存完整的检测结果（含特征）
-          roomDimensions: savedRoomDimensions // 保存 detect 返回的 roomDimensions
-        };
-        
-        console.log('Updating roomData with detection results:', {
-          roomType: data.roomType,
-          dimensions: data.dimensions,
-          furnitureCount: data.furniture.length,
-          style: data.style,
-          detectedItemsCount: data.detectedItems?.length || 0
-        });
-        
-        setRoomData(data);
-        setPreferences(prev => ({ ...prev, style: data.style }));
-      }).catch((error) => {
-        console.error('Error detecting room:', error);
-        console.error('Error details:', {
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
-        });
-        // 检测失败不影响图片显示，只记录错误
       });
       
+      console.log('Detect response:', detectResponse);
+      
+      // 5. 检测完成后，更新数据并关闭 loading
+      // 安全检查：确保响应格式正确
+      if (!detectResponse) {
+        console.error('Detect response is null or undefined');
+        setIsAnalyzing(false);
+        return;
+      }
+      
+      // 更新状态 - 适配新的响应格式
+      const detectedRoomType = detectResponse.roomType?.value || roomSetup.roomType;
+      const detectedDimensions = detectResponse.roomDimensions 
+        ? `${detectResponse.roomDimensions.length}×${detectResponse.roomDimensions.width}m`
+        : `${roomDimensions.length}×${roomDimensions.width}m`;
+      
+      // 安全检查：确保 detectedItems 存在且是数组
+      const detectedFurniture = (detectResponse.detectedItems && Array.isArray(detectResponse.detectedItems))
+        ? detectResponse.detectedItems.map(item => item.furnitureType)
+        : [];
+      
+      const detectedStyle = detectResponse.roomStyle?.value || 'Modern';
+      const confidence = detectResponse.roomType?.confidence || detectResponse.roomStyle?.confidence || 85;
+      
+      // 转换 detect 返回的 roomDimensions 格式（RoomDimensionsAnalysis -> RoomDimensions）
+      let savedRoomDimensions: RoomDimensions | undefined;
+      if (detectResponse.roomDimensions) {
+        const unit = detectResponse.roomDimensions.unit === 'meters' 
+          ? DimensionUnit.METERS 
+          : detectResponse.roomDimensions.unit === 'feet' 
+          ? DimensionUnit.FEET 
+          : DimensionUnit.METERS; // 默认使用 meters
+        savedRoomDimensions = {
+          length: detectResponse.roomDimensions.length,
+          width: detectResponse.roomDimensions.width,
+          height: detectResponse.roomDimensions.height,
+          unit: unit
+        };
+      }
+      
+      const data: RoomData = {
+        imageUrl: uploadResponse.imageUrl,
+        originalImageUrl: uploadResponse.imageUrl, // 保存原始图片URL
+        roomType: detectedRoomType,
+        dimensions: detectedDimensions,
+        furniture: detectedFurniture,
+        style: detectedStyle,
+        confidence: confidence,
+        detectedItems: detectResponse.detectedItems || [], // 保存完整的检测结果（含特征）
+        roomDimensions: savedRoomDimensions // 保存 detect 返回的 roomDimensions
+      };
+      
+      console.log('Updating roomData with detection results:', {
+        roomType: data.roomType,
+        dimensions: data.dimensions,
+        furnitureCount: data.furniture.length,
+        style: data.style,
+        detectedItemsCount: data.detectedItems?.length || 0
+      });
+      
+      setRoomData(data);
+      setPreferences(prev => ({ ...prev, style: data.style }));
+      
+      // 6. 所有操作完成，关闭 loading 状态
+      setIsAnalyzing(false);
+      
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error('Error uploading/detecting image:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
       setIsAnalyzing(false);
       // 降级到模拟数据
       const fallbackImageUrl = 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&q=80';
@@ -1577,10 +1576,10 @@ function RenderingCanvas({ roomData, isAnalyzing, isRendering, renderProgress, s
                 <div className="flex-1 min-h-0 rounded-lg overflow-hidden border border-border bg-muted relative">
                   <img src={roomData.originalImageUrl || roomData.imageUrl} alt="Original Room" className="w-full h-full object-cover" />
                   
-                  {/* Analyzing Overlay */}
+                  {/* Analyzing Overlay - 30% opacity */}
                   {isAnalyzing && (
-                    <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center">
-                      <div className="text-center">
+                    <div className="absolute inset-0 bg-background/30 flex items-center justify-center">
+                      <div className="text-center bg-background/90 backdrop-blur-sm px-6 py-4 rounded-lg border border-border shadow-lg">
                         <Loader2 className="w-10 h-10 text-primary animate-spin mx-auto mb-3" />
                         <h5 className="mb-1">Analyzing Room...</h5>
                         <p className="text-muted-foreground" style={{ fontSize: 'var(--text-caption)' }}>

@@ -24,7 +24,7 @@ import { AppDispatch } from '../../store';
 import { configureRoom } from '../../store/slices/sessionSlice';
 import { setRoomConfig } from '../../store/slices/designSlice';
 import { RoomType, RoomDimensions, DimensionUnit } from '../../types/domain';
-import { useDetectFurnitureMutation } from '../../services/aiApi';
+import { aiApi } from '../../services/aiApi';
 import { uploadToCloudinary, validateImageFile, UploadProgress } from '../../utils/cloudinaryUpload';
 import StepCard from '../shared/StepCard';
 import { brandColors, typography } from '../../theme/brandTheme';
@@ -49,8 +49,8 @@ export default function RoomSetupStep({ step, isExpanded, onToggle, onComplete }
   const [roomData, setRoomData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [detectFurniture, { isLoading: isDetecting }] = useDetectFurnitureMutation();
   const [isUploading, setIsUploading] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   const isAnalyzing = isUploading || isDetecting;
@@ -117,15 +117,23 @@ export default function RoomSetupStep({ step, isExpanded, onToggle, onComplete }
         throw new Error('Upload failed');
       }
       
+      // Switch to detection phase
+      console.log('Upload complete, starting detection...');
       setIsUploading(false);
+      setIsDetecting(true);
       setUploadProgress(0);
+      console.log('Detection state set to true, isDetecting:', true);
       
       // Detect furniture in the uploaded image
       const dimensions = getRoomDimensions(roomSize);
-      const detectionResult = await detectFurniture({
+      const detectionResult = await aiApi.detectRoom({
         imageUrl: uploadResult.imageUrl,
         roomDimensions: dimensions,
-      }).unwrap();
+      });
+      
+      console.log('Detection complete, clearing loading states...');
+      // Clear all loading states
+      setIsDetecting(false);
 
       // Process detection results - 使用AI分析结果
       const aiRoomType = detectionResult.roomType?.value;
@@ -159,6 +167,7 @@ export default function RoomSetupStep({ step, isExpanded, onToggle, onComplete }
     } catch (error: any) {
       console.error('Image upload/detection failed:', error);
       setIsUploading(false);
+      setIsDetecting(false);
       setUploadProgress(0);
       setError(error.message || error.data?.message || 'Failed to process image. Please try again.');
     }
@@ -352,7 +361,11 @@ export default function RoomSetupStep({ step, isExpanded, onToggle, onComplete }
                 <CircularProgress size={40} sx={{ color: brandColors.primary }} />
                 <Box sx={{ textAlign: 'center', width: '100%', px: 2 }}>
                   <Typography variant="h6" sx={{ mb: 0.5 }}>
-                    {isUploading && uploadProgress > 0 && uploadProgress < 100 ? 'Uploading Image...' : isUploading ? 'Preparing Upload...' : 'Analyzing Room...'}
+                    {isUploading 
+                      ? (uploadProgress > 0 && uploadProgress < 100 
+                          ? 'Uploading Image...' 
+                          : 'Preparing Upload...')
+                      : 'Analyzing Room...'}
                   </Typography>
                   {isUploading && uploadProgress > 0 && uploadProgress < 100 ? (
                     <Box sx={{ mt: 2, width: '100%' }}>
@@ -374,9 +387,27 @@ export default function RoomSetupStep({ step, isExpanded, onToggle, onComplete }
                         {uploadProgress}% uploaded
                       </Typography>
                     </Box>
+                  ) : isDetecting ? (
+                    <Box sx={{ mt: 2, width: '100%' }}>
+                      <LinearProgress
+                        sx={{
+                          height: 8,
+                          borderRadius: 4,
+                          backgroundColor: brandColors.muted,
+                          mb: 1,
+                          '& .MuiLinearProgress-bar': {
+                            backgroundColor: brandColors.primary,
+                            borderRadius: 4,
+                          },
+                        }}
+                      />
+                      <Typography sx={{ color: brandColors.mutedForeground, fontSize: typography.sizes.caption }}>
+                        AI is detecting furniture and room details...
+                      </Typography>
+                    </Box>
                   ) : (
                     <Typography sx={{ color: brandColors.mutedForeground, fontSize: typography.sizes.caption }}>
-                      {isUploading ? 'Please wait while we upload your image' : 'AI is detecting room details'}
+                      Please wait while we upload your image
                     </Typography>
                   )}
                 </Box>
