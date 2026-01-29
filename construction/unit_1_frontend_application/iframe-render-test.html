@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iframe Render Test</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .control-panel {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+      color: #1a202c;
+    }
+
+    .subtitle {
+      color: #718096;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    .section {
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 8px;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: #edf2f7;
+      color: #2d3748;
+    }
+
+    .btn-secondary:hover {
+      background: #e2e8f0;
+    }
+
+    .status-box {
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 13px;
+      color: #4a5568;
+      margin-top: 8px;
+    }
+
+    .status-label {
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 4px;
+    }
+
+    .status-value {
+      font-family: 'Courier New', monospace;
+      color: #667eea;
+    }
+
+    .log-box {
+      background: #1a202c;
+      color: #a0aec0;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 8px;
+    }
+
+    .log-entry {
+      margin-bottom: 4px;
+      line-height: 1.5;
+    }
+
+    .log-time {
+      color: #718096;
+    }
+
+    .log-status {
+      color: #48bb78;
+      font-weight: 600;
+    }
+
+    .log-error {
+      color: #f56565;
+    }
+
+    .iframe-wrapper {
+      background: white;
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    iframe {
+      width: 1000px;
+      height: 580px;
+      border: none;
+      border-radius: 8px;
+      display: block;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-success {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .badge-warning {
+      background: #feebc8;
+      color: #7c2d12;
+    }
+
+    .badge-error {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .badge-info {
+      background: #bee3f8;
+      color: #2c5282;
+    }
+
+    @media (max-width: 1024px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Control Panel -->
+    <div class="control-panel">
+      <h1>🎨 Iframe Render Test</h1>
+      <p class="subtitle">Test the iframe rendering functionality</p>
+
+      <!-- Actions -->
+      <div class="section">
+        <div class="section-title">Actions</div>
+        <button class="btn-primary" onclick="sendFurnitureData()">
+          📤 Send Furniture Data
+        </button>
+        <button class="btn-secondary" onclick="resetIframe()">
+          🔄 Reset Iframe
+        </button>
+      </div>
+
+      <!-- Status -->
+      <div class="section">
+        <div class="section-title">Status</div>
+        <div class="status-box">
+          <div class="status-label">Current Status:</div>
+          <div class="status-value" id="currentStatus">idle</div>
+        </div>
+        <div class="status-box">
+          <div class="status-label">Progress:</div>
+          <div class="status-value" id="progressValue">0%</div>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="section">
+        <div class="section-title">Results</div>
+        <div class="status-box">
+          <div class="status-label">Original Image:</div>
+          <div class="status-value" id="originalUrl" style="word-break: break-all; font-size: 11px;">-</div>
+        </div>
+        <div class="status-box">
+          <div class="status-label">Rendered Image:</div>
+          <div class="status-value" id="renderedUrl" style="word-break: break-all; font-size: 11px;">-</div>
+        </div>
+      </div>
+
+      <!-- Event Log -->
+      <div class="section">
+        <div class="section-title">Event Log</div>
+        <div class="log-box" id="eventLog">
+          <div class="log-entry">
+            <span class="log-time">[Ready]</span> Waiting for actions...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Iframe -->
+    <div class="iframe-wrapper">
+      <iframe 
+        id="renderIframe"
+        src="http://localhost:5173/iframe-render"
+      ></iframe>
+    </div>
+  </div>
+
+  <script>
+    // Sample furniture data
+    const sampleFurniture = [
+      {
+        id: 'sofa-001',
+        name: 'Modern Sectional Sofa',
+        imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400',
+        renderImageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800',
+        category: 'sofa'
+      },
+      {
+        id: 'chair-002',
+        name: 'Accent Chair',
+        imageUrl: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=400',
+        renderImageUrl: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=800',
+        category: 'chair'
+      },
+      {
+        id: 'table-003',
+        name: 'Coffee Table',
+        imageUrl: 'https://images.unsplash.com/photo-1532372320572-cda25653a26d?w=400',
+        renderImageUrl: 'https://images.unsplash.com/photo-1532372320572-cda25653a26d?w=800',
+        category: 'table'
+      }
+    ];
+
+    const iframe = document.getElementById('renderIframe');
+    const statusEl = document.getElementById('currentStatus');
+    const progressEl = document.getElementById('progressValue');
+    const originalUrlEl = document.getElementById('originalUrl');
+    const renderedUrlEl = document.getElementById('renderedUrl');
+    const logEl = document.getElementById('eventLog');
+
+    // Add log entry
+    function addLog(message, type = 'info') {
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      
+      let className = 'log-status';
+      if (type === 'error') className = 'log-error';
+      
+      entry.innerHTML = `<span class="log-time">[${time}]</span> <span class="${className}">${message}</span>`;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // Send furniture data to iframe
+    function sendFurnitureData() {
+      const message = {
+        type: 'FURNITURE_DATA',
+        payload: {
+          furniture: sampleFurniture
+          // Note: roomType and roomDimensions are detected by AI, not sent from parent
+        }
+      };
+
+      iframe.contentWindow.postMessage(message, '*');
+      addLog('Sent furniture data to iframe (3 items)');
+      console.log('Sent message:', message);
+    }
+
+    // Reset iframe
+    function resetIframe() {
+      iframe.contentWindow.postMessage({ type: 'RESET' }, '*');
+      addLog('Reset iframe');
+      statusEl.textContent = 'idle';
+      progressEl.textContent = '0%';
+      originalUrlEl.textContent = '-';
+      renderedUrlEl.textContent = '-';
+    }
+
+    // Listen for messages from iframe
+    window.addEventListener('message', (event) => {
+      // In production, verify event.origin
+      
+      if (event.data.type === 'RENDER_STATUS') {
+        const { status, progress, error, renderedImageUrl, originalImageUrl } = event.data.payload;
+        
+        console.log('Received status:', event.data.payload);
+        
+        // Update status
+        statusEl.textContent = status;
+        
+        // Update progress
+        if (progress !== undefined) {
+          progressEl.textContent = progress + '%';
+        }
+        
+        // Update URLs
+        if (originalImageUrl) {
+          originalUrlEl.textContent = originalImageUrl.substring(0, 50) + '...';
+        }
+        if (renderedImageUrl) {
+          renderedUrlEl.textContent = renderedImageUrl.substring(0, 50) + '...';
+        }
+        
+        // Add log
+        switch (status) {
+          case 'idle':
+            addLog('Status: Idle - Waiting for upload');
+            break;
+          case 'uploading':
+            addLog(`Status: Uploading... ${progress || 0}%`);
+            break;
+          case 'detecting':
+            addLog('Status: AI detecting room...');
+            break;
+          case 'rendering':
+            addLog('Status: Rendering furniture...');
+            break;
+          case 'completed':
+            addLog('✅ Status: Completed successfully!');
+            break;
+          case 'error':
+            addLog(`❌ Error: ${error}`, 'error');
+            break;
+        }
+      }
+    });
+
+    // Auto-send furniture data when iframe loads
+    iframe.onload = () => {
+      addLog('Iframe loaded successfully');
+      setTimeout(() => {
+        addLog('Auto-sending furniture data in 1 second...');
+        setTimeout(sendFurnitureData, 1000);
+      }, 100);
+    };
+  </script>
+</body>
+</html>

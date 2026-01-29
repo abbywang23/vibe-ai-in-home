@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LandingPage } from './components/LandingPage';
 import { DesignStudio } from './components/DesignStudio';
+import { IframeRenderPage } from './pages/IframeRenderPage';
 
-export default function App() {
+function MainApp() {
   const [showLanding, setShowLanding] = useState(true);
 
   if (showLanding) {
@@ -10,4 +12,16 @@ export default function App() {
   }
 
   return <DesignStudio />;
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<MainApp />} />
+        <Route path="/iframe-render" element={<IframeRenderPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
