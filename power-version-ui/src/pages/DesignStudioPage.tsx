@@ -34,18 +34,18 @@ const steps = [
     icon: <UploadFileIcon />,
   },
   {
-    label: 'Design Vision',
+    label: 'Preference',
     description: 'Define style & preferences',
     icon: <PaletteIcon />,
   },
   {
-    label: 'Furniture Selection',
+    label: 'Furniture Recommendation',
     description: 'Review AI recommendations',
     icon: <ChairIcon />,
   },
   {
-    label: 'Final Review',
-    description: 'Generate & purchase',
+    label: 'Generate',
+    description: 'Generate & View',
     icon: <CheckCircleIcon />,
   },
 ];

@@ -98,9 +98,9 @@ export function DesignStudio() {
 
   const [steps, setSteps] = useState<Step[]>([
     { id: 'upload', number: 1, title: 'Room Setup', subtitle: 'Upload & analyze your space', icon: <Upload className="w-5 h-5" />, status: 'active' },
-    { id: 'vision', number: 2, title: 'Design Vision', subtitle: 'Define style & preferences', icon: <Palette className="w-5 h-5" />, status: 'pending' },
-    { id: 'selection', number: 3, title: 'Furniture Selection', subtitle: 'Review AI recommendations', icon: <Sofa className="w-5 h-5" />, status: 'pending' },
-    { id: 'confirmation', number: 4, title: 'Final Review', subtitle: 'Generate & purchase', icon: <Eye className="w-5 h-5" />, status: 'pending' }
+    { id: 'vision', number: 2, title: 'Preference', subtitle: 'Define style & preferences', icon: <Palette className="w-5 h-5" />, status: 'pending' },
+    { id: 'selection', number: 3, title: 'Furniture Recommendation', subtitle: 'Review AI recommendations', icon: <Sofa className="w-5 h-5" />, status: 'pending' },
+    { id: 'confirmation', number: 4, title: 'Generate', subtitle: 'Generate & View', icon: <Eye className="w-5 h-5" />, status: 'pending' }
   ]);
 
   const [expandedStep, setExpandedStep] = useState<StepId>('upload');
@@ -1482,7 +1482,7 @@ function FurnitureListPanel({ selectedFurniture, isLoading, totalCost }: {
       <div className="h-full flex items-center justify-center p-6">
         <div className="text-center max-w-md">
           <Sofa className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-          <h5 className="mb-2">Furniture Selection</h5>
+          <h5 className="mb-2">Furniture Recommendation</h5>
           <p className="text-muted-foreground" style={{ fontSize: 'var(--text-caption)' }}>
             {selectedFurniture.length > 0 
               ? "No furniture items selected. Toggle items in the selection step above."
