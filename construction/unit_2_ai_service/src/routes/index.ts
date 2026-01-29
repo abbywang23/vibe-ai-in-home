@@ -80,6 +80,10 @@ export function setupRoutes(): Router {
     productController.getSmartRecommendations(req, res, next)
   );
 
+  router.post('/api/ai/products/swap-next', (req, res, next) =>
+    productController.getNextProductForSwap(req, res, next)
+  );
+
   // This must be last to avoid matching other routes
   router.get('/api/ai/products/:id', (req, res, next) =>
     productController.getProductById(req, res, next)

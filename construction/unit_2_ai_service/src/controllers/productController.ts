@@ -193,4 +193,45 @@ export class ProductController {
       next(error);
     }
   }
+
+  /**
+   * POST /api/ai/products/swap-next
+   * Get next product in category for Swap Item feature
+   */
+  async getNextProductForSwap(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { category, productName } = req.body;
+
+      if (!category || !productName) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_REQUEST',
+            message: 'category and productName are required',
+          },
+        });
+        return;
+      }
+
+      const nextProduct = await this.productClient.getNextProductInCategory(category, productName);
+
+      if (!nextProduct) {
+        res.status(404).json({
+          success: false,
+          error: {
+            code: 'PRODUCT_NOT_FOUND',
+            message: 'Product not found in category or category is empty',
+          },
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        product: nextProduct,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

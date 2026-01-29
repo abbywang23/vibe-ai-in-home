@@ -54,6 +54,11 @@ export interface FurnitureItem {
     estimatedValue: number;
   };
   isSelected?: boolean;
+  // 支持 API 返回的 Product 类型中的 images 属性（用于 Swap Item 功能）
+  images?: Array<{
+    url: string;
+    alt: string;
+  }>;
 }
 
 export interface SmartRecommendResponse {
@@ -389,6 +394,8 @@ function convertProductToFurnitureItem(product: Product, reason?: string): Furni
     reason: reason || product.description || '',
     dimensions: dimensionsStr,
     isSelected: false,
+    // 保留 images 数组以便 Swap Item 功能使用
+    images: product.images,
   };
 }
 
@@ -572,6 +579,22 @@ export const aiApi = {
       method: 'POST',
       body: JSON.stringify(request),
     });
+  },
+
+  /**
+   * 获取下一个商品（用于 Swap Item）
+   */
+  async getNextProductForSwap(category: string, productName: string): Promise<FurnitureItem> {
+    const response = await fetchAPI<{ success: boolean; product: Product }>('/api/ai/products/swap-next', {
+      method: 'POST',
+      body: JSON.stringify({ category, productName }),
+    });
+
+    if (!response.success || !response.product) {
+      throw new Error('Failed to get next product for swap');
+    }
+
+    return convertProductToFurnitureItem(response.product);
   },
 
   /**
