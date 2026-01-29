@@ -8,13 +8,11 @@ export interface FurnitureItemForRender {
   imageUrl: string; // 用于前端展示
   renderImageUrl?: string; // 用于渲染（优先使用）
   category?: string;
-  price?: number;
 }
 
 export interface IframeMessagePayload {
   furniture?: FurnitureItemForRender[];
-  roomType?: string;
-  roomDimensions?: RoomDimensions;
+  // roomType 和 roomDimensions 由后端 AI 识别，不需要从父页面传入
 }
 
 export interface IframeMessage {

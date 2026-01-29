@@ -53,7 +53,7 @@ export function RenderUploadArea({ onFileSelect, isUploading, uploadProgress = 0
       </div>
       
       {/* Upload Area */}
-      <div className="flex-1 flex items-center justify-center p-4" style={{ backgroundColor: '#f9f7ef' }}>
+      <div className="flex-1 flex items-center justify-center py-6 overflow-hidden" style={{ backgroundColor: '#f9f7ef' }}>
         <input
           ref={fileInputRef}
           type="file"
@@ -69,7 +69,7 @@ export function RenderUploadArea({ onFileSelect, isUploading, uploadProgress = 0
           onDragOver={handleDrag}
           onDrop={handleDrop}
           className={`
-            w-full h-full min-h-[200px] border-2 border-dashed rounded-lg
+            w-full h-full min-h-[180px] mx-6 border-2 border-dashed rounded-lg
             flex flex-col items-center justify-center gap-3
             transition-all duration-200
             ${dragActive ? 'border-[rgb(210,92,27)] bg-[rgb(210,92,27)]/10 scale-[0.98]' : 'border-border/50 bg-background'}

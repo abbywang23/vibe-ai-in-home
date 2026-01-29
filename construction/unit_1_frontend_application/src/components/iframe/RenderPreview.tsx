@@ -16,20 +16,18 @@ export function RenderPreview({ imageUrl, isLoading, title, emptyText }: RenderP
       </div>
       
       {/* Preview Area */}
-      <div className="flex-1 flex items-center justify-center p-4" style={{ backgroundColor: '#f9f7ef' }}>
+      <div className="flex-1 flex items-center justify-center py-6 overflow-hidden" style={{ backgroundColor: '#f9f7ef' }}>
         {isLoading ? (
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="w-12 h-12 text-[rgb(210,92,27)] animate-spin" />
             <p className="text-sm text-muted-foreground">Processing...</p>
           </div>
         ) : imageUrl ? (
-          <div className="w-full h-full flex items-center justify-center">
-            <img
-              src={imageUrl}
-              alt={title}
-              className="max-w-full max-h-full object-contain rounded-lg shadow-sm"
-            />
-          </div>
+          <img
+            src={imageUrl}
+            alt={title}
+            className="max-w-full max-h-full object-contain rounded-lg shadow-sm"
+          />
         ) : (
           <div className="flex flex-col items-center gap-3 text-muted-foreground">
             <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center">

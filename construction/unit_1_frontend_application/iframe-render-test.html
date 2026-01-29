@@ -22,10 +22,10 @@
     }
 
     .container {
-      max-width: 1200px;
+      max-width: 1400px;
       width: 100%;
       display: grid;
-      grid-template-columns: 1fr 600px;
+      grid-template-columns: 380px 1fr;
       gap: 20px;
       align-items: start;
     }
@@ -153,8 +153,8 @@
     }
 
     iframe {
-      width: 600px;
-      height: 800px;
+      width: 1000px;
+      height: 580px;
       border: none;
       border-radius: 8px;
       display: block;
@@ -266,18 +266,24 @@
     const sampleFurniture = [
       {
         id: 'sofa-001',
-        name: 'Modern Sofa',
+        name: 'Modern Sectional Sofa',
         imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400',
         renderImageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800',
-        category: 'sofa',
-        price: 1299
+        category: 'sofa'
       },
       {
-        id: 'table-001',
+        id: 'chair-002',
+        name: 'Accent Chair',
+        imageUrl: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=400',
+        renderImageUrl: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=800',
+        category: 'chair'
+      },
+      {
+        id: 'table-003',
         name: 'Coffee Table',
-        imageUrl: 'https://images.unsplash.com/photo-1565191999001-551c187427bb?w=400',
-        category: 'table',
-        price: 399
+        imageUrl: 'https://images.unsplash.com/photo-1532372320572-cda25653a26d?w=400',
+        renderImageUrl: 'https://images.unsplash.com/photo-1532372320572-cda25653a26d?w=800',
+        category: 'table'
       }
     ];
 
@@ -307,19 +313,13 @@
       const message = {
         type: 'FURNITURE_DATA',
         payload: {
-          furniture: sampleFurniture,
-          roomType: 'living_room',
-          roomDimensions: {
-            length: 15,
-            width: 12,
-            height: 8,
-            unit: 'feet'
-          }
+          furniture: sampleFurniture
+          // Note: roomType and roomDimensions are detected by AI, not sent from parent
         }
       };
 
       iframe.contentWindow.postMessage(message, '*');
-      addLog('Sent furniture data to iframe');
+      addLog('Sent furniture data to iframe (3 items)');
       console.log('Sent message:', message);
     }
 

@@ -53,24 +53,22 @@ export function IframeRenderPage() {
         originalImageUrl: uploadResult.imageUrl 
       });
 
-      // 2. 检测房间
+      // 2. 检测房间（AI 识别房间类型和尺寸）
       updateStatus('detecting');
-      
-      const defaultDimensions = furnitureData?.roomDimensions || {
-        length: 15,
-        width: 12,
-        height: 8,
-        unit: DimensionUnit.FEET,
-      };
 
       const detectionResult = await aiApi.detectRoom({
         imageUrl: uploadResult.imageUrl,
-        roomDimensions: defaultDimensions,
+        roomDimensions: {
+          length: 15,
+          width: 12,
+          height: 8,
+          unit: DimensionUnit.FEET,
+        },
       });
 
       console.log('Detection result:', detectionResult);
 
-      // 3. 生成渲染图
+      // 3. 生成渲染图（使用 AI 识别的房间信息）
       if (!furnitureData?.furniture || furnitureData.furniture.length === 0) {
         throw new Error('No furniture data provided');
       }
@@ -84,13 +82,18 @@ export function IframeRenderPage() {
           name: item.name,
           imageUrl: item.renderImageUrl || item.imageUrl,
         })),
-        roomType: detectionResult.roomType?.value || furnitureData?.roomType,
+        roomType: detectionResult.roomType?.value,
         roomDimensions: detectionResult.roomDimensions ? {
           length: detectionResult.roomDimensions.length,
           width: detectionResult.roomDimensions.width,
           height: detectionResult.roomDimensions.height,
           unit: detectionResult.roomDimensions.unit === 'meters' ? DimensionUnit.METERS : DimensionUnit.FEET,
-        } : defaultDimensions,
+        } : {
+          length: 15,
+          width: 12,
+          height: 8,
+          unit: DimensionUnit.FEET,
+        },
       });
 
       console.log('Render result:', renderResult);
@@ -153,7 +156,7 @@ export function IframeRenderPage() {
         {/* 内容层 - 与右侧卡片顶部对齐 */}
         <div className="relative z-10 flex flex-col mt-[75px]">
           {/* 标题和描述 */}
-          <div className="text-left">
+          <div className="text-left mb-4">
             <h2 className="text-3xl font-semibold mb-2" style={{ color: '#3C101E' }}>
               Visualize Your Space
             </h2>
@@ -161,6 +164,18 @@ export function IframeRenderPage() {
               Upload your room photo and see how our furniture transforms your space instantly
             </p>
           </div>
+
+          {/* 家具图片展示 - 只显示第一个 */}
+          {furnitureData?.furniture && furnitureData.furniture.length > 0 && (
+            <div className="w-32 h-32 rounded-lg overflow-hidden" style={{ backgroundColor: 'transparent' }}>
+              <img
+                src={furnitureData.furniture[0].imageUrl}
+                alt={furnitureData.furniture[0].name}
+                className="w-full h-full object-contain"
+                title={furnitureData.furniture[0].name}
+              />
+            </div>
+          )}
         </div>
       </div>
 
